@@ -1,0 +1,183 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ClipboardList, KanbanSquare, Plus, Rows3 } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { jobOrderDetailPath } from "@/constants/routes";
+import { useAuth } from "@/contexts/auth-context";
+import { usePermissions } from "@/hooks/use-permissions";
+import { useMoveRecordStage, useRecords } from "@/hooks/use-workflow-records";
+import { PageHeader } from "@/shared/components/page-header";
+import { PermissionGuard } from "@/components/permission-guard";
+import { EmptyState } from "@/shared/components/empty-state";
+import { PriorityBadge } from "@/shared/components/priority-badge";
+import { TableSkeleton } from "@/shared/components/table-skeleton";
+import { WorkflowKanban } from "@/shared/components/workflow-kanban";
+import { WorkflowStageBadge } from "@/shared/components/workflow-stage-badge";
+import { formatDate } from "@/utils/format";
+import { useWorkflowByModule } from "@/features/workflows/hooks";
+import { useAllWorkItems } from "@/features/work-items/hooks";
+import type { JobOrder } from "../types";
+import { jobOrderService } from "../service";
+import { JobOrderFormDialog } from "../components/job-order-form-dialog";
+import { JobOrderKanbanCard } from "../components/job-order-kanban-card";
+import { countIncompleteWorkItems, isCompletionStage } from "../completion";
+
+export function JobOrdersPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { can } = usePermissions();
+  const canMove = can("job-orders:update");
+
+  const { data: jobOrders = [], isLoading } = useRecords(
+    "job-orders",
+    jobOrderService,
+  );
+  const { data: workflow } = useWorkflowByModule("job-orders");
+  const { data: workItems = [] } = useAllWorkItems();
+  const moveStage = useMoveRecordStage("job-orders", jobOrderService);
+
+  const [view, setView] = useState<"list" | "kanban">("list");
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const stageOf = (id: string) =>
+    workflow?.stages.find((s) => s.id === id) ?? null;
+
+  const open = (jo: JobOrder) => navigate(jobOrderDetailPath(jo.id));
+
+  const handleMove = (id: number, toStageId: string) => {
+    const stage = stageOf(toStageId);
+    if (isCompletionStage(stage)) {
+      const incomplete = countIncompleteWorkItems(
+        workItems.filter((w) => w.jobOrderId === id),
+      );
+      if (incomplete > 0) {
+        toast.warning(
+          `${incomplete} work item${incomplete > 1 ? "s are" : " is"} still incomplete`,
+          { description: "The job order was moved anyway." },
+        );
+      }
+    }
+    moveStage.mutate({
+      id,
+      toStageId,
+      actor: user?.full_name ?? "System",
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Job Orders"
+        description="Service and repair jobs — the primary record for all field work."
+        actions={
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-lg border bg-muted/40 p-0.5">
+              <Button
+                variant={view === "list" ? "default" : "ghost"}
+                size="sm"
+                className="h-8"
+                onClick={() => setView("list")}
+              >
+                <Rows3 className="h-4 w-4" /> List
+              </Button>
+              <Button
+                variant={view === "kanban" ? "default" : "ghost"}
+                size="sm"
+                className="h-8"
+                onClick={() => setView("kanban")}
+              >
+                <KanbanSquare className="h-4 w-4" /> Kanban
+              </Button>
+            </div>
+            <PermissionGuard permission="job-orders:create">
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="h-4 w-4" /> New job order
+              </Button>
+            </PermissionGuard>
+          </div>
+        }
+      />
+
+      {isLoading ? (
+        <Card>
+          <TableSkeleton columns={6} />
+        </Card>
+      ) : jobOrders.length === 0 ? (
+        <EmptyState
+          icon={ClipboardList}
+          title="No job orders yet"
+          description="Create a job order to start tracking it through the workflow."
+        />
+      ) : view === "list" ? (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Job Order</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Equipment</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Stage</TableHead>
+                <TableHead>Due</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {jobOrders.map((jo) => (
+                <TableRow
+                  key={jo.id}
+                  className="cursor-pointer"
+                  onClick={() => open(jo)}
+                >
+                  <TableCell>
+                    <p className="font-mono text-xs text-muted-foreground">
+                      {jo.code}
+                    </p>
+                    <p className="font-medium text-foreground">{jo.title}</p>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {jo.customer}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {jo.equipment}
+                  </TableCell>
+                  <TableCell>
+                    <PriorityBadge priority={jo.priority} />
+                  </TableCell>
+                  <TableCell>
+                    <WorkflowStageBadge stage={stageOf(jo.currentStageId)} />
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {formatDate(jo.dueDate)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      ) : workflow ? (
+        <WorkflowKanban
+          items={jobOrders}
+          workflow={workflow}
+          canMove={canMove}
+          onMove={handleMove}
+          renderCard={(jo) => (
+            <JobOrderKanbanCard jobOrder={jo} onClick={() => open(jo)} />
+          )}
+        />
+      ) : null}
+
+      <JobOrderFormDialog open={createOpen} onOpenChange={setCreateOpen} />
+    </div>
+  );
+}

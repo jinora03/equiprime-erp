@@ -1,0 +1,35 @@
+import type { Priority } from "@/types";
+import type { WorkItemStatus } from "./statuses";
+
+/**
+ * A Work Item is a child of a Job Order. It uses a fixed status (see
+ * `statuses.ts`) rather than the Workflow Engine. Shape mirrors the future
+ * FastAPI `WorkItem` resource.
+ */
+export interface WorkItem {
+  id: number;
+  code: string;
+  task: string;
+  jobOrderId: number;
+  jobOrderCode: string;
+  assignee?: string | null;
+  priority: Priority;
+  estimatedHours: number;
+  actualHours: number;
+  dueDate: string;
+  status: WorkItemStatus;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkItemInput {
+  task: string;
+  jobOrderId: number;
+  jobOrderCode: string;
+  assignee?: string;
+  priority: Priority;
+  estimatedHours?: number;
+  dueDate?: string;
+  notes?: string;
+}
