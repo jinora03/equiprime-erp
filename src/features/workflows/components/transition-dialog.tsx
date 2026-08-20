@@ -67,7 +67,8 @@ export function TransitionDialog({
         <DialogHeader>
           <DialogTitle>Move to {toStageName}</DialogTitle>
           <DialogDescription>
-            These requirements must be satisfied before the transition.
+            Review the transition requirements. Manual confirmations and role
+            approvals are simulated in this browser-only demo.
           </DialogDescription>
         </DialogHeader>
 
@@ -111,9 +112,14 @@ export function TransitionDialog({
 
         {result.approverRoles.length > 0 ? (
           <section className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Waiting for approval
-            </p>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Simulated approvals
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Use Approve to simulate sign-off from each required role.
+              </p>
+            </div>
             {result.approverRoles.map((role) => (
               <div
                 key={role}

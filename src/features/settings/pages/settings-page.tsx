@@ -27,9 +27,9 @@ import { useTheme } from "@/contexts/theme-context";
 import { PageHeader } from "@/shared/components/page-header";
 import type { Theme } from "@/types";
 
-const phaseToast = () =>
-  toast.info("Settings are UI-only in Phase 1", {
-    description: "Persistence arrives once the backend is connected.",
+const demoOnlyToast = () =>
+  toast.info("Demo-only setting", {
+    description: "This control is not persisted in the browser-only demo.",
   });
 
 export function SettingsPage() {
@@ -120,7 +120,7 @@ export function SettingsPage() {
                 </div>
               </div>
               <div className="flex justify-end">
-                <Button onClick={phaseToast}>Save changes</Button>
+                <Button onClick={demoOnlyToast}>Save changes</Button>
               </div>
             </CardContent>
           </Card>
@@ -155,13 +155,13 @@ export function SettingsPage() {
               <SettingToggle
                 title="Sidebar auto-collapse"
                 description="Collapse the sidebar automatically on smaller screens."
-                onToggle={phaseToast}
+                onToggle={demoOnlyToast}
                 defaultChecked
               />
               <SettingToggle
                 title="Reduced motion"
                 description="Minimize animations across the interface."
-                onToggle={phaseToast}
+                onToggle={demoOnlyToast}
               />
             </CardContent>
           </Card>
@@ -180,28 +180,28 @@ export function SettingsPage() {
               <SettingToggle
                 title="Job order updates"
                 description="Assignments, status changes, and completions."
-                onToggle={phaseToast}
+                onToggle={demoOnlyToast}
                 defaultChecked
               />
               <Separator />
               <SettingToggle
                 title="Inventory alerts"
                 description="Low stock and reorder notifications."
-                onToggle={phaseToast}
+                onToggle={demoOnlyToast}
                 defaultChecked
               />
               <Separator />
               <SettingToggle
                 title="Approvals"
                 description="Requests waiting on your review."
-                onToggle={phaseToast}
+                onToggle={demoOnlyToast}
                 defaultChecked
               />
               <Separator />
               <SettingToggle
                 title="Email digest"
                 description="A daily summary delivered to your inbox."
-                onToggle={phaseToast}
+                onToggle={demoOnlyToast}
               />
             </CardContent>
           </Card>
@@ -220,13 +220,13 @@ export function SettingsPage() {
               <SettingToggle
                 title="Require 2FA for all users"
                 description="Enforce two-factor authentication org-wide."
-                onToggle={phaseToast}
+                onToggle={demoOnlyToast}
               />
               <Separator />
               <SettingToggle
                 title="Login alerts"
                 description="Notify admins of sign-ins from new devices."
-                onToggle={phaseToast}
+                onToggle={demoOnlyToast}
                 defaultChecked
               />
               <Separator />
@@ -285,7 +285,7 @@ export function SettingsPage() {
                       {integration.desc}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={phaseToast}>
+                  <Button variant="outline" size="sm" onClick={demoOnlyToast}>
                     Connect
                   </Button>
                 </div>

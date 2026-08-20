@@ -20,7 +20,7 @@ is configured to deploy straight to GitHub Pages.
 2. Push to the `main` branch.
 3. In the repo: **Settings → Pages → Build and deployment → Source: GitHub
    Actions**.
-4. The included workflow (`.github/workflows/deploy.yml`) builds the app
+4. The included workflow (`.github/workflows/deploy-pages.yml`) builds the app
    and publishes it. Your site goes live at
    `https://<your-username>.github.io/<repo-name>/` in a minute or two.
 
@@ -44,8 +44,9 @@ Password: Password123!
 
 ## Notes
 
-- All data is mocked and resets on refresh. Nothing is persisted or sent
-  anywhere.
+- Business-data mutations are mocked in memory and reset on refresh. The demo
+  auth token and theme preference are stored locally in the browser; mock-mode
+  business data is not sent to a backend.
 - Routing uses `HashRouter`, so application routes remain GitHub Pages-friendly
   (URLs look like `.../#/dashboard`).
 - Permission keys use the `<module>:<action>` format. Sidebar items, protected

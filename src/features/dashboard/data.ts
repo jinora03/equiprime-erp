@@ -1,4 +1,4 @@
-/** Dummy data powering the Phase 1 dashboard. */
+/** Demo data powering the dashboard. */
 
 export const CHART_COLORS = {
   primary: "#2563EB",

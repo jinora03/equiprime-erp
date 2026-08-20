@@ -82,7 +82,7 @@ export function DashboardPage() {
     { label: "New Department", icon: Building2, to: ROUTES.DEPARTMENTS, permission: "departments:create" },
     { label: "Manage Roles", icon: ShieldCheck, to: ROUTES.ROLES, permission: "roles:view" },
     { label: "Permissions", icon: KeyRound, to: ROUTES.PERMISSIONS, permission: "permissions:view" },
-    { label: "New Job Order", icon: ClipboardList, to: ROUTES.JOB_ORDERS, permission: "job-orders:view" },
+    { label: "New Job Order", icon: ClipboardList, to: ROUTES.JOB_ORDERS, permission: "job-orders:create" },
     { label: "View Reports", icon: ArrowUpRight, to: ROUTES.REPORTS, permission: "reports:view" },
   ].filter((action) => can(action.permission));
 

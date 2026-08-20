@@ -39,10 +39,9 @@ interface WorkflowDetailSheetProps {
 }
 
 /**
- * Reusable detail drawer for any workflow-driven record. Renders the current
- * stage, the full workflow timeline, stage-movement controls, module-specific
- * content, and the transition history — so all four Service modules share one
- * detail experience.
+ * Reusable detail drawer for workflow-driven records. Renders the current
+ * stage, full workflow timeline, stage-movement controls, module-specific
+ * content, and transition history without duplicating that presentation.
  */
 export function WorkflowDetailSheet({
   open,

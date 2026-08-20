@@ -2,9 +2,9 @@ import { delay } from "@/services/mock/delay";
 import type { WorkflowHistory, WorkflowRecord } from "@/types";
 
 /**
- * Generic in-memory store for workflow-driven business records. Every Service
- * module (Job Orders, Work Items, Projects, Maintenance) builds its service on
- * top of this, so stage-movement + history logic lives in exactly one place.
+ * Generic in-memory store for configurable workflow-driven records. Job Orders,
+ * Projects, and Maintenance build their services on top of this, so stage
+ * movement and history logic live in exactly one place.
  *
  * Replace this with repository calls to FastAPI later — the module services and
  * UI stay identical.
