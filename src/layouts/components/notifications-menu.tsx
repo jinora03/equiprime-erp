@@ -1,4 +1,4 @@
-import { Bell } from "lucide-react";
+import { Bell, ClipboardCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,40 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ROUTES } from "@/constants/routes";
-import { NOTIFICATIONS, UNREAD_COUNT } from "@/features/notifications/data";
+import { useMyApprovals } from "@/features/approvals/hooks";
+import { NOTIFICATIONS } from "@/features/notifications/data";
+import { usePermissions } from "@/hooks/use-permissions";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/format";
 
 export function NotificationsMenu() {
+  const { can } = usePermissions();
+  const { data: approvalTasks = [] } = useMyApprovals();
+  const approvalNotifications = approvalTasks
+    .filter((task) => task.status === "pending")
+    .map((task) => ({
+      id: `approval:${task.id}`,
+      title: `${task.recordCode} needs your approval`,
+      description: `${task.transitionLabel}: ${task.fromStageName} → ${task.toStageName}`,
+      icon: ClipboardCheck,
+      createdAt: task.requestedAt,
+      read: false,
+      href: ROUTES.APPROVALS,
+    }));
+  const notifications = [...approvalNotifications, ...NOTIFICATIONS];
+  const unreadCount = notifications.filter((notification) => !notification.read).length;
+  const hasPendingApprovals = approvalNotifications.length > 0;
+  const footerHref = hasPendingApprovals && can("approvals:view")
+    ? ROUTES.APPROVALS
+    : can("notifications:view")
+      ? ROUTES.NOTIFICATIONS
+      : can("approvals:view")
+        ? ROUTES.APPROVALS
+        : null;
+  const footerLabel = footerHref === ROUTES.APPROVALS
+    ? "Open My Approvals"
+    : "Open notifications center";
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -24,7 +53,7 @@ export function NotificationsMenu() {
           aria-label="Notifications"
         >
           <Bell className="h-[1.15rem] w-[1.15rem]" />
-          {UNREAD_COUNT > 0 ? (
+          {unreadCount > 0 ? (
             <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
@@ -36,58 +65,70 @@ export function NotificationsMenu() {
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold">Notifications</h3>
-            {UNREAD_COUNT > 0 ? (
+            {unreadCount > 0 ? (
               <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-medium text-brand-700">
-                {UNREAD_COUNT} new
+                {unreadCount} new
               </span>
             ) : null}
           </div>
-          <Link
-            to={ROUTES.NOTIFICATIONS}
-            className="text-xs font-medium text-primary hover:underline"
-          >
-            View all
-          </Link>
+          {footerHref ? (
+            <Link
+              to={footerHref}
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              View all
+            </Link>
+          ) : null}
         </div>
         <ScrollArea className="h-[360px]">
           <div className="divide-y">
-            {NOTIFICATIONS.slice(0, 5).map((n) => {
-              const Icon = n.icon;
-              return (
-                <div
-                  key={n.id}
-                  className={cn(
-                    "flex gap-3 px-4 py-3 transition-colors hover:bg-muted/50",
-                    !n.read && "bg-primary/[0.03]",
-                  )}
-                >
+            {notifications.slice(0, 5).map((notification) => {
+              const Icon = notification.icon;
+              const content = (
+                <>
                   <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                     <Icon className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium leading-snug text-foreground">
-                      {n.title}
+                      {notification.title}
                     </p>
                     <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                      {n.description}
+                      {notification.description}
                     </p>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      {formatRelativeTime(n.createdAt)}
+                      {formatRelativeTime(notification.createdAt)}
                     </p>
                   </div>
-                  {!n.read ? (
+                  {!notification.read ? (
                     <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand" />
                   ) : null}
+                </>
+              );
+              const className = cn(
+                "flex gap-3 px-4 py-3 transition-colors hover:bg-muted/50",
+                !notification.read && "bg-primary/[0.03]",
+              );
+
+              return "href" in notification ? (
+                <Link key={notification.id} to={notification.href} className={className}>
+                  {content}
+                </Link>
+              ) : (
+                <div key={notification.id} className={className}>
+                  {content}
                 </div>
               );
             })}
           </div>
         </ScrollArea>
-        <div className="border-t p-2">
-          <Button asChild variant="ghost" size="sm" className="w-full">
-            <Link to={ROUTES.NOTIFICATIONS}>Open notifications center</Link>
-          </Button>
-        </div>
+        {footerHref ? (
+          <div className="border-t p-2">
+            <Button asChild variant="ghost" size="sm" className="w-full">
+              <Link to={footerHref}>{footerLabel}</Link>
+            </Button>
+          </div>
+        ) : null}
       </PopoverContent>
     </Popover>
   );

@@ -7,7 +7,7 @@ is configured to deploy straight to GitHub Pages.
 - **Size:** ~1.5 MB of source (no `node_modules`). Well under GitHub's limits.
 - **Works fully:** Dashboard, Customers, Equipment, Job Orders, Work Items,
   Projects, Maintenance, Inventory, User Management, Roles, Departments,
-  Permission Matrix, Notifications, Settings, and Workflows. (CRM, Warehouse,
+  Permission Matrix, My Approvals, Notifications, Settings, and Workflows. (CRM, Warehouse,
   Purchasing, Sales, and Reports show a "Coming Soon" page by design.)
 - **Stack:** React 19 + TypeScript + Vite + Tailwind + shadcn/ui.
 - **Demo model:** in-browser mock services, frontend RBAC, configurable workflows,
@@ -59,6 +59,8 @@ Password: Password123!
 - New Job Orders, Projects, Maintenance records, and workflow edits record the
   currently signed-in user in their demo audit/history entries.
 - Workflow approval labels use roles that exist in the seeded demo role catalog.
+  Approval-required transitions create role-scoped tasks in My Approvals; approvers
+  can review limited record context without receiving full access to the source module.
 - Placeholder controls that implied unsupported behavior (global search, Help,
   "Keep me signed in", and attachment preview) are intentionally not shown.
   Seeded attachments are clearly marked as sample files.

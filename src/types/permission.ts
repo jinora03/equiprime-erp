@@ -6,7 +6,8 @@ export type PermissionActionId =
   | "create"
   | "update"
   | "delete"
-  | "manage";
+  | "manage"
+  | "act";
 
 export interface PermissionAction {
   key: PermissionKey;

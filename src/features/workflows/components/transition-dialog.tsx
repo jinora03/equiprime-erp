@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 import type { WorkflowTransition } from "@/types";
 import {
   evaluateTransition,
@@ -26,19 +25,21 @@ interface TransitionDialogProps {
   toStageName: string;
   context: ConditionContext;
   confirming?: boolean;
-  actorRole?: string | null;
-  canApproveAnyRole?: boolean;
+  requestingApproval?: boolean;
   onConfirm: (
+    toStageId: string,
+    evidence: WorkflowMoveEvidence,
+  ) => void | Promise<void>;
+  onRequestApproval: (
     toStageId: string,
     evidence: WorkflowMoveEvidence,
   ) => void | Promise<void>;
 }
 
 /**
- * Shows a transition's gate conditions + required approvals. Manual conditions
- * (supervisor/QA sign-off) and approvals are satisfied here at runtime — this is
- * NOT a workflow stage, just a pre-transition checklist. Confirm is enabled only
- * once every condition is met and every approver has approved.
+ * Reviews transition gates before a move. Manual conditions can be confirmed in
+ * the record detail; configured role approvals are routed to My Approvals rather
+ * than being self-confirmed inside the module.
  */
 export function TransitionDialog({
   open,
@@ -47,18 +48,14 @@ export function TransitionDialog({
   toStageName,
   context,
   confirming,
-  actorRole,
-  canApproveAnyRole = false,
+  requestingApproval,
   onConfirm,
+  onRequestApproval,
 }: TransitionDialogProps) {
   const [manual, setManual] = useState<Record<string, boolean>>({});
-  const [approvals, setApprovals] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (open) {
-      setManual({});
-      setApprovals({});
-    }
+    if (open) setManual({});
   }, [open, transition?.id]);
 
   if (!transition) return null;
@@ -69,8 +66,13 @@ export function TransitionDialog({
     qaPassed: context.qaPassed || !!manual.qa_passed,
   };
   const result = evaluateTransition(transition, effectiveContext);
-  const allApproved = result.approverRoles.every((r) => approvals[r]);
-  const canConfirm = result.conditionsMet && allApproved;
+  const requiresApproval = result.approverRoles.length > 0;
+  const busy = Boolean(confirming || requestingApproval);
+  const evidence: WorkflowMoveEvidence = {
+    confirmedConditions: result.conditions
+      .filter((condition) => condition.manual && condition.met)
+      .map((condition) => condition.condition.type),
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -78,8 +80,8 @@ export function TransitionDialog({
         <DialogHeader>
           <DialogTitle>Move to {toStageName}</DialogTitle>
           <DialogDescription>
-            Review the transition requirements. Manual confirmations and role
-            approvals are simulated in this browser-only demo.
+            Review the configured transition requirements. Role approvals are
+            sent to My Approvals and are not granted from this screen.
           </DialogDescription>
         </DialogHeader>
 
@@ -108,7 +110,10 @@ export function TransitionDialog({
                     size="sm"
                     variant="outline"
                     onClick={() =>
-                      setManual((m) => ({ ...m, [condition.type]: true }))
+                      setManual((current) => ({
+                        ...current,
+                        [condition.type]: true,
+                      }))
                     }
                   >
                     Confirm
@@ -121,50 +126,30 @@ export function TransitionDialog({
           </section>
         ) : null}
 
-        {result.approverRoles.length > 0 ? (
+        {requiresApproval ? (
           <section className="space-y-2">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Simulated approvals
+                Approval route
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Only the required role (or a full-access demo role) can provide each sign-off.
+                Requesting this transition creates a task for each configured
+                approver role. The record stays in its current stage until the
+                required approvals are completed.
               </p>
             </div>
-            {result.approverRoles.map((role) => {
-              const canApprove = canApproveAnyRole || actorRole === role;
-              return (
-                <div
-                  key={role}
-                  className={cn(
-                    "flex items-center justify-between gap-3 rounded-lg border p-2.5",
-                    approvals[role] && "border-success/40 bg-success/[0.04]",
-                  )}
-                >
-                  <span className="flex items-center gap-2 text-sm text-foreground">
-                    <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-                    {role}
-                  </span>
-                  {approvals[role] ? (
-                    <Badge variant="success">Approved</Badge>
-                  ) : canApprove ? (
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">Pending</Badge>
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          setApprovals((a) => ({ ...a, [role]: true }))
-                        }
-                      >
-                        Approve
-                      </Button>
-                    </div>
-                  ) : (
-                    <Badge variant="warning">Requires {role}</Badge>
-                  )}
-                </div>
-              );
-            })}
+            {result.approverRoles.map((role) => (
+              <div
+                key={role}
+                className="flex items-center justify-between gap-3 rounded-lg border p-2.5"
+              >
+                <span className="flex items-center gap-2 text-sm text-foreground">
+                  <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                  {role}
+                </span>
+                <Badge variant="secondary">Via My Approvals</Badge>
+              </div>
+            ))}
           </section>
         ) : null}
 
@@ -172,24 +157,25 @@ export function TransitionDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={confirming}
+            disabled={busy}
           >
             Cancel
           </Button>
           <Button
-            disabled={!canConfirm || confirming}
+            disabled={!result.conditionsMet || busy}
             onClick={() =>
-              onConfirm(transition.toStageId, {
-                confirmedConditions: result.conditions
-                  .filter((condition) => condition.manual && condition.met)
-                  .map((condition) => condition.condition.type),
-                approvedRoles: result.approverRoles.filter(
-                  (role) => approvals[role],
-                ),
-              })
+              requiresApproval
+                ? onRequestApproval(transition.toStageId, evidence)
+                : onConfirm(transition.toStageId, evidence)
             }
           >
-            {confirming ? "Moving…" : "Confirm & move"}
+            {busy
+              ? requiresApproval
+                ? "Requesting…"
+                : "Moving…"
+              : requiresApproval
+                ? "Request approval"
+                : "Confirm & move"}
           </Button>
         </DialogFooter>
       </DialogContent>

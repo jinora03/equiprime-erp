@@ -78,6 +78,14 @@ export const queryKeys = {
     all: ["dashboard"] as const,
     summary: (scopeKey = "") => ["dashboard", "summary", scopeKey] as const,
   },
+  approvals: {
+    all: ["approvals"] as const,
+    list: (scopeKey = "", actorKey = "") =>
+      ["approvals", "list", scopeKey, actorKey] as const,
+  },
+  notifications: {
+    all: ["notifications"] as const,
+  },
   partsRequests: {
     root: ["parts-requests"] as const,
     byJobOrder: (jobOrderId: number) =>

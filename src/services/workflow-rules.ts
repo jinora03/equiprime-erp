@@ -175,6 +175,57 @@ function withConfirmedManualConditions(
   return next;
 }
 
+/**
+ * Evaluate whether a workflow move is ready to be submitted for role approval.
+ * The requester must still be allowed to update the record and satisfy every
+ * configured condition; only the approver-role requirement is deferred.
+ */
+export function evaluateWorkflowApprovalRequest(
+  workflow: Workflow,
+  fromStageId: string,
+  toStageId: string,
+  conditionContext: ConditionContext,
+  actor: WorkflowMoveActor,
+): WorkflowMoveEvaluation {
+  const updatePermission = `${workflow.moduleId}:update`;
+  if (!hasPermission(actor.permissions, updatePermission)) {
+    return blockedWorkflowMove(
+      "You don't have permission to request this workflow transition.",
+    );
+  }
+
+  const transition = getOutgoingTransitions(workflow, fromStageId).find(
+    (candidate) => candidate.toStageId === toStageId,
+  );
+  if (!transition) {
+    const current = workflow.stages.find((stage) => stage.id === fromStageId);
+    const target = workflow.stages.find((stage) => stage.id === toStageId);
+    return blockedWorkflowMove(
+      current && target
+        ? `Moving from ${current.name} to ${target.name} is not an allowed transition.`
+        : "The requested workflow transition does not exist.",
+    );
+  }
+
+  const approverRoles = transition.approverRoles ?? [];
+  if (approverRoles.length === 0) {
+    return blockedWorkflowMove("This transition does not require role approval.");
+  }
+
+  // Reuse the authoritative move evaluator for conditions and transition rules.
+  // Wildcard is used only inside this domain helper after the requester's update
+  // permission was checked above; approvals are deliberately deferred to the
+  // approval-task service.
+  return evaluateWorkflowMove(workflow, fromStageId, toStageId, conditionContext, {
+    permissions: [WILDCARD],
+    actorRole: actor.actorRole,
+    evidence: {
+      ...actor.evidence,
+      approvedRoles: approverRoles,
+    },
+  });
+}
+
 /** Evaluate the complete rules for one requested record move. */
 export function evaluateWorkflowMove(
   workflow: Workflow,
@@ -238,8 +289,8 @@ export function evaluateWorkflowMove(
       approvalsMet: false,
       allowed: false,
       reason: canApprove
-        ? `${missingApproval} approval must be confirmed from the record detail before this move.`
-        : `${missingApproval} approval is required; use the record detail with an authorized approver.`,
+        ? `${missingApproval} approval must be completed through My Approvals.`
+        : `${missingApproval} approval is required; request it from the record detail and complete it through My Approvals.`,
     };
   }
 

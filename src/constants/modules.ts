@@ -12,6 +12,7 @@ export const ACTION_LABELS: Record<string, string> = {
   update: "Edit",
   delete: "Delete",
   manage: "Manage",
+  act: "Approve / Reject",
 };
 
 const CRUD = ["view", "create", "update", "delete"];
@@ -26,6 +27,7 @@ interface ModuleDef {
 
 export const MODULE_DEFS: ModuleDef[] = [
   { module: "dashboard", label: "Dashboard", group: "Overview", actions: VIEW_ONLY },
+  { module: "approvals", label: "My Approvals", group: "Overview", actions: ["view", "act"] },
 
   // Business
   { module: "crm", label: "CRM", group: "Business", actions: CRUD },

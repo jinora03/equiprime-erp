@@ -77,6 +77,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   Manager: [
     ...viewKeys("dashboard", "crm", "customers", "equipment", "sales", "reports"),
+    "approvals:view", "approvals:act",
     ...permissionKeysFor("job-orders", "work-items", "projects", "maintenance"),
     "equipment:update",
   ],
@@ -106,6 +107,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   "Warehouse Staff": [
     ...viewKeys("dashboard"),
+    "approvals:view", "approvals:act",
     "inventory:view", "inventory:update", "warehouse:view", "warehouse:update",
   ],
   Viewer: [...viewKeys("dashboard", "reports")],

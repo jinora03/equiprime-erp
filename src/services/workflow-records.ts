@@ -1,9 +1,14 @@
+import { WILDCARD } from "@/constants/modules";
 import { delay } from "@/services/mock/delay";
 import { matchesOrganizationScope } from "@/services/mock/scope";
-import { registerWorkflowRecordSource } from "@/services/workflow-record-registry";
+import {
+  registerWorkflowApprovalOperations,
+  registerWorkflowRecordSource,
+} from "@/services/workflow-record-registry";
 import {
   EMPTY_CONDITION_CONTEXT,
   blockedWorkflowMove,
+  evaluateWorkflowApprovalRequest,
   evaluateWorkflowMove,
   type ConditionContext,
   type WorkflowMoveEvidence,
@@ -86,6 +91,16 @@ export function createRecordStore<T extends WorkflowRecord>(
       (record) => record.id === id && matchesOrganizationScope(record),
     );
 
+  const resolveWorkflow = (record: T) =>
+    options.resolveWorkflow
+      ? options.resolveWorkflow(record)
+      : workflowService.getByModule(moduleId);
+
+  const resolveConditionContext = (record: T) =>
+    options.getConditionContext
+      ? options.getConditionContext(record)
+      : Promise.resolve(EMPTY_CONDITION_CONTEXT);
+
   const validateMove = async (
     id: number,
     toStageId: string,
@@ -105,16 +120,13 @@ export function createRecordStore<T extends WorkflowRecord>(
       };
     }
 
-    const workflow = options.resolveWorkflow
-      ? await options.resolveWorkflow(record)
-      : await workflowService.getByModule(moduleId);
+    const [workflow, conditionContext] = await Promise.all([
+      resolveWorkflow(record),
+      resolveConditionContext(record),
+    ]);
     if (!workflow) {
       return blockedWorkflowMove("No active workflow is configured for this module.");
     }
-
-    const conditionContext = options.getConditionContext
-      ? await options.getConditionContext(record)
-      : EMPTY_CONDITION_CONTEXT;
 
     return evaluateWorkflowMove(
       workflow,
@@ -128,6 +140,82 @@ export function createRecordStore<T extends WorkflowRecord>(
       },
     );
   };
+
+  const validateApprovalRequest = async (
+    id: number,
+    toStageId: string,
+    input: {
+      actorRole?: string | null;
+      permissions: PermissionKey[];
+      confirmedConditions?: WorkflowMoveEvidence["confirmedConditions"];
+    },
+  ): Promise<WorkflowMoveEvaluation> => {
+    const record = findRecord(id);
+    if (!record) return blockedWorkflowMove("Record not found.");
+
+    const [workflow, conditionContext] = await Promise.all([
+      resolveWorkflow(record),
+      resolveConditionContext(record),
+    ]);
+    if (!workflow) {
+      return blockedWorkflowMove("No active workflow is configured for this module.");
+    }
+
+    return evaluateWorkflowApprovalRequest(
+      workflow,
+      record.currentStageId,
+      toStageId,
+      conditionContext,
+      {
+        permissions: input.permissions,
+        actorRole: input.actorRole,
+        evidence: {
+          confirmedConditions: input.confirmedConditions,
+        },
+      },
+    );
+  };
+
+  const moveStage = async (
+    id: number,
+    toStageId: string,
+    input: WorkflowMoveInput,
+  ): Promise<T> => {
+    const record = findRecord(id);
+    if (!record) throw new Error("Record not found");
+    if (record.currentStageId === toStageId) {
+      return delay({ ...record, history: [...record.history] });
+    }
+
+    const evaluation = await validateMove(id, toStageId, input);
+    if (!evaluation.allowed) {
+      throw new Error(evaluation.reason ?? "This workflow move is not allowed.");
+    }
+
+    record.history = [
+      ...record.history,
+      historyEntry(record.currentStageId, toStageId, input.actor, input.note),
+    ];
+    record.currentStageId = toStageId;
+    record.updatedAt = new Date().toISOString();
+    return delay({ ...record, history: [...record.history] });
+  };
+
+  registerWorkflowApprovalOperations(moduleId, {
+    validateApprovalRequest,
+    applyApprovedMove: (id, toStageId, input) =>
+      moveStage(id, toStageId, {
+        actor: input.actor,
+        // Approval service is the trusted mock-domain orchestrator. A future
+        // backend performs this same final transition after authorization.
+        permissions: [WILDCARD],
+        evidence: {
+          confirmedConditions: input.confirmedConditions,
+          approvedRoles: input.approvedRoles,
+        },
+        note: input.note,
+      }),
+  });
 
   return {
     list: (scope) =>
@@ -151,26 +239,6 @@ export function createRecordStore<T extends WorkflowRecord>(
     },
 
     validateMove,
-
-    async moveStage(id, toStageId, input) {
-      const record = findRecord(id);
-      if (!record) throw new Error("Record not found");
-      if (record.currentStageId === toStageId) {
-        return delay({ ...record, history: [...record.history] });
-      }
-
-      const evaluation = await validateMove(id, toStageId, input);
-      if (!evaluation.allowed) {
-        throw new Error(evaluation.reason ?? "This workflow move is not allowed.");
-      }
-
-      record.history = [
-        ...record.history,
-        historyEntry(record.currentStageId, toStageId, input.actor, input.note),
-      ];
-      record.currentStageId = toStageId;
-      record.updatedAt = new Date().toISOString();
-      return delay({ ...record, history: [...record.history] });
-    },
+    moveStage,
   };
 }

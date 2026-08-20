@@ -10,6 +10,7 @@ import { ComingSoon } from "@/shared/components/coming-soon";
 
 import { LoginPage } from "@/features/auth/pages/login-page";
 import { DashboardPage } from "@/features/dashboard/pages/dashboard-page";
+import { ApprovalsPage } from "@/features/approvals/pages/approvals-page";
 import { UsersPage } from "@/features/users/pages/users-page";
 import { UserDetailPage } from "@/features/users/pages/user-detail-page";
 import { DepartmentsPage } from "@/features/departments/pages/departments-page";
@@ -58,6 +59,14 @@ export function App() {
             element={
               <RequirePermission permission="dashboard:view">
                 <DashboardPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path={ROUTES.APPROVALS}
+            element={
+              <RequirePermission permission="approvals:view">
+                <ApprovalsPage />
               </RequirePermission>
             }
           />

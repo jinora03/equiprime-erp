@@ -31,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ROUTES } from "@/constants/routes";
 import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useRequestApproval } from "@/features/approvals/hooks";
 import { useMoveRecordStage, useRecords } from "@/hooks/use-workflow-records";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PriorityBadge } from "@/shared/components/priority-badge";
@@ -73,7 +74,7 @@ export function JobOrderDetailPage() {
   const jobOrderId = Number(id);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { can, permissions, isSuperAdmin } = usePermissions();
+  const { can, permissions } = usePermissions();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = TABS.includes(searchParams.get("tab") ?? "")
@@ -88,6 +89,7 @@ export function JobOrderDetailPage() {
   const { data: workItems = [] } = useWorkItems(jobOrderId);
   const { data: partsRequests = [] } = usePartsRequests(jobOrderId);
   const moveJobStage = useMoveRecordStage("job-orders", jobOrderService);
+  const requestApproval = useRequestApproval();
 
   const [pendingTransition, setPendingTransition] =
     useState<WorkflowTransition | null>(null);
@@ -198,6 +200,37 @@ export function JobOrderDetailPage() {
       (transition.approverRoles?.length ?? 0) > 0;
     if (gated) setPendingTransition(transition);
     else handleMoveJob(transition.toStageId);
+  };
+
+  const handleRequestApproval = async (
+    toStageId: string,
+    evidence: WorkflowMoveEvidence,
+  ) => {
+    if (!user || !pendingTransition) return;
+    try {
+      const task = await requestApproval.mutateAsync({
+        moduleId: "job-orders",
+        recordId: jobOrder.id,
+        toStageId,
+        transitionId: pendingTransition.id,
+        actor: {
+          id: user.id,
+          name: user.full_name,
+          role: user.role,
+          permissions,
+        },
+        confirmedConditions: evidence.confirmedConditions,
+      });
+      toast.success("Approval requested", {
+        description: `${task.requiredRoles.join(", ")} can review ${task.recordCode} in My Approvals.`,
+      });
+      setPendingTransition(null);
+    } catch (error) {
+      toast.error("Approval request failed", {
+        description:
+          error instanceof Error ? error.message : "This approval could not be requested.",
+      });
+    }
   };
 
   const laborTotal = SAMPLE_LABOR.reduce((sum, l) => sum + l.hours * l.rate, 0);
@@ -488,13 +521,13 @@ export function JobOrderDetailPage() {
         }
         context={conditionContext}
         confirming={moveJobStage.isPending}
-        actorRole={user?.role}
-        canApproveAnyRole={isSuperAdmin}
+        requestingApproval={requestApproval.isPending}
         onConfirm={async (toStageId, evidence) => {
           if (await handleMoveJob(toStageId, evidence)) {
             setPendingTransition(null);
           }
         }}
+        onRequestApproval={handleRequestApproval}
       />
     </div>
   );
