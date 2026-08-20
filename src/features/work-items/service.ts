@@ -1,4 +1,7 @@
 import { delay, nextId } from "@/services/mock/delay";
+import { matchesOrganizationScope } from "@/services/mock/scope";
+import { getActiveOrganizationScope } from "@/store/organization.store";
+import type { OrganizationScope } from "@/types";
 import { workItemSeed } from "./data";
 import type { WorkItemStatus } from "./statuses";
 import type { WorkItem, WorkItemInput } from "./types";
@@ -14,15 +17,20 @@ let counter = workItemSeed.length;
 
 export const workItemService = {
   /** List work items, optionally scoped to a single job order. */
-  list(jobOrderId?: number): Promise<WorkItem[]> {
+  list(jobOrderId?: number, scope?: OrganizationScope): Promise<WorkItem[]> {
     const rows = data
-      .filter((w) => jobOrderId == null || w.jobOrderId === jobOrderId)
+      .filter(
+        (workItem) =>
+          matchesOrganizationScope(workItem, scope) &&
+          (jobOrderId == null || workItem.jobOrderId === jobOrderId),
+      )
       .map((w) => ({ ...w }));
     return delay(rows);
   },
 
   create(input: WorkItemInput): Promise<WorkItem> {
     const now = new Date().toISOString();
+    const scope = getActiveOrganizationScope();
     counter += 1;
     const record: WorkItem = {
       id: nextId(),
@@ -30,6 +38,8 @@ export const workItemService = {
       task: input.task,
       jobOrderId: input.jobOrderId,
       jobOrderCode: input.jobOrderCode,
+      companyId: scope.companyId,
+      branchId: scope.branchId,
       assignee: input.assignee || null,
       priority: input.priority,
       estimatedHours: input.estimatedHours ?? 0,
@@ -45,7 +55,10 @@ export const workItemService = {
   },
 
   updateStatus(id: number, status: WorkItemStatus): Promise<WorkItem> {
-    const record = data.find((w) => w.id === id);
+    const record = data.find(
+      (workItem) =>
+        workItem.id === id && matchesOrganizationScope(workItem),
+    );
     if (!record) return Promise.reject(new Error("Work item not found"));
     record.status = status;
     record.updatedAt = new Date().toISOString();

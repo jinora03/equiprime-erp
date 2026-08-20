@@ -1,13 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/constants/query-keys";
+import {
+  organizationScopeKey,
+  useOrganizationScope,
+} from "@/store/organization.store";
 import { roleService } from "@/services/role.service";
 import type { RoleInput } from "@/types";
 
 export function useRoles(search?: string) {
+  const scope = useOrganizationScope();
+  const scopeKey = organizationScopeKey(scope);
   return useQuery({
-    queryKey: queryKeys.roles.list(search),
-    queryFn: () => roleService.list(search),
+    queryKey: queryKeys.roles.list(search, scopeKey),
+    queryFn: () => roleService.list(search, scope),
   });
 }
 

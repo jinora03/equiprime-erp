@@ -17,6 +17,7 @@ function useInvalidateParts() {
   return () => {
     qc.invalidateQueries({ queryKey: queryKeys.partsRequests.root });
     qc.invalidateQueries({ queryKey: queryKeys.inventory.all });
+    qc.invalidateQueries({ queryKey: queryKeys.dashboard.all });
   };
 }
 

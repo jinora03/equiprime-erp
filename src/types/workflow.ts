@@ -97,6 +97,8 @@ export interface WorkflowRecord {
   code: string;
   title: string;
   moduleId: string;
+  companyId: string;
+  branchId: string;
   currentStageId: string;
   history: WorkflowHistory[];
   assignee?: string | null;

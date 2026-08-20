@@ -12,6 +12,8 @@ export interface WorkItem {
   task: string;
   jobOrderId: number;
   jobOrderCode: string;
+  companyId: string;
+  branchId: string;
   assignee?: string | null;
   priority: Priority;
   estimatedHours: number;

@@ -1,4 +1,6 @@
 import { delay } from "@/services/mock/delay";
+import { matchesOrganizationScope } from "@/services/mock/scope";
+import type { OrganizationScope } from "@/types";
 import { inventorySeed } from "./data";
 import type { InventoryItem } from "./types";
 
@@ -12,8 +14,12 @@ const data: InventoryItem[] = inventorySeed.map((i) => ({ ...i }));
 const find = (id: number) => data.find((i) => i.id === id);
 
 export const inventoryService = {
-  list(): Promise<InventoryItem[]> {
-    return delay(data.map((i) => ({ ...i })));
+  list(scope?: OrganizationScope): Promise<InventoryItem[]> {
+    return delay(
+      data
+        .filter((item) => matchesOrganizationScope(item, scope))
+        .map((item) => ({ ...item })),
+    );
   },
 
   /** Reserve stock when a parts request is raised. */

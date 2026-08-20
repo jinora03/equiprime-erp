@@ -2,21 +2,28 @@ import { USE_MOCK } from "@/constants/app";
 import { apiClient } from "@/services/api/client";
 import { ENDPOINTS } from "@/services/api/endpoints";
 import { delay, nextId } from "@/services/mock/delay";
+import { resolveOrganizationScope } from "@/services/mock/scope";
 import { roles, users } from "@/services/mock/data";
 import { slugify } from "@/utils/string";
-import type { Role, RoleInput } from "@/types";
+import type { OrganizationScope, Role, RoleInput } from "@/types";
 
-function withCounts(role: Role): Role {
+function withCounts(role: Role, scope?: OrganizationScope): Role {
+  const activeScope = resolveOrganizationScope(scope);
   return {
     ...role,
-    user_count: users.filter((u) => u.role === role.name).length,
+    user_count: users.filter(
+      (user) =>
+        user.role === role.name &&
+        user.company_id === activeScope.companyId &&
+        user.branch_id === activeScope.branchId,
+    ).length,
   };
 }
 
 export const roleService = {
-  async list(search?: string): Promise<Role[]> {
+  async list(search?: string, scope?: OrganizationScope): Promise<Role[]> {
     if (USE_MOCK) {
-      let list = roles.map(withCounts);
+      let list = roles.map((role) => withCounts(role, scope));
       if (search) {
         const q = search.toLowerCase();
         list = list.filter((r) => r.name.toLowerCase().includes(q));
@@ -24,7 +31,7 @@ export const roleService = {
       return delay(list);
     }
     const { data } = await apiClient.get<Role[]>(ENDPOINTS.roles.base, {
-      params: { search },
+      params: { search, company_id: scope?.companyId, branch_id: scope?.branchId },
     });
     return data;
   },

@@ -1,13 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/constants/query-keys";
+import {
+  organizationScopeKey,
+  useOrganizationScope,
+} from "@/store/organization.store";
 import { departmentService } from "@/services/department.service";
 import type { DepartmentInput } from "@/types";
 
 export function useDepartments(search?: string) {
+  const scope = useOrganizationScope();
+  const scopeKey = organizationScopeKey(scope);
   return useQuery({
-    queryKey: queryKeys.departments.list(search),
-    queryFn: () => departmentService.list(search),
+    queryKey: queryKeys.departments.list(search, scopeKey),
+    queryFn: () => departmentService.list(search, scope),
   });
 }
 

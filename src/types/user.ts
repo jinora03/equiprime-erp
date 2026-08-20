@@ -6,6 +6,8 @@ export interface User {
   last_name: string;
   full_name: string;
   email: string;
+  company_id: string;
+  branch_id: string;
   department: string;
   role: string;
   status: UserStatus;

@@ -2,21 +2,28 @@ import { USE_MOCK } from "@/constants/app";
 import { apiClient } from "@/services/api/client";
 import { ENDPOINTS } from "@/services/api/endpoints";
 import { delay, nextId } from "@/services/mock/delay";
+import { resolveOrganizationScope } from "@/services/mock/scope";
 import { departments, users } from "@/services/mock/data";
 import { slugify } from "@/utils/string";
-import type { Department, DepartmentInput } from "@/types";
+import type { Department, DepartmentInput, OrganizationScope } from "@/types";
 
-function withCounts(dept: Department): Department {
+function withCounts(dept: Department, scope?: OrganizationScope): Department {
+  const activeScope = resolveOrganizationScope(scope);
   return {
     ...dept,
-    member_count: users.filter((u) => u.department === dept.name).length,
+    member_count: users.filter(
+      (user) =>
+        user.department === dept.name &&
+        user.company_id === activeScope.companyId &&
+        user.branch_id === activeScope.branchId,
+    ).length,
   };
 }
 
 export const departmentService = {
-  async list(search?: string): Promise<Department[]> {
+  async list(search?: string, scope?: OrganizationScope): Promise<Department[]> {
     if (USE_MOCK) {
-      let list = departments.map(withCounts);
+      let list = departments.map((department) => withCounts(department, scope));
       if (search) {
         const q = search.toLowerCase();
         list = list.filter(
@@ -29,7 +36,7 @@ export const departmentService = {
     }
     const { data } = await apiClient.get<Department[]>(
       ENDPOINTS.departments.base,
-      { params: { search } },
+      { params: { search, company_id: scope?.companyId, branch_id: scope?.branchId } },
     );
     return data;
   },

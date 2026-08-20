@@ -1,22 +1,30 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/constants/query-keys";
+import {
+  organizationScopeKey,
+  useOrganizationScope,
+} from "@/store/organization.store";
 import { workItemService } from "./service";
 import type { WorkItemStatus } from "./statuses";
 import type { WorkItem, WorkItemInput } from "./types";
 
 export function useWorkItems(jobOrderId: number) {
+  const scope = useOrganizationScope();
+  const scopeKey = organizationScopeKey(scope);
   return useQuery({
-    queryKey: queryKeys.workItems.byJobOrder(jobOrderId),
-    queryFn: () => workItemService.list(jobOrderId),
+    queryKey: queryKeys.workItems.byJobOrder(jobOrderId, scopeKey),
+    queryFn: () => workItemService.list(jobOrderId, scope),
     enabled: !Number.isNaN(jobOrderId),
   });
 }
 
 export function useAllWorkItems() {
+  const scope = useOrganizationScope();
+  const scopeKey = organizationScopeKey(scope);
   return useQuery({
-    queryKey: queryKeys.workItems.all,
-    queryFn: () => workItemService.list(),
+    queryKey: queryKeys.workItems.all(scopeKey),
+    queryFn: () => workItemService.list(undefined, scope),
   });
 }
 
@@ -25,7 +33,10 @@ export function useCreateWorkItem() {
   return useMutation({
     mutationFn: (input: WorkItemInput) => workItemService.create(input),
     onSuccess: () =>
-      qc.invalidateQueries({ queryKey: queryKeys.workItems.root }),
+      Promise.all([
+        qc.invalidateQueries({ queryKey: queryKeys.workItems.root }),
+        qc.invalidateQueries({ queryKey: queryKeys.dashboard.all }),
+      ]),
   });
 }
 
@@ -53,6 +64,9 @@ export function useUpdateWorkItemStatus() {
       );
     },
     onSettled: () =>
-      qc.invalidateQueries({ queryKey: queryKeys.workItems.root }),
+      Promise.all([
+        qc.invalidateQueries({ queryKey: queryKeys.workItems.root }),
+        qc.invalidateQueries({ queryKey: queryKeys.dashboard.all }),
+      ]),
   });
 }

@@ -2,9 +2,12 @@ import { USE_MOCK } from "@/constants/app";
 import { apiClient } from "@/services/api/client";
 import { ENDPOINTS } from "@/services/api/endpoints";
 import { delay, nextId } from "@/services/mock/delay";
+import { resolveOrganizationScope } from "@/services/mock/scope";
+import { getActiveOrganizationScope } from "@/store/organization.store";
 import { users } from "@/services/mock/data";
 import { slugify } from "@/utils/string";
 import type {
+  OrganizationScope,
   Paginated,
   User,
   UserCreateInput,
@@ -38,12 +41,21 @@ function applyFilters(list: User[], filters: UserFilters): User[] {
 }
 
 export const userService = {
-  async list(filters: UserFilters = {}): Promise<Paginated<User>> {
+  async list(
+    filters: UserFilters = {},
+    scope?: OrganizationScope,
+  ): Promise<Paginated<User>> {
     const page = filters.page ?? 1;
     const pageSize = filters.page_size ?? 10;
 
     if (USE_MOCK) {
-      const filtered = applyFilters(users, filters);
+      const activeScope = resolveOrganizationScope(scope);
+      const scopedUsers = users.filter(
+        (user) =>
+          user.company_id === activeScope.companyId &&
+          user.branch_id === activeScope.branchId,
+      );
+      const filtered = applyFilters(scopedUsers, filters);
       const start = (page - 1) * pageSize;
       return delay({
         items: filtered.slice(start, start + pageSize),
@@ -63,15 +75,23 @@ export const userService = {
           role: filters.role,
           page,
           page_size: pageSize,
+          company_id: scope?.companyId,
+          branch_id: scope?.branchId,
         },
       },
     );
     return data;
   },
 
-  async get(id: number): Promise<User> {
+  async get(id: number, scope?: OrganizationScope): Promise<User> {
     if (USE_MOCK) {
-      const user = users.find((u) => u.id === id);
+      const activeScope = resolveOrganizationScope(scope);
+      const user = users.find(
+        (u) =>
+          u.id === id &&
+          u.company_id === activeScope.companyId &&
+          u.branch_id === activeScope.branchId,
+      );
       if (!user) throw new Error("User not found");
       return delay(user, 150);
     }
@@ -81,9 +101,12 @@ export const userService = {
 
   async create(input: UserCreateInput): Promise<User> {
     if (USE_MOCK) {
+      const scope = getActiveOrganizationScope();
       const user: User = {
         id: nextId(),
         ...input,
+        company_id: scope.companyId,
+        branch_id: scope.branchId,
         full_name: `${input.first_name} ${input.last_name}`,
         avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
           `${input.first_name} ${input.last_name}`,
@@ -102,7 +125,13 @@ export const userService = {
 
   async update(id: number, input: UserUpdateInput): Promise<User> {
     if (USE_MOCK) {
-      const user = users.find((u) => u.id === id);
+      const scope = getActiveOrganizationScope();
+      const user = users.find(
+        (u) =>
+          u.id === id &&
+          u.company_id === scope.companyId &&
+          u.branch_id === scope.branchId,
+      );
       if (!user) throw new Error("User not found");
       Object.assign(user, input);
       user.full_name = `${user.first_name} ${user.last_name}`;
@@ -117,7 +146,13 @@ export const userService = {
 
   async remove(id: number): Promise<void> {
     if (USE_MOCK) {
-      const idx = users.findIndex((u) => u.id === id);
+      const scope = getActiveOrganizationScope();
+      const idx = users.findIndex(
+        (u) =>
+          u.id === id &&
+          u.company_id === scope.companyId &&
+          u.branch_id === scope.branchId,
+      );
       if (idx >= 0) users.splice(idx, 1);
       await delay(null);
       return;

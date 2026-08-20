@@ -5,13 +5,12 @@ import {
   organizationScopeKey,
   useOrganizationScope,
 } from "@/store/organization.store";
-import { equipmentService } from "./service";
+import { dashboardService } from "./service";
 
-export function useEquipment() {
+export function useDashboardData() {
   const scope = useOrganizationScope();
-  const scopeKey = organizationScopeKey(scope);
   return useQuery({
-    queryKey: queryKeys.equipment.list(scopeKey),
-    queryFn: () => equipmentService.list(scope),
+    queryKey: queryKeys.dashboard.summary(organizationScopeKey(scope)),
+    queryFn: () => dashboardService.get(scope),
   });
 }

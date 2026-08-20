@@ -6,3 +6,4 @@ export type * from "./permission";
 export type * from "./auth";
 export type * from "./navigation";
 export type * from "./workflow";
+export type * from "./organization";

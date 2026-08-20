@@ -1,9 +1,13 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
-import { equipmentStatus } from "../data";
+import type { EquipmentStatusPoint } from "../data";
 
-export function EquipmentStatusChart() {
-  const total = equipmentStatus.reduce((sum, item) => sum + item.value, 0);
+export function EquipmentStatusChart({
+  data,
+}: {
+  data: EquipmentStatusPoint[];
+}) {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
 
   return (
     <div className="flex flex-col items-center gap-4 sm:flex-row">
@@ -11,7 +15,7 @@ export function EquipmentStatusChart() {
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={equipmentStatus}
+              data={data}
               dataKey="value"
               nameKey="name"
               innerRadius={52}
@@ -19,7 +23,7 @@ export function EquipmentStatusChart() {
               paddingAngle={2}
               stroke="none"
             >
-              {equipmentStatus.map((entry) => (
+              {data.map((entry) => (
                 <Cell key={entry.name} fill={entry.color} />
               ))}
             </Pie>
@@ -38,7 +42,7 @@ export function EquipmentStatusChart() {
         </div>
       </div>
       <ul className="grid w-full grid-cols-2 gap-2.5 sm:grid-cols-1">
-        {equipmentStatus.map((item) => (
+        {data.map((item) => (
           <li key={item.name} className="flex items-center justify-between gap-2 text-sm">
             <span className="flex items-center gap-2 text-muted-foreground">
               <span

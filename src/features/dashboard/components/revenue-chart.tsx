@@ -6,12 +6,12 @@ import {
   XAxis,
 } from "recharts";
 
-import { CHART_COLORS, revenueTrend } from "../data";
+import { CHART_COLORS, type RevenueTrendPoint } from "../data";
 
-export function RevenueChart() {
+export function RevenueChart({ data }: { data: RevenueTrendPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={120}>
-      <AreaChart data={revenueTrend} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+      <AreaChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
         <defs>
           <linearGradient id="gRev" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor={CHART_COLORS.success} stopOpacity={0.3} />

@@ -4,6 +4,8 @@ export interface InventoryItem {
   name: string;
   category: string;
   unit: string;
+  companyId: string;
+  branchId: string;
   warehouseId: number;
   warehouseName: string;
   onHand: number;

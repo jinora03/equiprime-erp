@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -10,16 +9,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useBranches } from "@/hooks/use-organizations";
 import { cn } from "@/lib/utils";
-
-const COMPANIES = [
-  { id: "main", name: "Equiprime — Main", region: "Manila HQ" },
-  { id: "cebu", name: "Equiprime — Cebu", region: "Visayas Branch" },
-  { id: "davao", name: "Equiprime — Davao", region: "Mindanao Branch" },
-];
+import {
+  useOrganizationScope,
+  useOrganizationStore,
+} from "@/store/organization.store";
 
 export function CompanySwitcher() {
-  const [active, setActive] = useState(COMPANIES[0]);
+  const scope = useOrganizationScope();
+  const setOrganizationScope = useOrganizationStore(
+    (state) => state.setOrganizationScope,
+  );
+  const { data: branches = [] } = useBranches(scope.companyId);
+  const active = branches.find((branch) => branch.id === scope.branchId);
 
   return (
     <DropdownMenu>
@@ -28,29 +31,36 @@ export function CompanySwitcher() {
           variant="outline"
           className="hidden h-9 max-w-[200px] justify-between gap-2 lg:flex"
         >
-          <span className="truncate text-sm">{active.name}</span>
+          <span className="truncate text-sm">
+            {active?.displayName ?? "Select branch"}
+          </span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
-        <DropdownMenuLabel>Switch company</DropdownMenuLabel>
+        <DropdownMenuLabel>Switch company / branch</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {COMPANIES.map((company) => (
+        {branches.map((branch) => (
           <DropdownMenuItem
-            key={company.id}
-            onClick={() => setActive(company)}
+            key={branch.id}
+            onClick={() =>
+              setOrganizationScope({
+                companyId: branch.companyId,
+                branchId: branch.id,
+              })
+            }
             className="flex items-center justify-between"
           >
             <div className="flex flex-col">
-              <span className="text-sm">{company.name}</span>
+              <span className="text-sm">{branch.displayName}</span>
               <span className="text-xs text-muted-foreground">
-                {company.region}
+                {branch.region}
               </span>
             </div>
             <Check
               className={cn(
                 "h-4 w-4 text-primary",
-                active.id === company.id ? "opacity-100" : "opacity-0",
+                active?.id === branch.id ? "opacity-100" : "opacity-0",
               )}
             />
           </DropdownMenuItem>

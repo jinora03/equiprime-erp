@@ -8,6 +8,7 @@ import {
 } from "@/services/workflow-records";
 import { getInitialWorkflowStageId } from "@/services/workflow-rules";
 import { workflowService } from "@/services/workflow.service";
+import { getActiveOrganizationScope } from "@/store/organization.store";
 import { jobOrderSeed } from "./data";
 import type { JobOrder, JobOrderInput } from "./types";
 
@@ -18,7 +19,10 @@ const store = createRecordStore<JobOrder>("job-orders", jobOrderSeed, {
       : workflowService.getByModule("job-orders"),
   getConditionContext: async (record) => {
     const [workItems, partsRequests] = await Promise.all([
-      workItemService.list(record.id),
+      workItemService.list(record.id, {
+        companyId: record.companyId,
+        branchId: record.branchId,
+      }),
       partsRequestService.listByJobOrder(record.id),
     ]);
     return {
@@ -29,12 +33,15 @@ const store = createRecordStore<JobOrder>("job-orders", jobOrderSeed, {
     };
   },
 });
-let counter = jobOrderSeed.length + 106;
+let counter = Math.max(
+  ...jobOrderSeed.map((job) => Number(job.code.split("-").at(-1) ?? 0)),
+);
 
 export const jobOrderService = {
   ...store,
   async create(input: JobOrderInput): Promise<JobOrder> {
     const now = new Date().toISOString();
+    const scope = getActiveOrganizationScope();
     const workflow = await workflowService.get(input.workflowId);
     if (workflow.moduleId !== "job-orders" || workflow.status !== "active") {
       throw new Error("Select an active Job Orders workflow.");
@@ -47,6 +54,8 @@ export const jobOrderService = {
       code: `JO-2026-${String(counter).padStart(4, "0")}`,
       title: input.title,
       moduleId: "job-orders",
+      companyId: scope.companyId,
+      branchId: scope.branchId,
       currentStageId: firstStage,
       history: [historyEntry(null, firstStage, input.actor, undefined, now)],
       assignee: input.assignee || null,

@@ -8,13 +8,13 @@ import {
   YAxis,
 } from "recharts";
 
-import { CHART_COLORS, workOverview } from "../data";
+import { CHART_COLORS, type WorkOverviewPoint } from "../data";
 
-export function WorkOverviewChart() {
+export function WorkOverviewChart({ data }: { data: WorkOverviewPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={280}>
       <AreaChart
-        data={workOverview}
+        data={data}
         margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
       >
         <defs>
@@ -22,7 +22,7 @@ export function WorkOverviewChart() {
             <stop offset="5%" stopColor={CHART_COLORS.primary} stopOpacity={0.25} />
             <stop offset="95%" stopColor={CHART_COLORS.primary} stopOpacity={0} />
           </linearGradient>
-          <linearGradient id="gSvc" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="gWork" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor={CHART_COLORS.brand} stopOpacity={0.22} />
             <stop offset="95%" stopColor={CHART_COLORS.brand} stopOpacity={0} />
           </linearGradient>
@@ -43,6 +43,7 @@ export function WorkOverviewChart() {
           axisLine={false}
           tick={{ fontSize: 12, fill: "hsl(215 16% 47%)" }}
           width={40}
+          allowDecimals={false}
         />
         <Tooltip
           contentStyle={{
@@ -62,11 +63,11 @@ export function WorkOverviewChart() {
         />
         <Area
           type="monotone"
-          dataKey="serviceRequests"
-          name="Service Requests"
+          dataKey="workItems"
+          name="Work Items"
           stroke={CHART_COLORS.brand}
           strokeWidth={2.5}
-          fill="url(#gSvc)"
+          fill="url(#gWork)"
         />
         <Area
           type="monotone"

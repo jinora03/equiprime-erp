@@ -1,4 +1,5 @@
 import { delay } from "@/services/mock/delay";
+import { matchesOrganizationScope } from "@/services/mock/scope";
 import { registerWorkflowRecordSource } from "@/services/workflow-record-registry";
 import {
   EMPTY_CONDITION_CONTEXT,
@@ -10,6 +11,7 @@ import {
 } from "@/services/workflow-rules";
 import { workflowService } from "@/services/workflow.service";
 import type {
+  OrganizationScope,
   PermissionKey,
   Workflow,
   WorkflowHistory,
@@ -51,8 +53,8 @@ export interface WorkflowMoveInput {
 }
 
 export interface RecordStore<T extends WorkflowRecord> {
-  list: () => Promise<T[]>;
-  get: (id: number) => Promise<T>;
+  list: (scope?: OrganizationScope) => Promise<T[]>;
+  get: (id: number, scope?: OrganizationScope) => Promise<T>;
   add: (record: T) => Promise<T>;
   validateMove: (
     id: number,
@@ -79,7 +81,10 @@ export function createRecordStore<T extends WorkflowRecord>(
   const data: T[] = seed.map((r) => ({ ...r, history: [...r.history] }));
   registerWorkflowRecordSource(moduleId, data);
 
-  const findRecord = (id: number) => data.find((record) => record.id === id);
+  const findRecord = (id: number) =>
+    data.find(
+      (record) => record.id === id && matchesOrganizationScope(record),
+    );
 
   const validateMove = async (
     id: number,
@@ -125,10 +130,17 @@ export function createRecordStore<T extends WorkflowRecord>(
   };
 
   return {
-    list: () => delay(data.map((r) => ({ ...r, history: [...r.history] }))),
+    list: (scope) =>
+      delay(
+        data
+          .filter((record) => matchesOrganizationScope(record, scope))
+          .map((r) => ({ ...r, history: [...r.history] })),
+      ),
 
-    get: (id) => {
-      const record = findRecord(id);
+    get: (id, scope) => {
+      const record = data.find(
+        (item) => item.id === id && matchesOrganizationScope(item, scope),
+      );
       if (!record) return Promise.reject(new Error("Record not found"));
       return delay({ ...record, history: [...record.history] });
     },

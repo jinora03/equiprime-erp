@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/constants/query-keys";
+import {
+  organizationScopeKey,
+  useOrganizationScope,
+} from "@/store/organization.store";
 import type { RecordStore } from "@/services/workflow-records";
 import type { WorkflowMoveEvidence } from "@/services/workflow-rules";
 import type { PermissionKey, WorkflowRecord } from "@/types";
@@ -15,9 +19,11 @@ export function useRecords<T extends WorkflowRecord>(
   moduleId: string,
   store: Pick<RecordStore<T>, "list">,
 ) {
+  const scope = useOrganizationScope();
+  const scopeKey = organizationScopeKey(scope);
   return useQuery({
-    queryKey: queryKeys.records.list(moduleId),
-    queryFn: () => store.list(),
+    queryKey: queryKeys.records.list(moduleId, scopeKey),
+    queryFn: () => store.list(scope),
   });
 }
 
@@ -26,7 +32,11 @@ export function useMoveRecordStage<T extends WorkflowRecord>(
   store: Pick<RecordStore<T>, "moveStage">,
 ) {
   const qc = useQueryClient();
-  const listKey = queryKeys.records.list(moduleId);
+  const scope = useOrganizationScope();
+  const listKey = queryKeys.records.list(
+    moduleId,
+    organizationScopeKey(scope),
+  );
 
   return useMutation({
     mutationFn: (vars: {
@@ -54,7 +64,10 @@ export function useMoveRecordStage<T extends WorkflowRecord>(
       );
     },
     onSettled: () =>
-      qc.invalidateQueries({ queryKey: queryKeys.records.all(moduleId) }),
+      Promise.all([
+        qc.invalidateQueries({ queryKey: queryKeys.records.all(moduleId) }),
+        qc.invalidateQueries({ queryKey: queryKeys.dashboard.all }),
+      ]),
   });
 }
 
@@ -66,6 +79,9 @@ export function useCreateRecord<T extends WorkflowRecord, I>(
   return useMutation({
     mutationFn: (input: I) => create(input),
     onSuccess: () =>
-      qc.invalidateQueries({ queryKey: queryKeys.records.all(moduleId) }),
+      Promise.all([
+        qc.invalidateQueries({ queryKey: queryKeys.records.all(moduleId) }),
+        qc.invalidateQueries({ queryKey: queryKeys.dashboard.all }),
+      ]),
   });
 }

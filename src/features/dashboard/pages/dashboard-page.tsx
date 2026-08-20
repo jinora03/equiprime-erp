@@ -31,25 +31,11 @@ import { PageHeader } from "@/shared/components/page-header";
 import { StatCard } from "@/shared/components/stat-card";
 import { UserAvatar } from "@/shared/components/user-avatar";
 import { formatCurrency, formatDate, formatRelativeTime } from "@/utils/format";
-import {
-  activities,
-  recentJobOrders,
-  upcomingMaintenance,
-  type JobOrderStatus,
-  type Priority,
-} from "../data";
+import { type DashboardPriority, type JobOrderStatus } from "../data";
+import { useDashboardData } from "../hooks";
 import { WorkOverviewChart } from "../components/work-overview-chart";
 import { EquipmentStatusChart } from "../components/equipment-status-chart";
 import { RevenueChart } from "../components/revenue-chart";
-
-const STAT_CARDS = [
-  { label: "Revenue (MTD)", value: formatCurrency(2_450_000), icon: Banknote, trend: 10, iconClassName: "bg-success/10 text-success" },
-  { label: "Open Job Orders", value: "28", icon: ClipboardList, trend: 12, iconClassName: "bg-primary/10 text-primary" },
-  { label: "Equipment Units", value: "76", icon: Forklift, trend: 4, iconClassName: "bg-info/10 text-info" },
-  { label: "Employees", value: "142", icon: Users, trend: 3, iconClassName: "bg-purple-500/10 text-purple-600" },
-  { label: "Attendance", value: "94%", icon: CalendarCheck, trend: 2, iconClassName: "bg-brand/10 text-brand" },
-  { label: "Inventory Items", value: "1,284", icon: Boxes, trend: -2, iconClassName: "bg-amber-500/10 text-amber-600" },
-];
 
 const JOB_STATUS: Record<
   JobOrderStatus,
@@ -61,7 +47,10 @@ const JOB_STATUS: Record<
   "On Hold": "secondary",
 };
 
-const PRIORITY: Record<Priority, "destructive" | "warning" | "secondary"> = {
+const PRIORITY: Record<
+  DashboardPriority,
+  "destructive" | "warning" | "secondary"
+> = {
   High: "destructive",
   Medium: "warning",
   Low: "secondary",
@@ -69,13 +58,23 @@ const PRIORITY: Record<Priority, "destructive" | "warning" | "secondary"> = {
 
 const LEGEND = [
   { label: "Job Orders", color: "#2563EB" },
-  { label: "Service Requests", color: "#F97316" },
+  { label: "Work Items", color: "#F97316" },
   { label: "Completed", color: "#16A34A" },
 ];
 
 export function DashboardPage() {
   const { user } = useAuth();
   const { can } = usePermissions();
+  const { data: dashboard } = useDashboardData();
+
+  const statCards = [
+    { label: "Revenue (latest month)", value: dashboard ? formatCurrency(dashboard.currentRevenue) : "—", icon: Banknote, trend: dashboard?.revenueChange, iconClassName: "bg-success/10 text-success" },
+    { label: "Open Job Orders", value: dashboard ? String(dashboard.openJobOrders) : "—", icon: ClipboardList, iconClassName: "bg-primary/10 text-primary" },
+    { label: "Equipment Units", value: dashboard ? String(dashboard.equipmentUnits) : "—", icon: Forklift, iconClassName: "bg-info/10 text-info" },
+    { label: "Employees", value: dashboard ? String(dashboard.employees) : "—", icon: Users, iconClassName: "bg-purple-500/10 text-purple-600" },
+    { label: "Attendance", value: dashboard ? `${dashboard.attendanceRate}%` : "—", icon: CalendarCheck, iconClassName: "bg-brand/10 text-brand" },
+    { label: "Inventory Stock", value: dashboard ? dashboard.inventoryOnHand.toLocaleString() : "—", icon: Boxes, iconClassName: "bg-amber-500/10 text-amber-600" },
+  ];
 
   const quickActions = [
     { label: "Add User", icon: UserPlus, to: ROUTES.USERS, permission: "users:create" },
@@ -90,12 +89,12 @@ export function DashboardPage() {
     <div className="space-y-6">
       <PageHeader
         title="Dashboard"
-        description={`Welcome back, ${user?.first_name ?? "there"}! Here's what's happening today.`}
+        description={`Welcome back, ${user?.first_name ?? "there"}! ${dashboard ? `${dashboard.branchName} · ${dashboard.region}` : "Loading branch data…"}`}
       />
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {STAT_CARDS.map((stat) => (
+        {statCards.map((stat) => (
           <StatCard key={stat.label} {...stat} />
         ))}
       </div>
@@ -118,7 +117,7 @@ export function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <WorkOverviewChart />
+            <WorkOverviewChart data={dashboard?.workOverview ?? []} />
           </CardContent>
         </Card>
 
@@ -128,7 +127,7 @@ export function DashboardPage() {
             <CardDescription>Fleet utilization snapshot</CardDescription>
           </CardHeader>
           <CardContent>
-            <EquipmentStatusChart />
+            <EquipmentStatusChart data={dashboard?.equipmentStatus ?? []} />
           </CardContent>
         </Card>
       </div>
@@ -148,7 +147,7 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent className="px-2">
             <div className="divide-y">
-              {recentJobOrders.map((job) => (
+              {(dashboard?.recentJobOrders ?? []).map((job) => (
                 <div
                   key={job.id}
                   className="flex items-center justify-between gap-4 px-4 py-3"
@@ -156,7 +155,7 @@ export function DashboardPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-xs text-muted-foreground">
-                        {job.id}
+                        {job.code}
                       </span>
                       <Badge variant={JOB_STATUS[job.status]}>{job.status}</Badge>
                     </div>
@@ -218,11 +217,11 @@ export function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Across your organization</CardDescription>
+            <CardDescription>Across the selected branch</CardDescription>
           </CardHeader>
           <CardContent>
             <ol className="space-y-4">
-              {activities.map((item) => (
+              {(dashboard?.activities ?? []).map((item) => (
                 <li key={item.id} className="flex gap-3">
                   <UserAvatar name={item.user} className="h-8 w-8 text-[10px]" />
                   <div className="min-w-0 flex-1">
@@ -249,7 +248,7 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {upcomingMaintenance.map((item) => (
+              {(dashboard?.upcomingMaintenance ?? []).map((item) => (
                 <li
                   key={item.id}
                   className="flex items-center justify-between gap-3 rounded-lg border p-3"
@@ -284,18 +283,18 @@ export function DashboardPage() {
             <div className="flex items-end justify-between">
               <div>
                 <p className="text-2xl font-semibold tracking-tight text-foreground">
-                  {formatCurrency(2_450_000)}
+                  {dashboard ? formatCurrency(dashboard.currentRevenue) : "—"}
                 </p>
                 <p className="mt-1 flex items-center gap-1 text-xs">
                   <span className="inline-flex items-center font-medium text-success">
-                    <ArrowUpRight className="h-3.5 w-3.5" /> 10%
+                    <ArrowUpRight className="h-3.5 w-3.5" /> {dashboard?.revenueChange ?? 0}%
                   </span>
                   <span className="text-muted-foreground">vs last month</span>
                 </p>
               </div>
             </div>
             <Separator className="my-4" />
-            <RevenueChart />
+            <RevenueChart data={dashboard?.revenueTrend ?? []} />
           </CardContent>
         </Card>
       </div>

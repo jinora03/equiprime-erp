@@ -3,9 +3,9 @@ import type { Priority, WorkflowRecord } from "@/types";
 export interface JobOrder extends WorkflowRecord {
   /** Display name (kept for tables); id is the API-ready reference. */
   customer: string;
-  customerId?: number;
+  customerId: number;
   equipment: string;
-  equipmentId?: number;
+  equipmentId: number;
   /** Workflow that drives this job order's stages. */
   workflowId?: number;
   priority: Priority;

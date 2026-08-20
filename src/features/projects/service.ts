@@ -5,6 +5,7 @@ import {
 } from "@/services/workflow-records";
 import { getInitialWorkflowStageId } from "@/services/workflow-rules";
 import { workflowService } from "@/services/workflow.service";
+import { getActiveOrganizationScope } from "@/store/organization.store";
 import { projectSeed } from "./data";
 import type { Project, ProjectInput } from "./types";
 
@@ -15,6 +16,7 @@ export const projectService = {
   ...store,
   async create(input: ProjectInput): Promise<Project> {
     const now = new Date().toISOString();
+    const scope = getActiveOrganizationScope();
     const workflow = await workflowService.getByModule("projects");
     if (!workflow) throw new Error("No active Project workflow is configured.");
     const firstStage = getInitialWorkflowStageId(workflow);
@@ -25,6 +27,8 @@ export const projectService = {
       code: `PRJ-2026-${String(counter).padStart(3, "0")}`,
       title: input.title,
       moduleId: "projects",
+      companyId: scope.companyId,
+      branchId: scope.branchId,
       currentStageId: firstStage,
       history: [historyEntry(null, firstStage, input.actor, undefined, now)],
       assignee: input.manager,
