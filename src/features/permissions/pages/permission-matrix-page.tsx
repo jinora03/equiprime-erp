@@ -35,11 +35,12 @@ export function PermissionMatrixPage() {
   const { data, isLoading } = usePermissionMatrix();
   const updatePerms = useUpdateRolePermissions();
 
-  const roles = data?.roles ?? [];
-  const modules = data?.modules ?? [];
+  const roles = useMemo(() => data?.roles ?? [], [data?.roles]);
+  const modules = useMemo(() => data?.modules ?? [], [data?.modules]);
 
-  const editableRoles = roles.filter(
-    (r) => !r.permissions.includes(WILDCARD),
+  const editableRoles = useMemo(
+    () => roles.filter((r) => !r.permissions.includes(WILDCARD)),
+    [roles],
   );
 
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);

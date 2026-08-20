@@ -32,7 +32,7 @@ never upload `node_modules`.
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm run check    # type-check + production build
+npm run check    # lint + type-check + production build
 ```
 
 Sign in with the demo account:
@@ -70,4 +70,4 @@ Before committing a change, run:
 npm run check
 ```
 
-This performs the TypeScript check and the production Vite build in one command.
+This runs ESLint, the TypeScript check, and the production Vite build in one command.
