@@ -30,7 +30,9 @@ export function EquipmentStatusChart({
             <Tooltip
               contentStyle={{
                 borderRadius: 12,
-                border: "1px solid hsl(214 32% 91%)",
+                background: "hsl(var(--popover))",
+                color: "hsl(var(--popover-foreground))",
+                border: "1px solid hsl(var(--border))",
                 fontSize: 12,
               }}
             />

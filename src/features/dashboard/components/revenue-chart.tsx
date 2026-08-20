@@ -22,13 +22,15 @@ export function RevenueChart({ data }: { data: RevenueTrendPoint[] }) {
           dataKey="month"
           tickLine={false}
           axisLine={false}
-          tick={{ fontSize: 11, fill: "hsl(215 16% 47%)" }}
+          tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
         />
         <Tooltip
           formatter={(value: number) => [`₱${value}M`, "Revenue"]}
           contentStyle={{
             borderRadius: 12,
-            border: "1px solid hsl(214 32% 91%)",
+            background: "hsl(var(--popover))",
+            color: "hsl(var(--popover-foreground))",
+            border: "1px solid hsl(var(--border))",
             fontSize: 12,
           }}
         />

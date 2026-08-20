@@ -1,5 +1,5 @@
 import { WILDCARD } from "@/constants/modules";
-import { delay } from "@/services/mock/delay";
+import { PARTS_APPROVER_ROLES, partsRequestService } from "@/features/parts/service";
 import {
   applyRegisteredApprovedMove,
   findRegisteredWorkflowRecord,
@@ -53,8 +53,8 @@ let seq = tasks.length;
 const isSuperAdmin = (actor: ApprovalActor) =>
   actor.permissions.includes(WILDCARD);
 
-const actorCanSeeTask = (task: ApprovalTaskEntity, actor: ApprovalActor) =>
-  isSuperAdmin(actor) || task.requiredRoles.includes(actor.role);
+const actorCanSeeRoles = (requiredRoles: readonly string[], actor: ApprovalActor) =>
+  isSuperAdmin(actor) || requiredRoles.includes(actor.role);
 
 async function workflowForRecord(
   task: Pick<ApprovalTaskEntity, "workflowId" | "moduleId">,
@@ -84,7 +84,7 @@ function contextForRecord(record: WorkflowRecord): ApprovalTask["context"] {
   return context;
 }
 
-async function enrich(task: ApprovalTaskEntity): Promise<ApprovalTask> {
+async function enrichWorkflow(task: ApprovalTaskEntity): Promise<ApprovalTask> {
   const record = findRegisteredWorkflowRecord(task.moduleId, task.recordId);
   if (!record) throw new Error("The record for this approval no longer exists.");
   const workflow = await workflowForRecord(task);
@@ -106,6 +106,7 @@ async function enrich(task: ApprovalTaskEntity): Promise<ApprovalTask> {
 
   return {
     ...task,
+    kind: "workflow_transition",
     requiredRoles: [...task.requiredRoles],
     confirmedConditions: [...task.confirmedConditions],
     decisions: task.decisions.map((decision) => ({ ...decision })),
@@ -120,6 +121,91 @@ async function enrich(task: ApprovalTaskEntity): Promise<ApprovalTask> {
     toStageName: toStage?.name ?? transition.toStageId,
     context: contextForRecord(record),
   };
+}
+
+async function enrichPartsRequest(
+  request: Awaited<ReturnType<typeof partsRequestService.listForApproval>>[number],
+): Promise<ApprovalTask> {
+  const job = findRegisteredWorkflowRecord("job-orders", request.jobOrderId);
+  const decision = request.decision
+    ? [{
+        role: request.decision.approvalRole,
+        actorId: request.decision.actorId,
+        actorName: request.decision.actorName,
+        actorRole: request.decision.actorRole,
+        at: request.decision.at,
+        note: request.decision.note,
+      }]
+    : [];
+  const status: ApprovalStatus =
+    request.status === "rejected"
+      ? "rejected"
+      : request.status === "pending"
+        ? "pending"
+        : "approved";
+  const itemSummary = request.items
+    .map((item) => `${item.name} ×${item.quantity} ${item.unit}`)
+    .join("; ");
+
+  return {
+    id: `parts:${request.id}`,
+    kind: "parts_request",
+    companyId: request.companyId,
+    branchId: request.branchId,
+    workflowId: 0,
+    moduleId: "parts-requests",
+    moduleLabel: "Parts Request",
+    recordId: request.id,
+    recordCode: request.code,
+    recordTitle: job ? `Parts for ${job.code} · ${job.title}` : "Parts request",
+    transitionId: "parts-approval",
+    transitionLabel: "Approve & release parts",
+    fromStageId: "pending",
+    fromStageName: "Pending",
+    toStageId: "released",
+    toStageName: "Released",
+    requiredRoles: [...PARTS_APPROVER_ROLES],
+    confirmedConditions: [],
+    context: [
+      ...(job ? [{ label: "Job order", value: `${job.code} · ${job.title}` }] : []),
+      { label: "Requested parts", value: itemSummary },
+      ...(job?.assignee ? [{ label: "Assigned", value: job.assignee }] : []),
+    ],
+    requestedById: request.requestedById,
+    requestedByName: request.requestedBy,
+    requestedByRole: request.requestedByRole,
+    requestedAt: request.createdAt,
+    status,
+    decisions: decision,
+    rejectedBy: status === "rejected" && decision[0] ? decision[0] : undefined,
+    resolvedAt: status === "pending" ? undefined : request.updatedAt,
+  };
+}
+
+async function decidePartsRequest(
+  taskId: string,
+  input: ApprovalDecisionInput,
+): Promise<ApprovalTask> {
+  const requestId = Number(taskId.slice("parts:".length));
+  if (!Number.isInteger(requestId)) throw new Error("Parts approval task is invalid.");
+  const request = partsRequestService.get(requestId);
+  if (!request) throw new Error("Parts request not found.");
+  if (!actorCanSeeRoles(PARTS_APPROVER_ROLES, input.actor)) {
+    throw new Error("This approval is assigned to a different role.");
+  }
+  const approvalRole = isSuperAdmin(input.actor)
+    ? PARTS_APPROVER_ROLES[0]
+    : input.actor.role;
+  await partsRequestService.decide(
+    requestId,
+    input.decision,
+    input.actor,
+    approvalRole,
+    input.note,
+  );
+  const updated = partsRequestService.get(requestId);
+  if (!updated) throw new Error("Parts request not found after approval.");
+  return enrichPartsRequest(updated);
 }
 
 function inScope(task: ApprovalTaskEntity, scope: OrganizationScope) {
@@ -139,9 +225,18 @@ export const approvalService = {
   ): Promise<ApprovalTask[]> {
     if (!hasPermission(actor.permissions, "approvals:view")) return [];
     const relevant = tasks.filter(
-      (task) => inScope(task, scope) && actorCanSeeTask(task, actor),
+      (task) => inScope(task, scope) && actorCanSeeRoles(task.requiredRoles, actor),
     );
-    return delay(await Promise.all(relevant.map(enrich)));
+    const workflowTasks = await Promise.all(relevant.map(enrichWorkflow));
+    const partsRequests = await partsRequestService.listForApproval(scope);
+    const canSeeParts =
+      isSuperAdmin(actor) || PARTS_APPROVER_ROLES.some((role) => role === actor.role);
+    const partsTasks = canSeeParts
+      ? await Promise.all(partsRequests.map(enrichPartsRequest))
+      : [];
+    return [...workflowTasks, ...partsTasks].sort((a, b) =>
+      b.requestedAt.localeCompare(a.requestedAt),
+    );
   },
 
   async request(input: ApprovalRequestInput): Promise<ApprovalTask> {
@@ -177,7 +272,7 @@ export const approvalService = {
         task.recordId === input.recordId &&
         task.transitionId === input.transitionId,
     );
-    if (existing) return enrich(existing);
+    if (existing) return enrichWorkflow(existing);
 
     seq += 1;
     const task: ApprovalTaskEntity = {
@@ -198,15 +293,18 @@ export const approvalService = {
       decisions: [],
     };
     tasks.unshift(task);
-    return delay(await enrich(task));
+    return enrichWorkflow(task);
   },
 
   async decide(input: ApprovalDecisionInput): Promise<ApprovalTask> {
     assertCanAct(input.actor);
+    if (input.taskId.startsWith("parts:")) {
+      return decidePartsRequest(input.taskId, input);
+    }
     const task = tasks.find((candidate) => candidate.id === input.taskId);
     if (!task) throw new Error("Approval task not found.");
     if (task.status !== "pending") throw new Error("This approval is already resolved.");
-    if (!actorCanSeeTask(task, input.actor)) {
+    if (!actorCanSeeRoles(task.requiredRoles, input.actor)) {
       throw new Error("This approval is assigned to a different role.");
     }
 
@@ -233,7 +331,7 @@ export const approvalService = {
       task.status = "rejected";
       task.rejectedBy = decision;
       task.resolvedAt = now;
-      return delay(await enrich(task));
+      return enrichWorkflow(task);
     }
 
     const nextDecisions = [...task.decisions, decision];
@@ -243,7 +341,7 @@ export const approvalService = {
     );
 
     if (fullyApproved) {
-      const enriched = await enrich(task);
+      const enriched = await enrichWorkflow(task);
       await applyRegisteredApprovedMove(
         task.moduleId,
         task.recordId,
@@ -260,10 +358,15 @@ export const approvalService = {
       task.decisions = nextDecisions;
       task.status = "approved";
       task.resolvedAt = now;
-    } else {
-      task.decisions = nextDecisions;
+      return {
+        ...enriched,
+        status: task.status,
+        decisions: task.decisions.map((decision) => ({ ...decision })),
+        resolvedAt: task.resolvedAt,
+      };
     }
 
-    return delay(await enrich(task));
+    task.decisions = nextDecisions;
+    return enrichWorkflow(task);
   },
 };

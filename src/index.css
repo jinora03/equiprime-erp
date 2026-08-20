@@ -46,12 +46,20 @@
     /* Status */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 66% 36%;
+    --success: 149 42% 34%;
     --success-foreground: 0 0% 100%;
-    --warning: 32 95% 44%;
+    --warning: 38 62% 42%;
     --warning-foreground: 0 0% 100%;
-    --info: 205 90% 42%;
+    --info: 207 52% 40%;
     --info-foreground: 0 0% 100%;
+
+    /* Muted business-chart palette aligned with the navy/gold brand. */
+    --chart-primary: 214 55% 34%;
+    --chart-brand: 42 39% 46%;
+    --chart-success: 149 38% 35%;
+    --chart-warning: 32 48% 43%;
+    --chart-neutral: 215 18% 46%;
+    --chart-danger: 4 48% 45%;
 
     /* Lines & focus */
     --border: 214 32% 91%;
@@ -101,12 +109,19 @@
 
     --destructive: 0 63% 50%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 56% 44%;
-    --success-foreground: 0 0% 100%;
-    --warning: 32 82% 50%;
-    --warning-foreground: 0 0% 100%;
-    --info: 205 72% 52%;
-    --info-foreground: 0 0% 100%;
+    --success: 149 38% 48%;
+    --success-foreground: 216 45% 11%;
+    --warning: 38 54% 56%;
+    --warning-foreground: 216 45% 11%;
+    --info: 207 48% 58%;
+    --info-foreground: 216 45% 11%;
+
+    --chart-primary: 214 48% 58%;
+    --chart-brand: 43 38% 58%;
+    --chart-success: 149 34% 52%;
+    --chart-warning: 33 43% 58%;
+    --chart-neutral: 215 18% 58%;
+    --chart-danger: 4 42% 58%;
 
     --border: 218 22% 21%;
     --input: 218 22% 24%;

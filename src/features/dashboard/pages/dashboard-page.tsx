@@ -57,9 +57,9 @@ const PRIORITY: Record<
 };
 
 const LEGEND = [
-  { label: "Job Orders", color: "#2563EB" },
-  { label: "Work Items", color: "#F97316" },
-  { label: "Completed", color: "#16A34A" },
+  { label: "Job Orders", color: "hsl(var(--chart-primary))" },
+  { label: "Work Items", color: "hsl(var(--chart-brand))" },
+  { label: "Completed", color: "hsl(var(--chart-success))" },
 ];
 
 export function DashboardPage() {
@@ -71,9 +71,9 @@ export function DashboardPage() {
     { label: "Revenue (latest month)", value: dashboard ? formatCurrency(dashboard.currentRevenue) : "—", icon: Banknote, trend: dashboard?.revenueChange, iconClassName: "bg-success/10 text-success" },
     { label: "Open Job Orders", value: dashboard ? String(dashboard.openJobOrders) : "—", icon: ClipboardList, iconClassName: "bg-primary/10 text-primary" },
     { label: "Equipment Units", value: dashboard ? String(dashboard.equipmentUnits) : "—", icon: Forklift, iconClassName: "bg-info/10 text-info" },
-    { label: "Employees", value: dashboard ? String(dashboard.employees) : "—", icon: Users, iconClassName: "bg-purple-500/10 text-purple-600" },
-    { label: "Attendance", value: dashboard ? `${dashboard.attendanceRate}%` : "—", icon: CalendarCheck, iconClassName: "bg-brand/10 text-brand" },
-    { label: "Inventory Stock", value: dashboard ? dashboard.inventoryOnHand.toLocaleString() : "—", icon: Boxes, iconClassName: "bg-amber-500/10 text-amber-600" },
+    { label: "Employees", value: dashboard ? String(dashboard.employees) : "—", icon: Users, iconClassName: "bg-primary/10 text-primary" },
+    { label: "Attendance", value: dashboard ? `${dashboard.attendanceRate}%` : "—", icon: CalendarCheck, iconClassName: "bg-brand/10 text-brand-700 dark:text-brand" },
+    { label: "Inventory Stock", value: dashboard ? dashboard.inventoryOnHand.toLocaleString() : "—", icon: Boxes, iconClassName: "bg-warning/10 text-warning" },
   ];
 
   const quickActions = [

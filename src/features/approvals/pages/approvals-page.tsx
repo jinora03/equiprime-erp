@@ -52,7 +52,10 @@ export function ApprovalsPage() {
         });
       } else if (updated.status === "approved") {
         toast.success("Approval completed", {
-          description: `${updated.recordCode} moved to ${updated.toStageName}.`,
+          description:
+            updated.kind === "parts_request"
+              ? `${updated.recordCode} was approved and released.`
+              : `${updated.recordCode} moved to ${updated.toStageName}.`,
         });
       } else {
         toast.success("Approval recorded", {
@@ -70,7 +73,7 @@ export function ApprovalsPage() {
     <div className="space-y-6">
       <PageHeader
         title="My Approvals"
-        description="Review workflow requests assigned to your role for the active branch."
+        description="Review business and workflow requests assigned to your role for the active branch."
       />
 
       <Tabs value={tab} onValueChange={(value) => setTab(value as typeof tab)}>
@@ -97,7 +100,7 @@ export function ApprovalsPage() {
           title={tab === "pending" ? "No approvals waiting" : "No approval history"}
           description={
             tab === "pending"
-              ? "There are no workflow requests assigned to your role in this branch."
+              ? "There are no approval requests assigned to your role in this branch."
               : "Approved and rejected requests will appear here."
           }
         />

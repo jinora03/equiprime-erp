@@ -21,13 +21,9 @@ import { TONE } from "@/shared/components/workflow-tones";
 import { formatRelativeTime } from "@/utils/format";
 import { useInventory } from "@/features/inventory/hooks";
 import { availableStock } from "@/features/inventory/types";
-import {
-  useCreatePartsRequest,
-  usePartsRequests,
-  useUpdatePartsRequestStatus,
-} from "@/features/parts/hooks";
+import { useCreatePartsRequest, usePartsRequests } from "@/features/parts/hooks";
 import { getPartsRequestStatus } from "@/features/parts/statuses";
-import type { PartsRequestItem, PartsRequestStatus } from "@/features/parts/types";
+import type { PartsRequestItem } from "@/features/parts/types";
 
 interface DraftPart extends PartsRequestItem {}
 
@@ -35,12 +31,10 @@ export function JobOrderPartsTab({ jobOrderId }: { jobOrderId: number }) {
   const { user } = useAuth();
   const { can } = usePermissions();
   const canRequest = can("job-orders:update");
-  const canApprove = can("inventory:update");
 
   const { data: inventory = [] } = useInventory();
   const { data: requests = [] } = usePartsRequests(jobOrderId);
   const createRequest = useCreatePartsRequest();
-  const updateStatus = useUpdatePartsRequestStatus();
 
   const [draft, setDraft] = useState<DraftPart[]>([]);
   const [selectedItem, setSelectedItem] = useState("");
@@ -77,10 +71,15 @@ export function JobOrderPartsTab({ jobOrderId }: { jobOrderId: number }) {
   const requestParts = async () => {
     if (draft.length === 0) return;
     try {
+      if (!user) throw new Error("Sign in before requesting parts.");
       await createRequest.mutateAsync({
         jobOrderId,
         items: draft,
-        requestedBy: user?.full_name ?? "System",
+        requestedBy: {
+          id: user.id,
+          name: user.full_name,
+          role: user.role,
+        },
       });
       toast.success("Parts request created", {
         description: "Stock reserved; awaiting approval.",
@@ -88,19 +87,6 @@ export function JobOrderPartsTab({ jobOrderId }: { jobOrderId: number }) {
       setDraft([]);
     } catch {
       toast.error("Couldn't create parts request.");
-    }
-  };
-
-  const changeStatus = async (id: number, status: PartsRequestStatus) => {
-    try {
-      await updateStatus.mutateAsync({ id, status });
-      toast.success(
-        status === "released"
-          ? "Parts released — inventory updated"
-          : `Request ${status}`,
-      );
-    } catch {
-      toast.error("Couldn't update request.");
     }
   };
 
@@ -263,42 +249,16 @@ export function JobOrderPartsTab({ jobOrderId }: { jobOrderId: number }) {
                       ))}
                     </ul>
 
-                    {canApprove &&
-                    (request.status === "pending" ||
-                      request.status === "approved") ? (
-                      <div className="mt-3 flex justify-end gap-2 border-t pt-3">
-                        {request.status === "pending" ? (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() =>
-                                changeStatus(request.id, "rejected")
-                              }
-                              disabled={updateStatus.isPending}
-                            >
-                              Reject
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() =>
-                                changeStatus(request.id, "approved")
-                              }
-                              disabled={updateStatus.isPending}
-                            >
-                              Approve
-                            </Button>
-                          </>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => changeStatus(request.id, "released")}
-                            disabled={updateStatus.isPending}
-                          >
-                            <PackageCheck className="h-4 w-4" /> Release parts
-                          </Button>
-                        )}
+                    {request.decision ? (
+                      <div className="mt-3 border-t pt-3 text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">
+                          {request.status === "rejected" ? "Rejected" : "Approved"} by {request.decision.actorName}
+                        </span>
+                        {request.decision.note ? ` · ${request.decision.note}` : ""}
+                      </div>
+                    ) : request.status === "pending" ? (
+                      <div className="mt-3 border-t pt-3 text-xs text-muted-foreground">
+                        Awaiting approval in My Approvals.
                       </div>
                     ) : null}
                   </CardContent>

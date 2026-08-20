@@ -58,14 +58,16 @@ export function useDecideApproval() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: ApprovalDecisionInput) => approvalService.decide(input),
-    onSettled: (task) =>
-      Promise.all([
-        qc.invalidateQueries({ queryKey: queryKeys.approvals.all }),
-        qc.invalidateQueries({ queryKey: queryKeys.notifications.all }),
-        qc.invalidateQueries({ queryKey: queryKeys.dashboard.all }),
-        ...(task
-          ? [qc.invalidateQueries({ queryKey: queryKeys.records.all(task.moduleId) })]
-          : []),
-      ]),
+    onSettled: (task) => {
+      void qc.invalidateQueries({ queryKey: queryKeys.approvals.all });
+      void qc.invalidateQueries({ queryKey: queryKeys.notifications.all });
+      void qc.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      if (task?.kind === "parts_request") {
+        void qc.invalidateQueries({ queryKey: queryKeys.partsRequests.root });
+        void qc.invalidateQueries({ queryKey: queryKeys.inventory.all });
+      } else if (task) {
+        void qc.invalidateQueries({ queryKey: queryKeys.records.all(task.moduleId) });
+      }
+    },
   });
 }

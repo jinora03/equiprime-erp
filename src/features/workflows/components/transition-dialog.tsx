@@ -119,7 +119,9 @@ export function TransitionDialog({
                     Confirm
                   </Button>
                 ) : (
-                  <Badge variant="warning">Not met</Badge>
+                  <Badge variant="destructive" className="shrink-0 whitespace-nowrap">
+                    Not met
+                  </Badge>
                 )}
               </div>
             ))}

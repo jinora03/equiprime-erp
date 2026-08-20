@@ -2,6 +2,7 @@ import type { PermissionKey } from "./permission";
 import type { TransitionConditionType } from "./workflow";
 
 export type ApprovalStatus = "pending" | "approved" | "rejected" | "cancelled";
+export type ApprovalKind = "workflow_transition" | "parts_request";
 
 export interface ApprovalContextItem {
   label: string;
@@ -19,6 +20,7 @@ export interface ApprovalDecision {
 
 export interface ApprovalTask {
   id: string;
+  kind: ApprovalKind;
   companyId: string;
   branchId: string;
   workflowId: number;

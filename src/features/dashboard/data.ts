@@ -1,13 +1,12 @@
 /** Shared dashboard presentation types plus branch-scoped revenue seed data. */
 
 export const CHART_COLORS = {
-  primary: "#2563EB",
-  brand: "#F97316",
-  success: "#16A34A",
-  purple: "#7C3AED",
-  cyan: "#0891B2",
-  slate: "#64748B",
-  amber: "#D97706",
+  primary: "hsl(var(--chart-primary))",
+  brand: "hsl(var(--chart-brand))",
+  success: "hsl(var(--chart-success))",
+  warning: "hsl(var(--chart-warning))",
+  neutral: "hsl(var(--chart-neutral))",
+  danger: "hsl(var(--chart-danger))",
 };
 
 export interface WorkOverviewPoint {

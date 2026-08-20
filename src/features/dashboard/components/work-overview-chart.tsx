@@ -31,24 +31,26 @@ export function WorkOverviewChart({ data }: { data: WorkOverviewPoint[] }) {
             <stop offset="95%" stopColor={CHART_COLORS.success} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(215 20% 65% / 0.18)" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.8)" vertical={false} />
         <XAxis
           dataKey="label"
           tickLine={false}
           axisLine={false}
-          tick={{ fontSize: 12, fill: "hsl(215 16% 47%)" }}
+          tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
         />
         <YAxis
           tickLine={false}
           axisLine={false}
-          tick={{ fontSize: 12, fill: "hsl(215 16% 47%)" }}
+          tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
           width={40}
           allowDecimals={false}
         />
         <Tooltip
           contentStyle={{
             borderRadius: 12,
-            border: "1px solid hsl(214 32% 91%)",
+            background: "hsl(var(--popover))",
+            color: "hsl(var(--popover-foreground))",
+            border: "1px solid hsl(var(--border))",
             boxShadow: "0 8px 24px -6px rgb(16 24 40 / 0.12)",
             fontSize: 12,
           }}

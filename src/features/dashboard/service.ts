@@ -83,9 +83,9 @@ export const dashboardService = {
 
     const equipmentStatus = [
       { name: "In Use", key: "in_use", color: CHART_COLORS.success },
-      { name: "Under Service", key: "under_service", color: CHART_COLORS.amber },
-      { name: "Idle", key: "idle", color: CHART_COLORS.slate },
-      { name: "Decommissioned", key: "decommissioned", color: CHART_COLORS.brand },
+      { name: "Under Service", key: "under_service", color: CHART_COLORS.warning },
+      { name: "Idle", key: "idle", color: CHART_COLORS.neutral },
+      { name: "Decommissioned", key: "decommissioned", color: CHART_COLORS.danger },
     ].map(({ name, key, color }) => ({
       name,
       value: equipment.filter((item) => item.status === key).length,

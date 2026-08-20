@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,10 +32,32 @@ export function ApprovalReviewDialog({
   onReject,
 }: ApprovalReviewDialogProps) {
   const [note, setNote] = useState("");
+  const [pendingDecision, setPendingDecision] = useState<"approve" | "reject" | null>(null);
 
   useEffect(() => {
-    if (open) setNote("");
+    if (open) {
+      setNote("");
+      setPendingDecision(null);
+    }
   }, [open, task?.id]);
+
+  const handleApprove = async () => {
+    setPendingDecision("approve");
+    try {
+      await onApprove(note.trim() || undefined);
+    } finally {
+      setPendingDecision(null);
+    }
+  };
+
+  const handleReject = async () => {
+    setPendingDecision("reject");
+    try {
+      await onReject(note);
+    } finally {
+      setPendingDecision(null);
+    }
+  };
 
   if (!task) return null;
 
@@ -45,7 +67,7 @@ export function ApprovalReviewDialog({
         <DialogHeader>
           <DialogTitle>Review approval</DialogTitle>
           <DialogDescription>
-            Review the workflow request without needing access to the full {task.moduleLabel} module.
+            Review this request without needing access to the full {task.moduleLabel} source module.
           </DialogDescription>
         </DialogHeader>
 
@@ -116,13 +138,27 @@ export function ApprovalReviewDialog({
           </Button>
           <Button
             variant="destructive"
-            onClick={() => onReject(note)}
+            onClick={handleReject}
             disabled={submitting || !note.trim()}
           >
-            Reject
+            {pendingDecision === "reject" ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Rejecting…
+              </>
+            ) : (
+              "Reject"
+            )}
           </Button>
-          <Button onClick={() => onApprove(note.trim() || undefined)} disabled={submitting}>
-            Approve
+          <Button onClick={handleApprove} disabled={submitting}>
+            {pendingDecision === "approve" ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Approving…
+              </>
+            ) : (
+              "Approve"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/constants/query-keys";
 import { partsRequestService } from "./service";
-import type { PartsRequestInput, PartsRequestStatus } from "./types";
+import type { PartsRequestInput } from "./types";
 
 export function usePartsRequests(jobOrderId: number) {
   return useQuery({
@@ -15,9 +15,11 @@ export function usePartsRequests(jobOrderId: number) {
 function useInvalidateParts() {
   const qc = useQueryClient();
   return () => {
-    qc.invalidateQueries({ queryKey: queryKeys.partsRequests.root });
-    qc.invalidateQueries({ queryKey: queryKeys.inventory.all });
-    qc.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+    void qc.invalidateQueries({ queryKey: queryKeys.partsRequests.root });
+    void qc.invalidateQueries({ queryKey: queryKeys.inventory.all });
+    void qc.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+    void qc.invalidateQueries({ queryKey: queryKeys.approvals.all });
+    void qc.invalidateQueries({ queryKey: queryKeys.notifications.all });
   };
 }
 
@@ -25,15 +27,6 @@ export function useCreatePartsRequest() {
   const invalidate = useInvalidateParts();
   return useMutation({
     mutationFn: (input: PartsRequestInput) => partsRequestService.create(input),
-    onSuccess: invalidate,
-  });
-}
-
-export function useUpdatePartsRequestStatus() {
-  const invalidate = useInvalidateParts();
-  return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: PartsRequestStatus }) =>
-      partsRequestService.setStatus(id, status),
     onSuccess: invalidate,
   });
 }
