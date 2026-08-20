@@ -5,9 +5,9 @@ entirely in the browser on mock data — **no backend or server required** — a
 is configured to deploy straight to GitHub Pages.
 
 - **Size:** ~1.5 MB of source (no `node_modules`). Well under GitHub's limits.
-- **Works fully:** Dashboard, Job Orders, Work Items, Projects, Maintenance,
-  Inventory, User Management, Roles, Departments, Permission Matrix,
-  Notifications, Settings, and Workflows. (CRM, Customers, Equipment, Warehouse,
+- **Works fully:** Dashboard, Customers, Equipment, Job Orders, Work Items,
+  Projects, Maintenance, Inventory, User Management, Roles, Departments,
+  Permission Matrix, Notifications, Settings, and Workflows. (CRM, Warehouse,
   Purchasing, Sales, and Reports show a "Coming Soon" page by design.)
 - **Stack:** React 19 + TypeScript + Vite + Tailwind + shadcn/ui.
 - **Demo model:** in-browser mock services, frontend RBAC, configurable workflows,

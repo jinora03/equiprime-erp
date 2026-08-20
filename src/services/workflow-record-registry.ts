@@ -1,9 +1,10 @@
 import type { WorkflowRecord } from "@/types";
 
 /**
- * Tiny in-memory registry used only by the demo workflow editor to protect
- * stages that still contain records. Registered arrays remain live as stores
- * mutate during the browser session.
+ * Tiny in-memory registry shared by mock workflow services. Registered arrays
+ * remain live as stores mutate during the browser session. It supports editor
+ * safety checks and lightweight cross-record validation without coupling mock
+ * feature services directly to one another.
  */
 const recordSources = new Map<string, WorkflowRecord[]>();
 
@@ -21,4 +22,15 @@ export function countWorkflowRecordsInStage(
   return (recordSources.get(moduleId) ?? []).filter(
     (record) => record.currentStageId === stageId,
   ).length;
+}
+
+export function findRegisteredWorkflowRecord<T extends WorkflowRecord>(
+  moduleId: string,
+  recordId: number,
+): T | null {
+  return (
+    (recordSources.get(moduleId) ?? []).find((record) => record.id === recordId) as
+      | T
+      | undefined
+  ) ?? null;
 }

@@ -14,6 +14,7 @@ export interface WorkItem {
   jobOrderCode: string;
   companyId: string;
   branchId: string;
+  assigneeId?: number | null;
   assignee?: string | null;
   priority: Priority;
   estimatedHours: number;
@@ -28,8 +29,7 @@ export interface WorkItem {
 export interface WorkItemInput {
   task: string;
   jobOrderId: number;
-  jobOrderCode: string;
-  assignee?: string;
+  assigneeId?: number;
   priority: Priority;
   estimatedHours?: number;
   dueDate?: string;

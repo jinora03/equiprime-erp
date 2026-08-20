@@ -17,6 +17,8 @@ export const queryKeys = {
       ["users", "list", scopeKey, filters] as const,
     detail: (id: number, scopeKey = "") =>
       ["users", "detail", scopeKey, id] as const,
+    technicians: (scopeKey = "") =>
+      ["users", "technicians", scopeKey] as const,
   },
   departments: {
     all: ["departments"] as const,

@@ -271,7 +271,7 @@ export function JobOrderDetailPage() {
                   value={<PriorityBadge priority={jobOrder.priority} />}
                 />
                 <Detail
-                  label="Assignee"
+                  label="Technicians"
                   value={jobOrder.assignee ?? "Unassigned"}
                 />
                 <Detail label="Due date" value={formatDate(jobOrder.dueDate)} />
@@ -355,6 +355,7 @@ export function JobOrderDetailPage() {
           <JobOrderWorkItemsTab
             jobOrderId={jobOrder.id}
             jobOrderCode={jobOrder.code}
+            technicianIds={jobOrder.assigneeIds}
           />
         </TabsContent>
 

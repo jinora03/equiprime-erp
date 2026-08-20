@@ -16,6 +16,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -30,11 +31,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTechnicians } from "@/features/users/hooks";
 import { useCreateWorkItem } from "../hooks";
 
 const schema = z.object({
   task: z.string().min(1, "Task is required"),
-  assignee: z.string().optional(),
+  assigneeId: z.string().optional(),
   priority: z.enum(["High", "Medium", "Low"]),
   estimatedHours: z.string().optional(),
   dueDate: z.string().optional(),
@@ -49,6 +51,7 @@ interface WorkItemFormDialogProps {
   /** The parent job order — work items cannot exist independently. */
   jobOrderId: number;
   jobOrderCode: string;
+  technicianIds: number[];
 }
 
 export function WorkItemFormDialog({
@@ -56,14 +59,19 @@ export function WorkItemFormDialog({
   onOpenChange,
   jobOrderId,
   jobOrderCode,
+  technicianIds,
 }: WorkItemFormDialogProps) {
   const create = useCreateWorkItem();
+  const { data: technicians = [] } = useTechnicians();
+  const assignedTechnicians = technicians.filter((technician) =>
+    technicianIds.includes(technician.id),
+  );
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       task: "",
-      assignee: "",
+      assigneeId: "",
       priority: "Medium",
       estimatedHours: "",
       dueDate: "",
@@ -80,8 +88,7 @@ export function WorkItemFormDialog({
       await create.mutateAsync({
         task: values.task,
         jobOrderId,
-        jobOrderCode,
-        assignee: values.assignee,
+        assigneeId: values.assigneeId ? Number(values.assigneeId) : undefined,
         priority: values.priority,
         estimatedHours: Number(values.estimatedHours) || 0,
         dueDate: values.dueDate || undefined,
@@ -119,16 +126,41 @@ export function WorkItemFormDialog({
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
-                name="assignee"
+                name="assigneeId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Technician</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Jun Bautista" {...field} />
-                    </FormControl>
+                    <Select
+                      value={field.value || "unassigned"}
+                      onValueChange={(value) =>
+                        field.onChange(value === "unassigned" ? "" : value)
+                      }
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Unassigned" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                        {assignedTechnicians.map((technician) => (
+                          <SelectItem
+                            key={technician.id}
+                            value={String(technician.id)}
+                          >
+                            {technician.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {assignedTechnicians.length > 0
+                        ? "Only technicians assigned to this job order are listed."
+                        : "Assign technicians to the job order to make them available here."}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -156,7 +188,7 @@ export function WorkItemFormDialog({
                 )}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="estimatedHours"

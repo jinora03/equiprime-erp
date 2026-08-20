@@ -28,9 +28,9 @@ import { viewKey } from "@/constants/modules";
 import type { NavSection } from "@/types";
 
 /**
- * Sidebar navigation (Phase 1.1 structure). Items are permission-aware; Phase 2+
- * modules are flagged `comingSoon` and route to the shared placeholder. The four
- * Service modules are now real, workflow-driven pages.
+ * Sidebar navigation. Items are permission-aware; deferred modules are flagged
+ * `comingSoon` and route to the shared placeholder. Connected Customers and
+ * Equipment views support the service demo alongside the workflow modules.
  */
 export const NAV_SECTIONS: NavSection[] = [
   {
@@ -51,7 +51,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Business",
     items: [
       { id: "crm", label: "CRM", path: ROUTES.CRM, icon: Handshake, permission: viewKey("crm"), comingSoon: true },
-      { id: "customers", label: "Customers", path: ROUTES.CUSTOMERS, icon: Contact, permission: viewKey("customers"), comingSoon: true },
+      { id: "customers", label: "Customers", path: ROUTES.CUSTOMERS, icon: Contact, permission: viewKey("customers") },
       { id: "sales", label: "Sales", path: ROUTES.SALES, icon: BadgeDollarSign, permission: viewKey("sales"), comingSoon: true },
       { id: "purchasing", label: "Purchasing", path: ROUTES.PURCHASING, icon: ShoppingCart, permission: viewKey("purchasing"), comingSoon: true },
     ],
@@ -60,7 +60,7 @@ export const NAV_SECTIONS: NavSection[] = [
     id: "operations",
     label: "Operations",
     items: [
-      { id: "equipment", label: "Equipment", path: ROUTES.EQUIPMENT, icon: Forklift, permission: viewKey("equipment"), comingSoon: true },
+      { id: "equipment", label: "Equipment", path: ROUTES.EQUIPMENT, icon: Forklift, permission: viewKey("equipment") },
       { id: "inventory", label: "Inventory", path: ROUTES.INVENTORY, icon: Boxes, permission: viewKey("inventory") },
       { id: "warehouse", label: "Warehouse", path: ROUTES.WAREHOUSE, icon: Warehouse, permission: viewKey("warehouse"), comingSoon: true },
     ],

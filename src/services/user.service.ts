@@ -83,6 +83,14 @@ export const userService = {
     return data;
   },
 
+  async listTechnicians(scope?: OrganizationScope): Promise<User[]> {
+    const page = await userService.list(
+      { status: "active", department: "Technician", page: 1, page_size: 100 },
+      scope,
+    );
+    return page.items;
+  },
+
   async get(id: number, scope?: OrganizationScope): Promise<User> {
     if (USE_MOCK) {
       const activeScope = resolveOrganizationScope(scope);

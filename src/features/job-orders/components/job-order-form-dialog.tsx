@@ -34,17 +34,18 @@ import {
 import { useAuth } from "@/contexts/auth-context";
 import { useCreateRecord } from "@/hooks/use-workflow-records";
 import { useCustomers } from "@/features/customers/hooks";
-import { useEquipment } from "@/features/equipment/hooks";
-import { useUsers } from "@/features/users/hooks";
+import { useEquipmentByCustomer } from "@/features/equipment/hooks";
+import { useTechnicians } from "@/features/users/hooks";
 import { useWorkflows } from "@/features/workflows/hooks";
 import { jobOrderService } from "../service";
+import { TechnicianMultiSelect } from "./technician-multi-select";
 
 const schema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  equipmentId: z.string().min(1, "Select equipment"),
   customerId: z.string().min(1, "Select a customer"),
-  assignee: z.string().optional(),
+  equipmentId: z.string().min(1, "Select equipment"),
+  assigneeIds: z.array(z.number()),
   priority: z.enum(["High", "Medium", "Low"]),
   workflowId: z.string().min(1, "Select a workflow"),
   dueDate: z.string().min(1, "Estimated date is required"),
@@ -63,11 +64,8 @@ export function JobOrderFormDialog({
   const { user } = useAuth();
   const create = useCreateRecord("job-orders", jobOrderService.create);
   const { data: customers = [] } = useCustomers();
-  const { data: equipment = [] } = useEquipment();
-  const { data: userPage } = useUsers({ status: "active", page_size: 100 });
+  const { data: technicians = [] } = useTechnicians();
   const { data: workflows = [] } = useWorkflows();
-
-  const assignees = userPage?.items ?? [];
   const jobWorkflows = workflows.filter(
     (w) => w.moduleId === "job-orders" && w.status === "active",
   );
@@ -77,9 +75,9 @@ export function JobOrderFormDialog({
     defaultValues: {
       title: "",
       description: "",
-      equipmentId: "",
       customerId: "",
-      assignee: "",
+      equipmentId: "",
+      assigneeIds: [],
       priority: "Medium",
       workflowId: "",
       dueDate: "",
@@ -98,11 +96,14 @@ export function JobOrderFormDialog({
     }
   }, [open, jobWorkflows, form]);
 
-  // Selecting equipment auto-fills the owning customer.
-  const onEquipmentChange = (value: string) => {
-    form.setValue("equipmentId", value, { shouldValidate: true });
-    const eq = equipment.find((e) => String(e.id) === value);
-    if (eq) form.setValue("customerId", String(eq.customerId), { shouldValidate: true });
+  const selectedCustomerId = Number(form.watch("customerId")) || undefined;
+  const { data: equipment = [] } = useEquipmentByCustomer(selectedCustomerId);
+
+  const onCustomerChange = (value: string) => {
+    form.setValue("customerId", value, { shouldValidate: true });
+    // Equipment is customer-owned, so changing the customer invalidates any
+    // previous equipment selection.
+    form.setValue("equipmentId", "", { shouldValidate: false });
   };
 
   const onSubmit = async (values: FormValues) => {
@@ -114,10 +115,8 @@ export function JobOrderFormDialog({
         title: values.title,
         description: values.description,
         customerId: customer.id,
-        customerName: customer.name,
         equipmentId: eq.id,
-        equipmentName: eq.name,
-        assignee: values.assignee,
+        assigneeIds: values.assigneeIds,
         priority: values.priority,
         workflowId: Number(values.workflowId),
         dueDate: values.dueDate,
@@ -184,24 +183,27 @@ export function JobOrderFormDialog({
 
             <FormField
               control={form.control}
-              name="equipmentId"
+              name="customerId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Equipment</FormLabel>
-                  <Select value={field.value} onValueChange={onEquipmentChange}>
+                  <FormLabel>Customer</FormLabel>
+                  <Select value={field.value} onValueChange={onCustomerChange}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select equipment" />
+                        <SelectValue placeholder="Select a customer" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {equipment.map((e) => (
-                        <SelectItem key={e.id} value={String(e.id)}>
-                          {e.name} · {e.type}
+                      {customers.map((customer) => (
+                        <SelectItem key={customer.id} value={String(customer.id)}>
+                          {customer.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormDescription>
+                    Equipment choices are filtered to this customer.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -209,27 +211,39 @@ export function JobOrderFormDialog({
 
             <FormField
               control={form.control}
-              name="customerId"
+              name="equipmentId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Customer</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <FormLabel>Equipment</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={!selectedCustomerId}
+                  >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a customer" />
+                        <SelectValue
+                          placeholder={
+                            selectedCustomerId
+                              ? "Select equipment"
+                              : "Select a customer first"
+                          }
+                        />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {customers.map((c) => (
-                        <SelectItem key={c.id} value={String(c.id)}>
-                          {c.name}
+                      {equipment.map((item) => (
+                        <SelectItem key={item.id} value={String(item.id)}>
+                          {item.name} · {item.type}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription>
-                    Auto-filled from the selected equipment; change if needed.
-                  </FormDescription>
+                  {selectedCustomerId && equipment.length === 0 ? (
+                    <FormDescription>
+                      This customer has no equipment in the active branch.
+                    </FormDescription>
+                  ) : null}
                   <FormMessage />
                 </FormItem>
               )}
@@ -238,24 +252,18 @@ export function JobOrderFormDialog({
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
-                name="assignee"
+                name="assigneeIds"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Assigned to</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Unassigned" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {assignees.map((u) => (
-                          <SelectItem key={u.id} value={u.full_name}>
-                            {u.full_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Assigned technicians</FormLabel>
+                    <TechnicianMultiSelect
+                      technicians={technicians}
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                    <FormDescription>
+                      Active employees from the Technician department in this branch.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

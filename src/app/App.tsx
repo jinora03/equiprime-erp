@@ -25,9 +25,11 @@ import { JobOrderDetailPage } from "@/features/job-orders/pages/job-order-detail
 import { ProjectsPage } from "@/features/projects/pages/projects-page";
 import { MaintenancePage } from "@/features/maintenance/pages/maintenance-page";
 import { InventoryPage } from "@/features/inventory/pages/inventory-page";
+import { CustomersPage } from "@/features/customers/pages/customers-page";
+import { EquipmentPage } from "@/features/equipment/pages/equipment-page";
 import { NotFoundPage } from "@/pages/not-found";
 
-/** Phase 2+ modules: derived from the nav config so there's a single source. */
+/** Deferred modules: derived from the nav config so there's a single source. */
 const deferredItems = NAV_SECTIONS.flatMap((section) =>
   section.items.filter((item) => item.comingSoon),
 );
@@ -175,8 +177,24 @@ export function App() {
               </RequirePermission>
             }
           />
+          <Route
+            path={ROUTES.CUSTOMERS}
+            element={
+              <RequirePermission permission="customers:view">
+                <CustomersPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path={ROUTES.EQUIPMENT}
+            element={
+              <RequirePermission permission="equipment:view">
+                <EquipmentPage />
+              </RequirePermission>
+            }
+          />
 
-          {/* Phase 2+ — Coming Soon placeholders, still RBAC-protected */}
+          {/* Deferred modules — Coming Soon placeholders, still RBAC-protected */}
           {deferredItems.map((item) => (
             <Route
               key={item.id}

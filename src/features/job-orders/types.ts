@@ -9,6 +9,8 @@ export interface JobOrder extends WorkflowRecord {
   /** Workflow that drives this job order's stages. */
   workflowId?: number;
   priority: Priority;
+  /** Active technicians assigned to this job order. */
+  assigneeIds: number[];
   /** Estimated completion date. */
   dueDate: string;
   description?: string;
@@ -19,10 +21,8 @@ export interface JobOrderInput {
   title: string;
   description?: string;
   customerId: number;
-  customerName: string;
   equipmentId: number;
-  equipmentName: string;
-  assignee?: string;
+  assigneeIds: number[];
   priority: Priority;
   workflowId: number;
   dueDate: string;

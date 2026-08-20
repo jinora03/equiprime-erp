@@ -1,5 +1,8 @@
+import type { JobOrder } from "@/features/job-orders/types";
 import { delay, nextId } from "@/services/mock/delay";
 import { matchesOrganizationScope } from "@/services/mock/scope";
+import { findRegisteredWorkflowRecord } from "@/services/workflow-record-registry";
+import { userService } from "@/services/user.service";
 import { getActiveOrganizationScope } from "@/store/organization.store";
 import type { OrganizationScope } from "@/types";
 import { workItemSeed } from "./data";
@@ -28,19 +31,41 @@ export const workItemService = {
     return delay(rows);
   },
 
-  create(input: WorkItemInput): Promise<WorkItem> {
+  async create(input: WorkItemInput): Promise<WorkItem> {
     const now = new Date().toISOString();
     const scope = getActiveOrganizationScope();
+    const jobOrder = findRegisteredWorkflowRecord<JobOrder>(
+      "job-orders",
+      input.jobOrderId,
+    );
+    if (!jobOrder || !matchesOrganizationScope(jobOrder, scope)) {
+      throw new Error("Job order not found in the active branch.");
+    }
+
+    const technicians = input.assigneeId
+      ? await userService.listTechnicians(scope)
+      : [];
+    const technician = input.assigneeId
+      ? technicians.find((candidate) => candidate.id === input.assigneeId)
+      : null;
+    if (input.assigneeId && !technician) {
+      throw new Error("Select an active technician from this branch.");
+    }
+    if (input.assigneeId && !jobOrder.assigneeIds.includes(input.assigneeId)) {
+      throw new Error("Assign this technician to the job order first.");
+    }
+
     counter += 1;
     const record: WorkItem = {
       id: nextId(),
       code: `WI-2026-${String(counter).padStart(4, "0")}`,
       task: input.task,
       jobOrderId: input.jobOrderId,
-      jobOrderCode: input.jobOrderCode,
+      jobOrderCode: jobOrder.code,
       companyId: scope.companyId,
       branchId: scope.branchId,
-      assignee: input.assignee || null,
+      assigneeId: technician?.id ?? null,
+      assignee: technician?.full_name ?? null,
       priority: input.priority,
       estimatedHours: input.estimatedHours ?? 0,
       actualHours: 0,

@@ -33,6 +33,16 @@ export function useUser(id: number, enabled = true) {
   });
 }
 
+
+export function useTechnicians() {
+  const scope = useOrganizationScope();
+  const scopeKey = organizationScopeKey(scope);
+  return useQuery({
+    queryKey: queryKeys.users.technicians(scopeKey),
+    queryFn: () => userService.listTechnicians(scope),
+  });
+}
+
 export function useCreateUser() {
   const qc = useQueryClient();
   return useMutation({

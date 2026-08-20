@@ -171,6 +171,8 @@ const USER_SEED: UserSeed[] = [
   ["Mina", "Lopez", "mina.lopez@equiprime.ph", "Service", "Supervisor", "active", "Service Supervisor", 1, "davao"],
   ["Joel", "Manalo", "joel.manalo@equiprime.ph", "Technician", "Technician", "active", "Heavy Equipment Technician", 3, "davao"],
   ["Lea", "Garcia", "lea.garcia@equiprime.ph", "Management", "Manager", "active", "Branch Manager", 1, "cebu"],
+  ["Miguel", "Torres", "miguel.torres@equiprime.ph", "Technician", "Technician", "active", "Field Technician", 1, "main"],
+  ["Niko", "Abad", "niko.abad@equiprime.ph", "Technician", "Technician", "active", "Field Technician", 2, "davao"],
 ];
 
 export const users: User[] = USER_SEED.map(
