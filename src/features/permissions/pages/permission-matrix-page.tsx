@@ -95,7 +95,8 @@ export function PermissionMatrixPage() {
         permissions: Array.from(draft),
       });
       toast.success("Permissions updated", {
-        description: `Saved access for ${selectedRole.role}.`,
+        description:
+          `Saved access for ${selectedRole.role}. Changes apply on the next sign-in.`,
       });
     } catch {
       toast.error("Couldn't save permissions.");

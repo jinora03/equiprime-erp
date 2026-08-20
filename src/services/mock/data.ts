@@ -136,7 +136,7 @@ export const roles: Role[] = ROLE_SEED.map(([name, description, is_system], i) =
 }));
 
 export function permissionsForRole(roleName: string): string[] {
-  return ROLE_PERMISSIONS[roleName] ?? [];
+  return roles.find((role) => role.name === roleName)?.permissions ?? [];
 }
 
 // --------------------------------------------------------------------------- //
