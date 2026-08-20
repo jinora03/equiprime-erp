@@ -1,10 +1,10 @@
 /**
- * Workflow Engine — generic types (Phase 1.1).
+ * Workflow Engine — generic types.
  *
- * The engine is intentionally module-agnostic: business modules (Job Orders,
- * Work Items, Projects, Maintenance) *consume* a workflow rather than hardcoding
- * stages. These interfaces mirror the future FastAPI/PostgreSQL schema so the
- * mock services can be swapped for real APIs without changing consumers.
+ * The engine is intentionally module-agnostic. Job Orders, Projects, and
+ * Maintenance consume configurable workflows; Work Items intentionally use
+ * fixed statuses. These interfaces also keep the mock/API boundary aligned so
+ * a future backend can replace mock services without changing consumers.
  */
 
 export type WorkflowStatus = "active" | "draft" | "archived";

@@ -27,9 +27,12 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error?.response?.status === 401) {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
-      // Let the guard handle redirect; avoid a hard reload loop on /login.
-      if (!window.location.pathname.startsWith("/login")) {
-        window.location.assign("/login");
+      // HashRouter owns the application route. Preserve the deployment
+      // pathname (for example /superEP/) and replace only the hash route.
+      if (window.location.hash !== "#/login") {
+        window.location.replace(
+          `${window.location.pathname}${window.location.search}#/login`,
+        );
       }
     }
     return Promise.reject(error);

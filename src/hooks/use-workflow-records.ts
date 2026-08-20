@@ -5,9 +5,9 @@ import type { RecordStore } from "@/services/workflow-records";
 import type { WorkflowRecord } from "@/types";
 
 /**
- * Generic TanStack Query hooks for workflow-driven business records. Every
- * Service module (Job Orders, Work Items, Projects, Maintenance) reuses these,
- * so list/move/create caching behaves identically everywhere.
+ * Generic TanStack Query hooks for configurable workflow-driven records such as
+ * Job Orders, Projects, and Maintenance, so list/move/create caching behaves
+ * consistently across those modules.
  */
 
 export function useRecords<T extends WorkflowRecord>(
