@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   MoreHorizontal,
   Pencil,
@@ -142,6 +142,7 @@ export function UsersPage() {
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
+              aria-label="Search users"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -234,23 +235,23 @@ export function UsersPage() {
             </TableHeader>
             <TableBody>
               {items.map((user) => (
-                <TableRow
-                  key={user.id}
-                  className="cursor-pointer"
-                  onClick={() => navigate(userDetailPath(user.id))}
-                >
+                <TableRow key={user.id}>
                   <TableCell>
-                    <div className="flex items-center gap-3">
+                    <Link
+                      to={userDetailPath(user.id)}
+                      className="flex items-center gap-3 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      aria-label={`View ${user.full_name}'s profile`}
+                    >
                       <UserAvatar name={user.full_name} src={user.avatar} />
                       <div className="min-w-0">
-                        <p className="truncate font-medium text-foreground">
+                        <p className="truncate font-medium text-foreground hover:underline">
                           {user.full_name}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
                           {user.email}
                         </p>
                       </div>
-                    </div>
+                    </Link>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {user.department}
@@ -265,13 +266,14 @@ export function UsersPage() {
                     {formatRelativeTime(user.last_login)}
                   </TableCell>
                   {hasRowActions ? (
-                    <TableCell
-                      className="text-right"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Actions for ${user.full_name}`}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -359,7 +361,10 @@ function FilterSelect({
 }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="lg:w-[160px]">
+      <SelectTrigger
+        className="lg:w-[160px]"
+        aria-label={`${placeholder} filter`}
+      >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
