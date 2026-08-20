@@ -1,13 +1,25 @@
 import { delay } from "@/services/mock/delay";
-import type { WorkflowHistory, WorkflowRecord } from "@/types";
+import { registerWorkflowRecordSource } from "@/services/workflow-record-registry";
+import {
+  EMPTY_CONDITION_CONTEXT,
+  blockedWorkflowMove,
+  evaluateWorkflowMove,
+  type ConditionContext,
+  type WorkflowMoveEvidence,
+  type WorkflowMoveEvaluation,
+} from "@/services/workflow-rules";
+import { workflowService } from "@/services/workflow.service";
+import type {
+  PermissionKey,
+  Workflow,
+  WorkflowHistory,
+  WorkflowRecord,
+} from "@/types";
 
 /**
- * Generic in-memory store for configurable workflow-driven records. Job Orders,
- * Projects, and Maintenance build their services on top of this, so stage
- * movement and history logic live in exactly one place.
- *
- * Replace this with repository calls to FastAPI later — the module services and
- * UI stay identical.
+ * Generic in-memory store for configurable workflow-driven business records.
+ * Stage mutation and final transition validation live here so list/detail/
+ * Kanban surfaces cannot apply different workflow rules.
  */
 
 let seq = 5000;
@@ -30,49 +42,123 @@ export function historyEntry(
   };
 }
 
+export interface WorkflowMoveInput {
+  actor: string;
+  permissions: PermissionKey[];
+  actorRole?: string | null;
+  note?: string;
+  evidence?: WorkflowMoveEvidence;
+}
+
 export interface RecordStore<T extends WorkflowRecord> {
   list: () => Promise<T[]>;
   get: (id: number) => Promise<T>;
   add: (record: T) => Promise<T>;
+  validateMove: (
+    id: number,
+    toStageId: string,
+    input: WorkflowMoveInput,
+  ) => Promise<WorkflowMoveEvaluation>;
   moveStage: (
     id: number,
     toStageId: string,
-    actor: string,
-    note?: string,
+    input: WorkflowMoveInput,
   ) => Promise<T>;
 }
 
+interface RecordStoreOptions<T extends WorkflowRecord> {
+  resolveWorkflow?: (record: T) => Promise<Workflow | null>;
+  getConditionContext?: (record: T) => Promise<ConditionContext>;
+}
+
 export function createRecordStore<T extends WorkflowRecord>(
+  moduleId: string,
   seed: T[],
+  options: RecordStoreOptions<T> = {},
 ): RecordStore<T> {
   const data: T[] = seed.map((r) => ({ ...r, history: [...r.history] }));
+  registerWorkflowRecordSource(moduleId, data);
+
+  const findRecord = (id: number) => data.find((record) => record.id === id);
+
+  const validateMove = async (
+    id: number,
+    toStageId: string,
+    input: WorkflowMoveInput,
+  ): Promise<WorkflowMoveEvaluation> => {
+    const record = findRecord(id);
+    if (!record) return blockedWorkflowMove("Record not found.");
+
+    if (record.currentStageId === toStageId) {
+      return {
+        transition: null,
+        conditions: [],
+        approverRoles: [],
+        conditionsMet: true,
+        approvalsMet: true,
+        allowed: true,
+      };
+    }
+
+    const workflow = options.resolveWorkflow
+      ? await options.resolveWorkflow(record)
+      : await workflowService.getByModule(moduleId);
+    if (!workflow) {
+      return blockedWorkflowMove("No active workflow is configured for this module.");
+    }
+
+    const conditionContext = options.getConditionContext
+      ? await options.getConditionContext(record)
+      : EMPTY_CONDITION_CONTEXT;
+
+    return evaluateWorkflowMove(
+      workflow,
+      record.currentStageId,
+      toStageId,
+      conditionContext,
+      {
+        permissions: input.permissions,
+        actorRole: input.actorRole,
+        evidence: input.evidence,
+      },
+    );
+  };
 
   return {
-    list: () => delay(data.map((r) => ({ ...r }))),
+    list: () => delay(data.map((r) => ({ ...r, history: [...r.history] }))),
 
     get: (id) => {
-      const record = data.find((r) => r.id === id);
+      const record = findRecord(id);
       if (!record) return Promise.reject(new Error("Record not found"));
-      return delay({ ...record });
+      return delay({ ...record, history: [...record.history] });
     },
 
     add: (record) => {
       data.unshift(record);
-      return delay({ ...record });
+      return delay({ ...record, history: [...record.history] });
     },
 
-    moveStage: (id, toStageId, actor, note) => {
-      const record = data.find((r) => r.id === id);
-      if (!record) return Promise.reject(new Error("Record not found"));
-      if (record.currentStageId !== toStageId) {
-        record.history = [
-          ...record.history,
-          historyEntry(record.currentStageId, toStageId, actor, note),
-        ];
-        record.currentStageId = toStageId;
-        record.updatedAt = new Date().toISOString();
+    validateMove,
+
+    async moveStage(id, toStageId, input) {
+      const record = findRecord(id);
+      if (!record) throw new Error("Record not found");
+      if (record.currentStageId === toStageId) {
+        return delay({ ...record, history: [...record.history] });
       }
-      return delay({ ...record });
+
+      const evaluation = await validateMove(id, toStageId, input);
+      if (!evaluation.allowed) {
+        throw new Error(evaluation.reason ?? "This workflow move is not allowed.");
+      }
+
+      record.history = [
+        ...record.history,
+        historyEntry(record.currentStageId, toStageId, input.actor, input.note),
+      ];
+      record.currentStageId = toStageId;
+      record.updatedAt = new Date().toISOString();
+      return delay({ ...record, history: [...record.history] });
     },
   };
 }

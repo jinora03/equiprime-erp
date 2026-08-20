@@ -13,7 +13,11 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { WorkflowTransition } from "@/types";
-import { evaluateTransition, type ConditionContext } from "../transition-engine";
+import {
+  evaluateTransition,
+  type ConditionContext,
+  type WorkflowMoveEvidence,
+} from "../transition-engine";
 
 interface TransitionDialogProps {
   open: boolean;
@@ -22,7 +26,12 @@ interface TransitionDialogProps {
   toStageName: string;
   context: ConditionContext;
   confirming?: boolean;
-  onConfirm: (toStageId: string) => void;
+  actorRole?: string | null;
+  canApproveAnyRole?: boolean;
+  onConfirm: (
+    toStageId: string,
+    evidence: WorkflowMoveEvidence,
+  ) => void | Promise<void>;
 }
 
 /**
@@ -38,6 +47,8 @@ export function TransitionDialog({
   toStageName,
   context,
   confirming,
+  actorRole,
+  canApproveAnyRole = false,
   onConfirm,
 }: TransitionDialogProps) {
   const [manual, setManual] = useState<Record<string, boolean>>({});
@@ -117,38 +128,43 @@ export function TransitionDialog({
                 Simulated approvals
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Use Approve to simulate sign-off from each required role.
+                Only the required role (or a full-access demo role) can provide each sign-off.
               </p>
             </div>
-            {result.approverRoles.map((role) => (
-              <div
-                key={role}
-                className={cn(
-                  "flex items-center justify-between gap-3 rounded-lg border p-2.5",
-                  approvals[role] && "border-success/40 bg-success/[0.04]",
-                )}
-              >
-                <span className="flex items-center gap-2 text-sm text-foreground">
-                  <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-                  {role}
-                </span>
-                {approvals[role] ? (
-                  <Badge variant="success">Approved</Badge>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">Pending</Badge>
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        setApprovals((a) => ({ ...a, [role]: true }))
-                      }
-                    >
-                      Approve
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
+            {result.approverRoles.map((role) => {
+              const canApprove = canApproveAnyRole || actorRole === role;
+              return (
+                <div
+                  key={role}
+                  className={cn(
+                    "flex items-center justify-between gap-3 rounded-lg border p-2.5",
+                    approvals[role] && "border-success/40 bg-success/[0.04]",
+                  )}
+                >
+                  <span className="flex items-center gap-2 text-sm text-foreground">
+                    <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                    {role}
+                  </span>
+                  {approvals[role] ? (
+                    <Badge variant="success">Approved</Badge>
+                  ) : canApprove ? (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">Pending</Badge>
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          setApprovals((a) => ({ ...a, [role]: true }))
+                        }
+                      >
+                        Approve
+                      </Button>
+                    </div>
+                  ) : (
+                    <Badge variant="warning">Requires {role}</Badge>
+                  )}
+                </div>
+              );
+            })}
           </section>
         ) : null}
 
@@ -162,7 +178,16 @@ export function TransitionDialog({
           </Button>
           <Button
             disabled={!canConfirm || confirming}
-            onClick={() => onConfirm(transition.toStageId)}
+            onClick={() =>
+              onConfirm(transition.toStageId, {
+                confirmedConditions: result.conditions
+                  .filter((condition) => condition.manual && condition.met)
+                  .map((condition) => condition.condition.type),
+                approvedRoles: result.approverRoles.filter(
+                  (role) => approvals[role],
+                ),
+              })
+            }
           >
             {confirming ? "Moving…" : "Confirm & move"}
           </Button>

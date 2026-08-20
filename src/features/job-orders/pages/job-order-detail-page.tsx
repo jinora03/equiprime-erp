@@ -40,7 +40,10 @@ import { WorkflowTimeline } from "@/shared/components/workflow-timeline";
 import { formatCurrency, formatDate, formatRelativeTime } from "@/utils/format";
 import { useWorkflowByModule } from "@/features/workflows/hooks";
 import { useWorkItems } from "@/features/work-items/hooks";
-import { getWorkItemStatus } from "@/features/work-items/statuses";
+import {
+  getWorkItemStatus,
+  isWorkItemComplete,
+} from "@/features/work-items/statuses";
 import { usePartsRequests } from "@/features/parts/hooks";
 import {
   getOutgoingTransitions,
@@ -48,6 +51,7 @@ import {
 } from "@/features/workflows/transition-engine";
 import { TransitionDialog } from "@/features/workflows/components/transition-dialog";
 import type { WorkflowTransition } from "@/types";
+import type { WorkflowMoveEvidence } from "@/services/workflow-rules";
 import { jobOrderService } from "../service";
 import { SAMPLE_ATTACHMENTS, SAMPLE_LABOR } from "../detail-data";
 import { JobOrderWorkItemsTab } from "../components/job-order-work-items-tab";
@@ -69,7 +73,7 @@ export function JobOrderDetailPage() {
   const jobOrderId = Number(id);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { can } = usePermissions();
+  const { can, permissions, isSuperAdmin } = usePermissions();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = TABS.includes(searchParams.get("tab") ?? "")
@@ -92,7 +96,9 @@ export function JobOrderDetailPage() {
 
   // Context the transition engine evaluates conditions against.
   const conditionContext: ConditionContext = {
-    allWorkItemsCompleted: workItems.every((w) => w.status === "completed"),
+    allWorkItemsCompleted: workItems.every((w) =>
+      isWorkItemComplete(w.status),
+    ),
     partsReleased: partsRequests.some((r) => r.status === "released"),
     supervisorApproved: false,
     qaPassed: false,
@@ -164,16 +170,27 @@ export function JobOrderDetailPage() {
     jobWorkflow?.stages.find((s) => s.id === id)?.name ?? id;
   const outgoing = getOutgoingTransitions(jobWorkflow, jobOrder.currentStageId);
 
-  const handleMoveJob = async (toStageId: string) => {
+  const handleMoveJob = async (
+    toStageId: string,
+    evidence?: WorkflowMoveEvidence,
+  ): Promise<boolean> => {
     try {
       await moveJobStage.mutateAsync({
         id: jobOrder.id,
         toStageId,
         actor: user?.full_name ?? "System",
+        actorRole: user?.role,
+        permissions,
+        evidence,
       });
       toast.success(`Moved to ${stageName(toStageId)}`);
-    } catch {
-      toast.error("Couldn't update stage.");
+      return true;
+    } catch (error) {
+      toast.warning("Move blocked", {
+        description:
+          error instanceof Error ? error.message : "This move isn't allowed.",
+      });
+      return false;
     }
   };
 
@@ -472,9 +489,12 @@ export function JobOrderDetailPage() {
         }
         context={conditionContext}
         confirming={moveJobStage.isPending}
-        onConfirm={(toStageId) => {
-          handleMoveJob(toStageId);
-          setPendingTransition(null);
+        actorRole={user?.role}
+        canApproveAnyRole={isSuperAdmin}
+        onConfirm={async (toStageId, evidence) => {
+          if (await handleMoveJob(toStageId, evidence)) {
+            setPendingTransition(null);
+          }
         }}
       />
     </div>

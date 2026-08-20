@@ -28,6 +28,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
 import { PageHeader } from "@/shared/components/page-header";
 import { EmptyState } from "@/shared/components/empty-state";
+import { workflowService } from "@/services/workflow.service";
 import type { WorkflowStage, WorkflowStatus } from "@/types";
 import { useUpdateWorkflow, useWorkflow } from "../hooks";
 import { StageListEditor } from "../components/stage-list-editor";
@@ -118,8 +119,10 @@ export function WorkflowEditorPage() {
       toast.success("Workflow saved", {
         description: `${draft.name} was updated.`,
       });
-    } catch {
-      toast.error("Couldn't save workflow.");
+    } catch (error) {
+      toast.error("Couldn't save workflow.", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   };
 
@@ -196,7 +199,7 @@ export function WorkflowEditorPage() {
                 <Badge variant="secondary">{workflow.moduleLabel}</Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                One active workflow per module in this phase.
+                One active workflow per module in this demo.
               </p>
             </div>
             <div className="space-y-2">
@@ -239,6 +242,12 @@ export function WorkflowEditorPage() {
               stages={draft.stages}
               editable={editable}
               onChange={(stages) => setDraft({ ...draft, stages })}
+              getDeleteBlockReason={(stage) =>
+                workflowService.getStageDeletionBlockReason(
+                  workflow.id,
+                  stage.id,
+                )
+              }
             />
           </CardContent>
         </Card>

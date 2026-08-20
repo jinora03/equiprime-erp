@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, GripVertical, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ interface StageListEditorProps {
   stages: WorkflowStage[];
   onChange: (stages: WorkflowStage[]) => void;
   editable?: boolean;
+  getDeleteBlockReason?: (stage: WorkflowStage) => string | null;
 }
 
 /**
@@ -40,6 +42,7 @@ export function StageListEditor({
   stages,
   onChange,
   editable = true,
+  getDeleteBlockReason,
 }: StageListEditorProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
@@ -53,8 +56,15 @@ export function StageListEditor({
   const setTone = (index: number, tone: WorkflowTone) =>
     commit(stages.map((s, i) => (i === index ? { ...s, tone } : s)));
 
-  const remove = (index: number) =>
+  const remove = (index: number) => {
+    const stage = stages[index];
+    const reason = stage ? getDeleteBlockReason?.(stage) : null;
+    if (reason) {
+      toast.warning("Stage can't be deleted", { description: reason });
+      return;
+    }
     commit(stages.filter((_, i) => i !== index));
+  };
 
   const move = (from: number, to: number) => {
     if (to < 0 || to >= stages.length) return;

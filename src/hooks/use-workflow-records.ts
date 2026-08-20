@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/constants/query-keys";
 import type { RecordStore } from "@/services/workflow-records";
-import type { WorkflowRecord } from "@/types";
+import type { WorkflowMoveEvidence } from "@/services/workflow-rules";
+import type { PermissionKey, WorkflowRecord } from "@/types";
 
 /**
  * Generic TanStack Query hooks for configurable workflow-driven records such as
@@ -32,23 +33,25 @@ export function useMoveRecordStage<T extends WorkflowRecord>(
       id: number;
       toStageId: string;
       actor: string;
+      permissions: PermissionKey[];
+      actorRole?: string | null;
       note?: string;
-    }) => store.moveStage(vars.id, vars.toStageId, vars.actor, vars.note),
+      evidence?: WorkflowMoveEvidence;
+    }) =>
+      store.moveStage(vars.id, vars.toStageId, {
+        actor: vars.actor,
+        permissions: vars.permissions,
+        actorRole: vars.actorRole,
+        note: vars.note,
+        evidence: vars.evidence,
+      }),
 
-    // Optimistic update: move the record in the cache immediately so the Kanban
-    // card lands in the destination column with no snap-back / flicker.
-    onMutate: async (vars) => {
-      await qc.cancelQueries({ queryKey: queryKeys.records.all(moduleId) });
-      const previous = qc.getQueryData<T[]>(listKey);
+    // Do not optimistically move a card before the service has validated the
+    // workflow transition. Invalid drops therefore never become UI state.
+    onSuccess: (updated) => {
       qc.setQueryData<T[]>(listKey, (old) =>
-        old?.map((r) =>
-          r.id === vars.id ? { ...r, currentStageId: vars.toStageId } : r,
-        ),
+        old?.map((record) => (record.id === updated.id ? updated : record)),
       );
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) qc.setQueryData(listKey, context.previous);
     },
     onSettled: () =>
       qc.invalidateQueries({ queryKey: queryKeys.records.all(moduleId) }),

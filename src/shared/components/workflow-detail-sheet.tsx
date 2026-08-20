@@ -10,6 +10,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
+import { getOutgoingTransitions } from "@/services/workflow-rules";
 import type { Workflow } from "@/types";
 import { StageMover } from "./stage-mover";
 import { WorkflowHistoryList } from "./workflow-history-list";
@@ -39,9 +40,10 @@ interface WorkflowDetailSheetProps {
 }
 
 /**
- * Reusable detail drawer for workflow-driven records. Renders the current
- * stage, full workflow timeline, stage-movement controls, module-specific
- * content, and transition history without duplicating that presentation.
+ * Reusable detail drawer for any workflow-driven record. Renders the current
+ * stage, the full workflow timeline, stage-movement controls, module-specific
+ * content, and transition history so workflow-driven Service modules share one
+ * detail experience.
  */
 export function WorkflowDetailSheet({
   open,
@@ -60,6 +62,9 @@ export function WorkflowDetailSheet({
 }: WorkflowDetailSheetProps) {
   const currentStage =
     workflow?.stages.find((s) => s.id === currentStageId) ?? null;
+  const availableStageIds = getOutgoingTransitions(workflow, currentStageId).map(
+    (transition) => transition.toStageId,
+  );
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -122,7 +127,7 @@ export function WorkflowDetailSheet({
               {canMove ? (
                 <StageMover
                   stages={workflow.stages}
-                  currentStageId={currentStageId}
+                  availableStageIds={availableStageIds}
                   onMove={onMoveStage}
                   loading={moving}
                 />

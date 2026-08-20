@@ -68,7 +68,9 @@ export function JobOrderFormDialog({
   const { data: workflows = [] } = useWorkflows();
 
   const assignees = userPage?.items ?? [];
-  const jobWorkflows = workflows.filter((w) => w.moduleId === "job-orders");
+  const jobWorkflows = workflows.filter(
+    (w) => w.moduleId === "job-orders" && w.status === "active",
+  );
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),

@@ -30,7 +30,7 @@ import { MaintenanceFormDialog } from "../components/maintenance-form-dialog";
 
 export function MaintenancePage() {
   const { user } = useAuth();
-  const { can } = usePermissions();
+  const { can, permissions } = usePermissions();
   const canMove = can("maintenance:update");
 
   const { data: records = [], isLoading } = useRecords(
@@ -53,11 +53,16 @@ export function MaintenancePage() {
         id: selected.id,
         toStageId,
         actor: user?.full_name ?? "System",
+        actorRole: user?.role,
+        permissions,
       });
       setSelected(updated as Maintenance);
       toast.success("Stage updated");
-    } catch {
-      toast.error("Couldn't update stage.");
+    } catch (error) {
+      toast.warning("Move blocked", {
+        description:
+          error instanceof Error ? error.message : "This move isn't allowed.",
+      });
     }
   };
 

@@ -20,8 +20,8 @@ import type { Workflow, WorkflowRecord, WorkflowStage } from "@/types";
 interface WorkflowKanbanProps<T extends WorkflowRecord> {
   items: T[];
   workflow: Workflow;
-  /** Called on drop into a new stage. The parent persists (optimistically). */
-  onMove: (id: number, toStageId: string) => void;
+  /** Called on drop; the parent/service validates before committing the move. */
+  onMove: (id: number, toStageId: string) => void | Promise<void>;
   canMove?: boolean;
   renderCard: (item: T) => ReactNode;
 }
@@ -32,8 +32,7 @@ interface WorkflowKanbanProps<T extends WorkflowRecord> {
  * workflow reshapes the board automatically. Columns expand to fill the
  * available width (Jira/Linear-style) and scroll only when there are many
  * stages. Drag-and-drop uses @dnd-kit with the drop-return animation disabled;
- * combined with the parent's optimistic cache update this gives an instant,
- * flicker-free move.
+ * the service validates the requested transition before the record is updated.
  */
 export function WorkflowKanban<T extends WorkflowRecord>({
   items,

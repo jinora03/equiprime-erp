@@ -1,26 +1,48 @@
+import { partsRequestService } from "@/features/parts/service";
+import { isWorkItemComplete } from "@/features/work-items/statuses";
+import { workItemService } from "@/features/work-items/service";
 import {
   createRecordStore,
   historyEntry,
   nextRecordId,
 } from "@/services/workflow-records";
-import { WORKFLOWS } from "@/services/mock/workflow-data";
+import { getInitialWorkflowStageId } from "@/services/workflow-rules";
+import { workflowService } from "@/services/workflow.service";
 import { jobOrderSeed } from "./data";
 import type { JobOrder, JobOrderInput } from "./types";
 
-const store = createRecordStore<JobOrder>(jobOrderSeed);
+const store = createRecordStore<JobOrder>("job-orders", jobOrderSeed, {
+  resolveWorkflow: (record) =>
+    record.workflowId
+      ? workflowService.get(record.workflowId)
+      : workflowService.getByModule("job-orders"),
+  getConditionContext: async (record) => {
+    const [workItems, partsRequests] = await Promise.all([
+      workItemService.list(record.id),
+      partsRequestService.listByJobOrder(record.id),
+    ]);
+    return {
+      allWorkItemsCompleted: workItems.every((item) =>
+        isWorkItemComplete(item.status),
+      ),
+      partsReleased: partsRequests.some((request) => request.status === "released"),
+      supervisorApproved: false,
+      qaPassed: false,
+    };
+  },
+});
 let counter = jobOrderSeed.length + 106;
 
 export const jobOrderService = {
   ...store,
-  create(input: JobOrderInput): Promise<JobOrder> {
+  async create(input: JobOrderInput): Promise<JobOrder> {
     const now = new Date().toISOString();
+    const workflow = await workflowService.get(input.workflowId);
+    if (workflow.moduleId !== "job-orders" || workflow.status !== "active") {
+      throw new Error("Select an active Job Orders workflow.");
+    }
+    const firstStage = getInitialWorkflowStageId(workflow);
     counter += 1;
-
-    // New job orders enter at the first stage of their assigned workflow.
-    const workflow = WORKFLOWS.find((w) => w.id === input.workflowId);
-    const firstStage =
-      [...(workflow?.stages ?? [])].sort((a, b) => a.order - b.order)[0]?.id ??
-      "jo-draft";
 
     const record: JobOrder = {
       id: nextRecordId(),

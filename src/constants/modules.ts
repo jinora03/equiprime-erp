@@ -38,7 +38,7 @@ export const MODULE_DEFS: ModuleDef[] = [
   { module: "inventory", label: "Inventory", group: "Operations", actions: CRUD },
   { module: "warehouse", label: "Warehouse", group: "Operations", actions: CRUD },
 
-  // Service (workflow-enabled in Phase 1.1)
+  // Service
   { module: "job-orders", label: "Job Orders", group: "Service", actions: CRUD },
   { module: "work-items", label: "Work Items", group: "Service", actions: CRUD },
   { module: "projects", label: "Projects", group: "Service", actions: CRUD },

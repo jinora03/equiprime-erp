@@ -30,7 +30,7 @@ import { ProjectFormDialog } from "../components/project-form-dialog";
 
 export function ProjectsPage() {
   const { user } = useAuth();
-  const { can } = usePermissions();
+  const { can, permissions } = usePermissions();
   const canMove = can("projects:update");
 
   const { data: projects = [], isLoading } = useRecords(
@@ -53,11 +53,16 @@ export function ProjectsPage() {
         id: selected.id,
         toStageId,
         actor: user?.full_name ?? "System",
+        actorRole: user?.role,
+        permissions,
       });
       setSelected(updated as Project);
       toast.success("Stage updated");
-    } catch {
-      toast.error("Couldn't update stage.");
+    } catch (error) {
+      toast.warning("Move blocked", {
+        description:
+          error instanceof Error ? error.message : "This move isn't allowed.",
+      });
     }
   };
 

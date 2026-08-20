@@ -26,17 +26,15 @@ import { WorkflowKanban } from "@/shared/components/workflow-kanban";
 import { WorkflowStageBadge } from "@/shared/components/workflow-stage-badge";
 import { formatDate } from "@/utils/format";
 import { useWorkflowByModule } from "@/features/workflows/hooks";
-import { useAllWorkItems } from "@/features/work-items/hooks";
 import type { JobOrder } from "../types";
 import { jobOrderService } from "../service";
 import { JobOrderFormDialog } from "../components/job-order-form-dialog";
 import { JobOrderKanbanCard } from "../components/job-order-kanban-card";
-import { countIncompleteWorkItems, isCompletionStage } from "../completion";
 
 export function JobOrdersPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { can } = usePermissions();
+  const { can, permissions } = usePermissions();
   const canMove = can("job-orders:update");
 
   const { data: jobOrders = [], isLoading } = useRecords(
@@ -44,7 +42,6 @@ export function JobOrdersPage() {
     jobOrderService,
   );
   const { data: workflow } = useWorkflowByModule("job-orders");
-  const { data: workItems = [] } = useAllWorkItems();
   const moveStage = useMoveRecordStage("job-orders", jobOrderService);
 
   const [view, setView] = useState<"list" | "kanban">("list");
@@ -55,24 +52,22 @@ export function JobOrdersPage() {
 
   const open = (jo: JobOrder) => navigate(jobOrderDetailPath(jo.id));
 
-  const handleMove = (id: number, toStageId: string) => {
-    const stage = stageOf(toStageId);
-    if (isCompletionStage(stage)) {
-      const incomplete = countIncompleteWorkItems(
-        workItems.filter((w) => w.jobOrderId === id),
-      );
-      if (incomplete > 0) {
-        toast.warning(
-          `${incomplete} work item${incomplete > 1 ? "s are" : " is"} still incomplete`,
-          { description: "The job order was moved anyway." },
-        );
-      }
+  const handleMove = async (id: number, toStageId: string) => {
+    try {
+      await moveStage.mutateAsync({
+        id,
+        toStageId,
+        actor: user?.full_name ?? "System",
+        actorRole: user?.role,
+        permissions,
+      });
+      toast.success(`Moved to ${stageOf(toStageId)?.name ?? "new stage"}`);
+    } catch (error) {
+      toast.warning("Move blocked", {
+        description:
+          error instanceof Error ? error.message : "This move isn't allowed.",
+      });
     }
-    moveStage.mutate({
-      id,
-      toStageId,
-      actor: user?.full_name ?? "System",
-    });
   };
 
   return (
