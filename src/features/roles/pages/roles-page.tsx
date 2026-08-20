@@ -152,6 +152,7 @@ export function RolesPage() {
                           ? "brand"
                           : "secondary"
                       }
+                      className="whitespace-nowrap px-2 py-0.5 text-[11px]"
                     >
                       {permissionLabel(role)}
                     </Badge>

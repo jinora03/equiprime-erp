@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { KanbanSquare, ListChecks, Plus, Rows3 } from "lucide-react";
+import {
+  Check,
+  KanbanSquare,
+  ListChecks,
+  Play,
+  Plus,
+  RotateCcw,
+  Rows3,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -28,7 +29,11 @@ import {
   useUpdateWorkItemStatus,
   useWorkItems,
 } from "@/features/work-items/hooks";
-import { WORK_ITEM_STATUSES, type WorkItemStatus } from "@/features/work-items/statuses";
+import {
+  getWorkItemStatusAction,
+  isWorkItemComplete,
+  type WorkItemStatus,
+} from "@/features/work-items/statuses";
 import { WorkItemStatusChip } from "@/features/work-items/components/work-item-status-chip";
 import { WorkItemFormDialog } from "@/features/work-items/components/work-item-form-dialog";
 import { WorkItemKanban } from "@/features/work-items/components/work-item-kanban";
@@ -49,6 +54,9 @@ export function JobOrderWorkItemsTab({
   const updateStatus = useUpdateWorkItemStatus();
   const [createOpen, setCreateOpen] = useState(false);
   const [view, setView] = useState<"table" | "kanban">("table");
+  const completedCount = items.filter((item) =>
+    isWorkItemComplete(item.status),
+  ).length;
 
   return (
     <div className="space-y-4">
@@ -71,11 +79,18 @@ export function JobOrderWorkItemsTab({
             <KanbanSquare className="h-4 w-4" /> Kanban
           </Button>
         </div>
-        <PermissionGuard permission="work-items:create">
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" /> Add work item
-          </Button>
-        </PermissionGuard>
+        <div className="flex items-center gap-3">
+          {items.length > 0 ? (
+            <span className="hidden whitespace-nowrap text-sm text-muted-foreground sm:inline">
+              {completedCount} of {items.length} complete
+            </span>
+          ) : null}
+          <PermissionGuard permission="work-items:create">
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4" /> Add work item
+            </Button>
+          </PermissionGuard>
+        </div>
       </div>
 
       {isLoading ? (
@@ -107,9 +122,9 @@ export function JobOrderWorkItemsTab({
                 <TableHead>Task</TableHead>
                 <TableHead>Technician</TableHead>
                 <TableHead>Priority</TableHead>
-                <TableHead className="text-right">Est / Act</TableHead>
+                <TableHead className="min-w-[96px] text-right">Hours</TableHead>
                 <TableHead>Due</TableHead>
-                <TableHead className="w-[160px]">Status</TableHead>
+                <TableHead className="min-w-[190px]">Status</TableHead>
                 <TableHead>Notes</TableHead>
               </TableRow>
             </TableHeader>
@@ -128,37 +143,37 @@ export function JobOrderWorkItemsTab({
                   <TableCell>
                     <PriorityBadge priority={item.priority} />
                   </TableCell>
-                  <TableCell className="text-right text-sm text-muted-foreground">
-                    {item.estimatedHours}h / {item.actualHours}h
+                  <TableCell className="text-right">
+                    <div className="ml-auto grid w-fit grid-cols-[auto_auto] gap-x-2 text-xs tabular-nums">
+                      <span className="text-muted-foreground">Est.</span>
+                      <span className="font-medium text-foreground">
+                        {item.estimatedHours}h
+                      </span>
+                      <span className="text-muted-foreground">Act.</span>
+                      <span className="font-medium text-foreground">
+                        {item.actualHours}h
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {item.dueDate ? formatDate(item.dueDate) : "—"}
                   </TableCell>
                   <TableCell>
-                    {canEdit ? (
-                      <Select
-                        value={item.status}
-                        onValueChange={(v) =>
-                          updateStatus.mutate({
-                            id: item.id,
-                            status: v as WorkItemStatus,
-                          })
-                        }
-                      >
-                        <SelectTrigger className="h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WORK_ITEM_STATUSES.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>
-                              {s.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
+                    <div className="flex flex-wrap items-center gap-2">
                       <WorkItemStatusChip status={item.status} />
-                    )}
+                      {canEdit ? (
+                        <WorkItemStatusActionButton
+                          status={item.status}
+                          disabled={
+                            updateStatus.isPending &&
+                            updateStatus.variables?.id === item.id
+                          }
+                          onChange={(status) =>
+                            updateStatus.mutate({ id: item.id, status })
+                          }
+                        />
+                      ) : null}
+                    </div>
                   </TableCell>
                   <TableCell
                     className="max-w-[220px] truncate text-sm text-muted-foreground"
@@ -180,5 +195,38 @@ export function JobOrderWorkItemsTab({
         jobOrderCode={jobOrderCode}
       />
     </div>
+  );
+}
+
+function WorkItemStatusActionButton({
+  status,
+  disabled,
+  onChange,
+}: {
+  status: WorkItemStatus;
+  disabled: boolean;
+  onChange: (status: WorkItemStatus) => void;
+}) {
+  const action = getWorkItemStatusAction(status);
+  const Icon =
+    action.label === "Start"
+      ? Play
+      : action.label === "Complete"
+        ? Check
+        : RotateCcw;
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="h-7 gap-1.5 px-2 text-xs"
+      disabled={disabled}
+      onClick={() => onChange(action.nextStatus)}
+      aria-label={`${action.label} work item`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {action.label}
+    </Button>
   );
 }

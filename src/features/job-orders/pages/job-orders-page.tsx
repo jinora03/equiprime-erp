@@ -165,6 +165,7 @@ export function JobOrdersPage() {
           items={jobOrders}
           workflow={workflow}
           canMove={canMove}
+          fillAvailableHeight
           onMove={handleMove}
           renderCard={(jo) => (
             <JobOrderKanbanCard jobOrder={jo} onClick={() => open(jo)} />

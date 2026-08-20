@@ -135,8 +135,8 @@ export function JobOrderFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
+        <DialogHeader className="shrink-0 border-b px-6 py-5 pr-12">
           <DialogTitle>New job order</DialogTitle>
           <DialogDescription>
             Job number is auto-generated. Related records are selected from
@@ -144,7 +144,11 @@ export function JobOrderFormDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="flex min-h-0 flex-1 flex-col"
+          >
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
             <div className="space-y-2">
               <FormLabel>Job number</FormLabel>
               <Input value="Auto-generated" disabled />
@@ -231,7 +235,7 @@ export function JobOrderFormDialog({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="assignee"
@@ -280,7 +284,7 @@ export function JobOrderFormDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="workflowId"
@@ -334,7 +338,9 @@ export function JobOrderFormDialog({
               )}
             />
 
-            <DialogFooter className="pt-2">
+            </div>
+
+            <DialogFooter className="shrink-0 border-t bg-muted/20 px-6 py-4">
               <Button
                 type="button"
                 variant="outline"

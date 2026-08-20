@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -23,6 +23,8 @@ interface WorkflowKanbanProps<T extends WorkflowRecord> {
   /** Called on drop; the parent/service validates before committing the move. */
   onMove: (id: number, toStageId: string) => void | Promise<void>;
   canMove?: boolean;
+  /** Stretch columns to the available viewport height for full-page boards. */
+  fillAvailableHeight?: boolean;
   renderCard: (item: T) => ReactNode;
 }
 
@@ -39,12 +41,60 @@ export function WorkflowKanban<T extends WorkflowRecord>({
   workflow,
   onMove,
   canMove = false,
+  fillAvailableHeight = false,
   renderCard,
 }: WorkflowKanbanProps<T>) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
   const [activeId, setActiveId] = useState<number | null>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
+
+  // dnd-kit's nested scroll handling can feel awkward when workflow columns
+  // scroll vertically inside a horizontally scrolling board. While pointer
+  // dragging, scroll only the board when the pointer approaches its edges.
+  useEffect(() => {
+    if (activeId == null) return;
+
+    const board = boardRef.current;
+    if (!board) return;
+
+    let direction = 0;
+    let frame = 0;
+    const edgeSize = 96;
+    const scrollStep = 12;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const rect = board.getBoundingClientRect();
+      const canScroll = board.scrollWidth > board.clientWidth;
+      const withinVerticalBounds =
+        event.clientY >= rect.top && event.clientY <= rect.bottom;
+
+      if (!canScroll || !withinVerticalBounds) {
+        direction = 0;
+      } else if (event.clientX <= rect.left + edgeSize) {
+        direction = -1;
+      } else if (event.clientX >= rect.right - edgeSize) {
+        direction = 1;
+      } else {
+        direction = 0;
+      }
+    };
+
+    const scroll = () => {
+      if (direction !== 0) board.scrollLeft += direction * scrollStep;
+      frame = window.requestAnimationFrame(scroll);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    frame = window.requestAnimationFrame(scroll);
+
+    return () => {
+      direction = 0;
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.cancelAnimationFrame(frame);
+    };
+  }, [activeId]);
 
   const stages = useMemo(
     () => [...workflow.stages].sort((a, b) => a.order - b.order),
@@ -78,16 +128,27 @@ export function WorkflowKanban<T extends WorkflowRecord>({
     <DndContext
       sensors={sensors}
       collisionDetection={pointerWithin}
+      autoScroll={false}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveId(null)}
     >
-      <div className="flex w-full gap-4 overflow-x-auto pb-2">
+      <div
+        ref={boardRef}
+        className={cn(
+          "flex w-full gap-4 overflow-x-auto overscroll-x-contain pb-3",
+          fillAvailableHeight
+            ? "h-[calc(100dvh-13rem)] min-h-[22rem] items-stretch"
+            : "items-start",
+          activeId == null ? "snap-x snap-proximity" : "snap-none",
+        )}
+      >
         {stages.map((stage) => (
           <KanbanColumn
             key={stage.id}
             stage={stage}
             count={byStage[stage.id]?.length ?? 0}
+            fillAvailableHeight={fillAvailableHeight}
           >
             {(byStage[stage.id] ?? []).map((item) =>
               canMove ? (
@@ -115,21 +176,24 @@ function KanbanColumn({
   stage,
   count,
   children,
+  fillAvailableHeight,
 }: {
   stage: WorkflowStage;
   count: number;
   children: ReactNode;
+  fillAvailableHeight: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "flex w-64 min-w-64 flex-1 flex-col rounded-xl border bg-muted/30 transition-colors",
+        "flex w-[82vw] min-w-[82vw] snap-start flex-col overflow-hidden rounded-xl border bg-muted/30 transition-colors sm:w-64 sm:min-w-64 lg:flex-1",
+        fillAvailableHeight ? "h-full" : "max-h-[70vh]",
         isOver && "border-primary/50 bg-primary/[0.05]",
       )}
     >
-      <div className="flex items-center justify-between border-b px-3 py-2.5">
+      <div className="shrink-0 flex items-center justify-between border-b bg-muted/40 px-3 py-2.5">
         <span className="truncate text-sm font-semibold text-foreground">
           {stage.name}
         </span>
@@ -137,7 +201,7 @@ function KanbanColumn({
           {count}
         </span>
       </div>
-      <div className="flex min-h-[120px] flex-1 flex-col gap-2 p-2">
+      <div className="flex min-h-[120px] flex-1 flex-col gap-2 overflow-y-auto p-2">
         {children}
       </div>
     </div>

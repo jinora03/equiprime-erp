@@ -1,5 +1,5 @@
 import { partsRequestService } from "@/features/parts/service";
-import { isWorkItemComplete } from "@/features/work-items/statuses";
+import { areAllWorkItemsComplete } from "@/features/work-items/statuses";
 import { workItemService } from "@/features/work-items/service";
 import {
   createRecordStore,
@@ -22,9 +22,7 @@ const store = createRecordStore<JobOrder>("job-orders", jobOrderSeed, {
       partsRequestService.listByJobOrder(record.id),
     ]);
     return {
-      allWorkItemsCompleted: workItems.every((item) =>
-        isWorkItemComplete(item.status),
-      ),
+      allWorkItemsCompleted: areAllWorkItemsComplete(workItems),
       partsReleased: partsRequests.some((request) => request.status === "released"),
       supervisorApproved: false,
       qaPassed: false,

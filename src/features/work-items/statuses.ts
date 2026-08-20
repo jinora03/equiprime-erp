@@ -27,3 +27,39 @@ export function getWorkItemStatus(id: WorkItemStatus): WorkItemStatusDef {
 
 export const isWorkItemComplete = (status: WorkItemStatus) =>
   status === "completed";
+
+/**
+ * A completion gate should represent actual completed work, not the vacuous
+ * truth of Array.every() on an empty list.
+ */
+export function areAllWorkItemsComplete(
+  items: ReadonlyArray<{ status: WorkItemStatus }>,
+): boolean {
+  return items.length > 0 && items.every((item) => isWorkItemComplete(item.status));
+}
+
+export interface WorkItemStatusAction {
+  label: "Start" | "Complete" | "Reopen";
+  nextStatus: WorkItemStatus;
+}
+
+/**
+ * User-facing action for the small fixed work-item lifecycle. The status stays
+ * available for display/filtering, while the UI can present a natural action
+ * instead of asking users to choose a state from a dropdown.
+ */
+export function getWorkItemStatusAction(
+  status: WorkItemStatus,
+): WorkItemStatusAction {
+  switch (status) {
+    case "not_started":
+      return { label: "Start", nextStatus: "in_progress" };
+    case "in_progress":
+      return { label: "Complete", nextStatus: "completed" };
+    case "completed":
+      return { label: "Reopen", nextStatus: "in_progress" };
+  }
+
+  const exhaustiveStatus: never = status;
+  return exhaustiveStatus;
+}

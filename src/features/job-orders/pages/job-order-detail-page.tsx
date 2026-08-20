@@ -41,8 +41,8 @@ import { formatCurrency, formatDate, formatRelativeTime } from "@/utils/format";
 import { useWorkflowByModule } from "@/features/workflows/hooks";
 import { useWorkItems } from "@/features/work-items/hooks";
 import {
+  areAllWorkItemsComplete,
   getWorkItemStatus,
-  isWorkItemComplete,
 } from "@/features/work-items/statuses";
 import { usePartsRequests } from "@/features/parts/hooks";
 import {
@@ -96,9 +96,7 @@ export function JobOrderDetailPage() {
 
   // Context the transition engine evaluates conditions against.
   const conditionContext: ConditionContext = {
-    allWorkItemsCompleted: workItems.every((w) =>
-      isWorkItemComplete(w.status),
-    ),
+    allWorkItemsCompleted: areAllWorkItemsComplete(workItems),
     partsReleased: partsRequests.some((r) => r.status === "released"),
     supervisorApproved: false,
     qaPassed: false,
@@ -331,7 +329,7 @@ export function JobOrderDetailPage() {
                               ) : (
                                 <ArrowRight className="h-4 w-4" />
                               )}
-                              {stageName(t.toStageId)}
+                              {t.label ?? stageName(t.toStageId)}
                             </Button>
                           );
                         })}

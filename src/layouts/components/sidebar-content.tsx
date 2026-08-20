@@ -132,42 +132,37 @@ function SidebarLink({
 }) {
   const Icon = item.icon;
 
-  const link = (
-    <NavLink
-      to={item.path}
-      onClick={onNavigate}
-      className={({ isActive }) =>
-        cn(
-          "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-          collapsed && "justify-center px-0",
-          isActive
-            ? "bg-sidebar-accent font-semibold text-slate-900 shadow-sm"
-            : "text-sidebar-foreground hover:bg-white/5 hover:text-white",
-        )
-      }
-    >
-      <Icon className="h-[18px] w-[18px] shrink-0" />
-      {!collapsed ? (
-        <>
-          <span className="flex-1 truncate">{item.label}</span>
-          {item.comingSoon ? (
-            <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-medium text-sidebar-muted">
-              Under Construction
-            </span>
-          ) : item.badge ? (
-            <span className="rounded-full bg-sidebar-accent px-1.5 py-0.5 text-[10px] font-semibold text-slate-900">
-              {item.badge}
-            </span>
-          ) : null}
-        </>
-      ) : null}
-    </NavLink>
-  );
-
   if (collapsed) {
+    /*
+     * TooltipTrigger uses Radix Slot when `asChild` is enabled. Keep the
+     * NavLink className static here and put active-state styling inside the
+     * NavLink render prop so Slot never has to merge a function-valued
+     * className. This also keeps the icon color and selected state reliable.
+     */
+    const collapsedLink = (
+      <NavLink
+        to={item.path}
+        onClick={onNavigate}
+        className="group mx-auto block h-10 w-10 rounded-lg"
+      >
+        {({ isActive }) => (
+          <span
+            className={cn(
+              "flex h-full w-full items-center justify-center rounded-lg transition-colors",
+              isActive
+                ? "bg-sidebar-accent text-slate-900 shadow-sm"
+                : "text-sidebar-foreground hover:bg-white/10 hover:text-white",
+            )}
+          >
+            <Icon className="h-5 w-5 shrink-0" />
+          </span>
+        )}
+      </NavLink>
+    );
+
     return (
       <Tooltip>
-        <TooltipTrigger asChild>{link}</TooltipTrigger>
+        <TooltipTrigger asChild>{collapsedLink}</TooltipTrigger>
         <TooltipContent side="right" className="flex items-center gap-2">
           {item.label}
           {item.comingSoon ? (
@@ -178,5 +173,30 @@ function SidebarLink({
     );
   }
 
-  return link;
+  return (
+    <NavLink
+      to={item.path}
+      onClick={onNavigate}
+      className={({ isActive }) =>
+        cn(
+          "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+          isActive
+            ? "bg-sidebar-accent font-semibold text-slate-900 shadow-sm"
+            : "text-sidebar-foreground/90 hover:bg-white/10 hover:text-white",
+        )
+      }
+    >
+      <Icon className="h-[18px] w-[18px] shrink-0 text-current" />
+      <span className="flex-1 truncate">{item.label}</span>
+      {item.comingSoon ? (
+        <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-medium text-sidebar-muted">
+          Under Construction
+        </span>
+      ) : item.badge ? (
+        <span className="rounded-full bg-sidebar-accent px-1.5 py-0.5 text-[10px] font-semibold text-slate-900">
+          {item.badge}
+        </span>
+      ) : null}
+    </NavLink>
+  );
 }

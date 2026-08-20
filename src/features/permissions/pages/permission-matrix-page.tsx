@@ -211,7 +211,7 @@ export function PermissionMatrixPage() {
             </Select>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           {selectedRole?.permissions.includes(WILDCARD) ? (
             <div className="flex items-center gap-3 rounded-lg border border-dashed bg-muted/30 p-6">
               <ShieldCheck className="h-6 w-6 text-brand" />
@@ -227,7 +227,7 @@ export function PermissionMatrixPage() {
           ) : selectedRole ? (
             <div className="space-y-6">
               {/* Column header */}
-              <div className="grid grid-cols-[1fr_repeat(5,72px)] items-center gap-2 border-b pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <div className="grid min-w-[560px] grid-cols-[minmax(160px,1fr)_repeat(5,72px)] items-center gap-2 border-b pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 <span>Module</span>
                 {ACTION_COLUMNS.map((action) => (
                   <span key={action} className="text-center">
@@ -237,7 +237,7 @@ export function PermissionMatrixPage() {
               </div>
 
               {groupedModules.map(([group, mods]) => (
-                <div key={group} className="space-y-1">
+                <div key={group} className="min-w-[560px] space-y-1">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-700">
                     {group}
                   </p>
@@ -250,7 +250,7 @@ export function PermissionMatrixPage() {
                     return (
                       <div
                         key={mod.module}
-                        className="grid grid-cols-[1fr_repeat(5,72px)] items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/50"
+                        className="grid grid-cols-[minmax(160px,1fr)_repeat(5,72px)] items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/50"
                       >
                         <button
                           type="button"
