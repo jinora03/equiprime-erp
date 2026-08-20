@@ -16,7 +16,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
 import { DEMO_CREDENTIALS } from "@/constants/app";
 import { ROUTES } from "@/constants/routes";
 import { useAuth } from "@/contexts/auth-context";
@@ -25,7 +24,6 @@ import equiprimeLogo from "@/assets/equiprime-logo.jpg";
 const loginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Enter a valid email"),
   password: z.string().min(1, "Password is required"),
-  remember: z.boolean().optional(),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -43,7 +41,7 @@ export function LoginPage() {
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "", remember: true },
+    defaultValues: { email: "", password: "" },
   });
 
   const onSubmit = async (values: LoginForm) => {
@@ -149,24 +147,6 @@ export function LoginPage() {
                   </div>
                 </FormControl>
                 <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="remember"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center gap-2 space-y-0">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <FormLabel className="!mt-0 cursor-pointer font-normal text-muted-foreground">
-                  Keep me signed in
-                </FormLabel>
               </FormItem>
             )}
           />

@@ -10,6 +10,8 @@ is configured to deploy straight to GitHub Pages.
   Notifications, Settings, and Workflows. (CRM, Customers, Equipment, Warehouse,
   Purchasing, Sales, and Reports show a "Coming Soon" page by design.)
 - **Stack:** React 19 + TypeScript + Vite + Tailwind + shadcn/ui.
+- **Demo model:** in-browser mock services, frontend RBAC, configurable workflows,
+  and session-only mutations that intentionally reset on refresh.
 
 ## Deploy to GitHub Pages (automatic)
 
@@ -18,7 +20,7 @@ is configured to deploy straight to GitHub Pages.
 2. Push to the `main` branch.
 3. In the repo: **Settings → Pages → Build and deployment → Source: GitHub
    Actions**.
-4. The included workflow (`.github/workflows/deploy-pages.yml`) builds the app
+4. The included workflow (`.github/workflows/deploy.yml`) builds the app
    and publishes it. Your site goes live at
    `https://<your-username>.github.io/<repo-name>/` in a minute or two.
 
@@ -30,6 +32,7 @@ never upload `node_modules`.
 ```bash
 npm install
 npm run dev      # http://localhost:5173
+npm run check    # type-check + production build
 ```
 
 Sign in with the demo account:
@@ -43,5 +46,28 @@ Password: Password123!
 
 - All data is mocked and resets on refresh. Nothing is persisted or sent
   anywhere.
-- Routing uses `HashRouter` and a relative asset base so deep links and page
-  refreshes work correctly on GitHub Pages (URLs look like `.../#/dashboard`).
+- Routing uses `HashRouter`, so application routes remain GitHub Pages-friendly
+  (URLs look like `.../#/dashboard`).
+- Permission keys use the `<module>:<action>` format. Sidebar items, protected
+  routes, and UI actions all use the same RBAC model.
+- Permission Matrix edits update the role's runtime permission source. Changes
+  are reflected the next time a user with that role signs in.
+- Job Orders, Projects, and Maintenance use the configurable workflow engine.
+  Work Items intentionally use fixed statuses instead of a configurable
+  workflow.
+- New Job Orders, Projects, Maintenance records, and workflow edits record the
+  currently signed-in user in their demo audit/history entries.
+- Workflow approval labels use roles that exist in the seeded demo role catalog.
+- Placeholder controls that implied unsupported behavior (global search, Help,
+  "Keep me signed in", and attachment preview) are intentionally not shown.
+  Seeded attachments are clearly marked as sample files.
+
+## Validation
+
+Before committing a change, run:
+
+```bash
+npm run check
+```
+
+This performs the TypeScript check and the production Vite build in one command.

@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   ArrowRight,
   ClipboardList,
-  FileText,
   Lock,
   Paperclip,
 } from "lucide-react";
@@ -409,9 +408,9 @@ export function JobOrderDetailPage() {
                       {formatDate(a.uploadedAt)}
                     </p>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <FileText className="h-4 w-4" /> View
-                  </Button>
+                  <Badge variant="secondary" className="shrink-0">
+                    Sample file
+                  </Badge>
                 </div>
               ))}
             </CardContent>
