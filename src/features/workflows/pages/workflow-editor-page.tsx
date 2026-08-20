@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ROUTES } from "@/constants/routes";
+import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
 import { PageHeader } from "@/shared/components/page-header";
 import { EmptyState } from "@/shared/components/empty-state";
@@ -43,6 +44,7 @@ export function WorkflowEditorPage() {
   const workflowId = Number(id);
   const navigate = useNavigate();
   const { can } = usePermissions();
+  const { user } = useAuth();
   const editable = can("workflows:manage");
 
   const { data: workflow, isLoading, isError } = useWorkflow(workflowId);
@@ -110,6 +112,7 @@ export function WorkflowEditorPage() {
           description: draft.description,
           status: draft.status,
           stages: draft.stages,
+          actor: user?.full_name ?? "System",
         },
       });
       toast.success("Workflow saved", {

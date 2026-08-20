@@ -21,7 +21,7 @@ export const maintenanceService = {
       moduleId: "maintenance",
       currentStageId: "mt-scheduled",
       history: [
-        historyEntry(null, "mt-scheduled", "Christian Cua", undefined, now),
+        historyEntry(null, "mt-scheduled", input.actor, undefined, now),
       ],
       assignee: input.assignee || null,
       equipment: input.equipment,

@@ -27,4 +27,5 @@ export interface JobOrderInput {
   workflowId: number;
   dueDate: string;
   notes?: string;
+  actor: string;
 }

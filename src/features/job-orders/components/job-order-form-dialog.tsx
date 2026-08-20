@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from "@/contexts/auth-context";
 import { useCreateRecord } from "@/hooks/use-workflow-records";
 import { useCustomers } from "@/features/customers/hooks";
 import { useEquipment } from "@/features/equipment/hooks";
@@ -59,6 +60,7 @@ export function JobOrderFormDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { user } = useAuth();
   const create = useCreateRecord("job-orders", jobOrderService.create);
   const { data: customers = [] } = useCustomers();
   const { data: equipment = [] } = useEquipment();
@@ -118,6 +120,7 @@ export function JobOrderFormDialog({
         workflowId: Number(values.workflowId),
         dueDate: values.dueDate,
         notes: values.notes,
+        actor: user?.full_name ?? "System",
       });
       toast.success("Job order created", {
         description: "It now follows its assigned workflow.",

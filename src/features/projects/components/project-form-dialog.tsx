@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/auth-context";
 import { useCreateRecord } from "@/hooks/use-workflow-records";
 import { projectService } from "../service";
 
@@ -42,6 +43,7 @@ export function ProjectFormDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { user } = useAuth();
   const create = useCreateRecord("projects", projectService.create);
 
   const form = useForm<FormValues>({
@@ -61,7 +63,10 @@ export function ProjectFormDialog({
 
   const onSubmit = async (values: FormValues) => {
     try {
-      await create.mutateAsync(values);
+      await create.mutateAsync({
+        ...values,
+        actor: user?.full_name ?? "System",
+      });
       toast.success("Project created", {
         description: "It now follows the Project Workflow.",
       });

@@ -20,7 +20,7 @@ export const projectService = {
       title: input.title,
       moduleId: "projects",
       currentStageId: "pr-planning",
-      history: [historyEntry(null, "pr-planning", "Christian Cua", undefined, now)],
+      history: [historyEntry(null, "pr-planning", input.actor, undefined, now)],
       assignee: input.manager,
       client: input.client,
       manager: input.manager,

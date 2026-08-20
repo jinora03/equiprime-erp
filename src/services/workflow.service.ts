@@ -21,6 +21,7 @@ export interface WorkflowUpdateInput {
   description?: string;
   status?: Workflow["status"];
   stages?: WorkflowStage[];
+  actor: string;
 }
 
 export const workflowService = {
@@ -52,7 +53,7 @@ export const workflowService = {
       // Re-number stages to match their new order.
       workflow.stages = input.stages.map((s, i) => ({ ...s, order: i + 1 }));
     }
-    workflow.updatedBy = "Christian Cua";
+    workflow.updatedBy = input.actor;
     workflow.updatedAt = new Date().toISOString();
     return delay(cloneWorkflow(workflow));
   },

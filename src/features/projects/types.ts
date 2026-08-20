@@ -14,4 +14,5 @@ export interface ProjectInput {
   manager: string;
   startDate: string;
   dueDate: string;
+  actor: string;
 }

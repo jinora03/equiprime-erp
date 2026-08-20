@@ -28,7 +28,7 @@ export const jobOrderService = {
       title: input.title,
       moduleId: "job-orders",
       currentStageId: firstStage,
-      history: [historyEntry(null, firstStage, "Christian Cua", undefined, now)],
+      history: [historyEntry(null, firstStage, input.actor, undefined, now)],
       assignee: input.assignee || null,
       customer: input.customerName,
       customerId: input.customerId,
