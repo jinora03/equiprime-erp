@@ -40,7 +40,6 @@ export function SidebarContent({
     <TooltipProvider delayDuration={0}>
       <div
         className="relative flex h-full flex-col overflow-hidden bg-sidebar text-sidebar-foreground"
-        data-onboarding="sidebar"
       >
         {/* Subtle heavy-equipment backdrop */}
         <img
@@ -77,7 +76,10 @@ export function SidebarContent({
         </div>
 
         {/* Nav */}
-        <nav className="relative z-10 flex-1 space-y-5 overflow-y-auto px-3 py-4">
+        <nav
+          className="relative z-10 flex-1 space-y-5 overflow-y-auto px-3 py-4"
+          data-onboarding="sidebar-navigation"
+        >
           {sections.map((section) => (
             <div key={section.id} className="space-y-1">
               {!collapsed ? (

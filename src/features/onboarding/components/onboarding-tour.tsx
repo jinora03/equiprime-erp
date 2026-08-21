@@ -16,9 +16,9 @@ interface OnboardingTourProps {
   onSkip: () => void;
 }
 
-const EDGE = 16;
-const GAP = 14;
-const CARD_WIDTH = 360;
+const EDGE = 20;
+const GAP = 16;
+const CARD_WIDTH = 380;
 const CARD_HEIGHT_FALLBACK = 260;
 
 function clamp(value: number, min: number, max: number) {
@@ -89,7 +89,7 @@ export function OnboardingTour({
     const observer = new ResizeObserver(measure);
     observer.observe(card);
     return () => observer.disconnect();
-  }, [currentIndex, isMobile]);
+  }, [currentIndex, isMobile, status]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -136,16 +136,7 @@ export function OnboardingTour({
     const viewportHeight = window.innerHeight;
     const safeCardHeight = Math.min(cardHeight, viewportHeight - EDGE * 2);
 
-    if (!highlight) {
-      return {
-        left: clamp((viewportWidth - CARD_WIDTH) / 2, EDGE, viewportWidth - CARD_WIDTH - EDGE),
-        top: clamp(
-          (viewportHeight - safeCardHeight) / 2,
-          EDGE,
-          viewportHeight - safeCardHeight - EDGE,
-        ),
-      };
-    }
+    if (!highlight) return undefined;
 
     if (highlight.left + highlight.width + GAP + CARD_WIDTH <= viewportWidth - EDGE) {
       return {
@@ -177,26 +168,26 @@ export function OnboardingTour({
 
   if (!step || typeof document === "undefined") return null;
 
+  // Never render a centered fallback while a target is still resolving. Waiting
+  // invisibly avoids a distracting card jump before the spotlight is measured.
+  if (status !== "ready" || !highlight) return null;
+
   return createPortal(
     <div
       className="fixed inset-0 z-[90] pointer-events-auto overscroll-contain"
       aria-live="polite"
     >
-      {highlight ? (
-        <div
-          className="fixed z-[91] rounded-xl ring-2 ring-primary ring-offset-2 ring-offset-background transition-[top,left,width,height] duration-200 motion-reduce:transition-none"
-          style={{
-            top: highlight.top,
-            left: highlight.left,
-            width: highlight.width,
-            height: highlight.height,
-            boxShadow: "0 0 0 9999px rgb(2 6 23 / 0.58)",
-          }}
-          aria-hidden
-        />
-      ) : (
-        <div className="fixed inset-0 bg-slate-950/55 dark:bg-black/65" aria-hidden />
-      )}
+      <div
+        className="fixed z-[91] rounded-xl ring-2 ring-primary ring-offset-2 ring-offset-background transition-[top,left,width,height] duration-200 motion-reduce:transition-none"
+        style={{
+          top: highlight.top,
+          left: highlight.left,
+          width: highlight.width,
+          height: highlight.height,
+          boxShadow: "0 0 0 9999px rgb(2 6 23 / 0.58)",
+        }}
+        aria-hidden
+      />
 
       <OnboardingStepCard
         ref={cardRef}

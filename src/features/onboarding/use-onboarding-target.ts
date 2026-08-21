@@ -36,19 +36,25 @@ function isVisibleTarget(element: HTMLElement) {
   );
 }
 
-function toHighlightRect(element: HTMLElement, isMobile: boolean): OnboardingHighlightRect {
+function toHighlightRect(
+  element: HTMLElement,
+  isMobile: boolean,
+  maxHeight?: number,
+): OnboardingHighlightRect {
   const rect = element.getBoundingClientRect();
-  const padding = isMobile ? 5 : 7;
+  const padding = isMobile ? 8 : 10;
   const left = clamp(rect.left - padding, HIGHLIGHT_EDGE, window.innerWidth - HIGHLIGHT_EDGE);
   const right = clamp(rect.right + padding, HIGHLIGHT_EDGE, window.innerWidth - HIGHLIGHT_EDGE);
   const top = clamp(rect.top - padding, HIGHLIGHT_EDGE, window.innerHeight - HIGHLIGHT_EDGE);
   const bottom = clamp(rect.bottom + padding, HIGHLIGHT_EDGE, window.innerHeight - HIGHLIGHT_EDGE);
 
+  const measuredHeight = Math.max(1, bottom - top);
+
   return {
     top,
     left,
     width: Math.max(1, right - left),
-    height: Math.max(1, bottom - top),
+    height: maxHeight ? Math.min(measuredHeight, maxHeight) : measuredHeight,
   };
 }
 
@@ -87,7 +93,7 @@ export function useOnboardingTarget({
         setStatus("missing");
         return;
       }
-      setHighlight(toHighlightRect(target, isMobile));
+      setHighlight(toHighlightRect(target, isMobile, step.highlightMaxHeight));
       setStatus("ready");
     };
 

@@ -42,8 +42,9 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     description:
       "The navigation only exposes modules allowed by your current permissions. On mobile, open the menu from this control.",
     icon: PanelLeft,
-    target: '[data-onboarding="sidebar"]',
+    target: '[data-onboarding="sidebar-navigation"]',
     mobileTarget: '[data-onboarding="mobile-menu"]',
+    highlightMaxHeight: 360,
   },
   {
     id: "job-orders",

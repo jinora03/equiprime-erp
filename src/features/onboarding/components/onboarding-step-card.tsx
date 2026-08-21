@@ -38,12 +38,12 @@ export const OnboardingStepCard = forwardRef<HTMLElement, OnboardingStepCardProp
         className={cn(
           "pointer-events-auto z-[92] overflow-y-auto border border-border/80 bg-popover/95 text-popover-foreground shadow-elevated backdrop-blur focus:outline-none",
           isMobile
-            ? "fixed inset-x-3 bottom-3 max-h-[calc(100dvh-1.5rem)] rounded-2xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
-            : "fixed w-[360px] max-h-[calc(100dvh-2rem)] rounded-xl p-5",
+            ? "fixed inset-x-4 bottom-4 max-h-[calc(100dvh-2rem)] rounded-2xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+            : "fixed w-[380px] max-h-[calc(100dvh-2.5rem)] rounded-xl p-6",
         )}
         style={isMobile ? undefined : style}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-4">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Icon className="h-5 w-5" />
           </span>
@@ -62,19 +62,19 @@ export const OnboardingStepCard = forwardRef<HTMLElement, OnboardingStepCardProp
                 Skip
               </Button>
             </div>
-            <h2 id={titleId} className="mt-1 text-base font-semibold">
+            <h2 id={titleId} className="mt-1.5 text-base font-semibold">
               {step.title}
             </h2>
             <p
               id={descriptionId}
-              className="mt-1.5 text-sm leading-6 text-muted-foreground"
+              className="mt-2 text-sm leading-6 text-muted-foreground"
             >
               {step.description}
             </p>
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-1.5" aria-hidden>
+        <div className="mt-5 flex items-center gap-1.5" aria-hidden>
           {Array.from({ length: total }, (_, dotIndex) => (
             <span
               key={dotIndex}
@@ -86,7 +86,7 @@ export const OnboardingStepCard = forwardRef<HTMLElement, OnboardingStepCardProp
           ))}
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-3">
+        <div className="mt-5 flex items-center justify-between gap-3 border-t border-border/60 pt-4">
           <Button
             type="button"
             variant="outline"

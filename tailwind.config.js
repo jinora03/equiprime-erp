@@ -63,7 +63,7 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Brand secondary — orange
+        // Brand secondary — muted gold
         brand: {
           DEFAULT: "hsl(var(--brand))",
           foreground: "hsl(var(--brand-foreground))",
@@ -100,12 +100,12 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        soft: "0 1px 2px 0 rgb(16 24 40 / 0.04), 0 1px 3px 0 rgb(16 24 40 / 0.06)",
-        card: "0 1px 3px 0 rgb(16 24 40 / 0.06), 0 1px 2px -1px rgb(16 24 40 / 0.04)",
+        soft: "0 1px 2px 0 rgb(16 24 40 / 0.05)",
+        card: "0 1px 2px 0 rgb(16 24 40 / 0.035)",
         elevated:
-          "0 4px 6px -2px rgb(16 24 40 / 0.05), 0 12px 16px -4px rgb(16 24 40 / 0.08)",
+          "0 8px 20px -8px rgb(16 24 40 / 0.18), 0 2px 6px -3px rgb(16 24 40 / 0.10)",
         popover:
-          "0 8px 24px -6px rgb(16 24 40 / 0.12), 0 2px 6px -2px rgb(16 24 40 / 0.08)",
+          "0 10px 24px -10px rgb(16 24 40 / 0.22), 0 3px 8px -4px rgb(16 24 40 / 0.12)",
       },
       keyframes: {
         "accordion-down": {

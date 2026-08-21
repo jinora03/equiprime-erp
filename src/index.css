@@ -4,8 +4,8 @@
 
 /* ===========================================================================
    Equiprime ERP — Design Tokens
-   Brand: deep blue (primary) · orange (secondary/brand) · slate gray (neutral)
-   Inspired by Linear / Stripe Dashboard / Vercel Dashboard.
+   Brand: deep navy (primary) · muted gold (brand) · slate gray (neutral)
+   Direction: restrained, operational enterprise UI with semantic color accents.
    =========================================================================== */
 
 @layer base {
@@ -65,7 +65,7 @@
     --border: 214 32% 91%;
     --input: 214 32% 89%;
     --ring: 214 60% 42%;
-    --radius: 0.65rem;
+    --radius: 0.5rem;
 
     /* Application sidebar — deep navy with khaki active accent */
     --sidebar: 214 44% 15%;

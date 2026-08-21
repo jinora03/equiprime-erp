@@ -12,6 +12,8 @@ export interface OnboardingStep {
   route?: string;
   permission?: PermissionKey;
   desktopOnly?: boolean;
+  /** Caps very tall spotlight targets so tours highlight a useful region, not an entire page column. */
+  highlightMaxHeight?: number;
 }
 
 export type OnboardingPreference = "completed" | "skipped";
