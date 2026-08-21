@@ -1,21 +1,32 @@
 import { equipmentService } from "@/features/equipment/service";
 import { inventoryService } from "@/features/inventory/service";
+import { isLowStock, LOW_STOCK_AVAILABLE_THRESHOLD } from "@/features/inventory/types";
 import { jobOrderService } from "@/features/job-orders/service";
 import { maintenanceService } from "@/features/maintenance/service";
-import { workItemService } from "@/features/work-items/service";
+import { partsRequestService } from "@/features/parts/service";
 import { revenueSeed } from "@/services/mock/revenue-data";
 import { organizationService } from "@/services/organization.service";
-import { userService } from "@/services/user.service";
-import type { OrganizationScope } from "@/types";
+import { workflowService } from "@/services/workflow.service";
+import type { OrganizationScope, Workflow } from "@/types";
 import {
   CHART_COLORS,
   type Activity,
   type DashboardSnapshot,
   type JobOrderStatus,
-  type WorkOverviewPoint,
 } from "./data";
 
-const MONTH_FORMATTER = new Intl.DateTimeFormat("en", { month: "short" });
+const MONTH_FORMATTER = new Intl.DateTimeFormat("en", {
+  month: "short",
+  timeZone: "UTC",
+});
+
+const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("en-PH", {
+  month: "short",
+  day: "numeric",
+  timeZone: "UTC",
+});
+
+const DAY_MS = 24 * 60 * 60 * 1_000;
 
 function jobOrderStatus(stageId: string): JobOrderStatus {
   if (stageId === "jo-completed" || stageId === "jo-closed") return "Completed";
@@ -31,22 +42,18 @@ function percentageChange(current: number, previous: number): number {
   return Math.round(((current - previous) / previous) * 100);
 }
 
-function buildWorkOverview(
-  periods: string[],
-  jobOrders: Awaited<ReturnType<typeof jobOrderService.list>>,
-  workItems: Awaited<ReturnType<typeof workItemService.list>>,
-): WorkOverviewPoint[] {
-  return periods.map((period) => ({
-    label: MONTH_FORMATTER.format(new Date(`${period}-01T00:00:00Z`)),
-    jobOrders: jobOrders.filter((job) => job.createdAt.startsWith(period)).length,
-    workItems: workItems.filter((item) => item.createdAt.startsWith(period)).length,
-    completed: jobOrders.filter((job) =>
-      job.history.some(
-        (entry) =>
-          entry.toStageId === "jo-completed" && entry.at.startsWith(period),
-      ),
-    ).length,
-  }));
+function daysPastDue(date: string, today: string): number {
+  const due = Date.parse(`${date}T00:00:00Z`);
+  const current = Date.parse(`${today}T00:00:00Z`);
+  return Math.max(0, Math.floor((current - due) / DAY_MS));
+}
+
+function stageName(workflow: Workflow | null, stageId: string): string {
+  return workflow?.stages.find((stage) => stage.id === stageId)?.name ?? stageId;
+}
+
+function shortDate(value: string): string {
+  return SHORT_DATE_FORMATTER.format(new Date(value));
 }
 
 export const dashboardService = {
@@ -54,37 +61,36 @@ export const dashboardService = {
     const [
       branch,
       jobOrders,
-      usersPage,
       equipment,
       inventory,
       maintenance,
-      allWorkItems,
+      partsRequests,
+      jobWorkflow,
+      maintenanceWorkflow,
     ] = await Promise.all([
       organizationService.getBranch(scope),
       jobOrderService.list(scope),
-      userService.list({ page: 1, page_size: 500 }, scope),
       equipmentService.list(scope),
       inventoryService.list(scope),
       maintenanceService.list(scope),
-      workItemService.list(undefined, scope),
+      partsRequestService.listForApproval(scope),
+      workflowService.getByModule("job-orders"),
+      workflowService.getByModule("maintenance"),
     ]);
 
-    const jobIds = new Set(jobOrders.map((job) => job.id));
-    const workItems = allWorkItems.filter((item) => jobIds.has(item.jobOrderId));
     const revenue = revenueSeed
       .filter(
         (entry) =>
           entry.companyId === scope.companyId && entry.branchId === scope.branchId,
       )
       .sort((a, b) => a.period.localeCompare(b.period));
-    const periods = revenue.slice(-6).map((entry) => entry.period);
     const latestRevenue = revenue.at(-1)?.amount ?? 0;
     const previousRevenue = revenue.at(-2)?.amount ?? 0;
 
     const equipmentStatus = [
       { name: "In Use", key: "in_use", color: CHART_COLORS.success },
       { name: "Under Service", key: "under_service", color: CHART_COLORS.warning },
-      { name: "Idle", key: "idle", color: CHART_COLORS.neutral },
+      { name: "Idle", key: "idle", color: CHART_COLORS.primary },
       { name: "Decommissioned", key: "decommissioned", color: CHART_COLORS.danger },
     ].map(({ name, key, color }) => ({
       name,
@@ -92,44 +98,156 @@ export const dashboardService = {
       color,
     }));
 
+    const today = new Date().toISOString().slice(0, 10);
+    const activeJobOrders = jobOrders.filter(
+      (job) => !["jo-completed", "jo-closed"].includes(job.currentStageId),
+    );
+    const overdueJobOrders = activeJobOrders.filter((job) => job.dueDate < today);
+    const overdueMaintenance = maintenance.filter(
+      (item) => item.currentStageId !== "mt-completed" && item.scheduledDate < today,
+    );
+    const waitingForParts = activeJobOrders.filter(
+      (job) => job.currentStageId === "jo-waiting-parts",
+    );
+    const lowStockItems = inventory.filter(isLowStock);
+    const equipmentInUse = equipment.filter((item) => item.status === "in_use").length;
+
+    const oldestJobOverdueDays = overdueJobOrders.reduce(
+      (max, job) => Math.max(max, daysPastDue(job.dueDate, today)),
+      0,
+    );
+    const highPriorityMaintenance = overdueMaintenance.filter(
+      (item) => item.priority === "High",
+    ).length;
+    const waitingSince = waitingForParts
+      .flatMap((job) =>
+        job.history
+          .filter((entry) => entry.toStageId === "jo-waiting-parts")
+          .map((entry) => entry.at),
+      )
+      .sort()[0];
+
+    const attention = [
+      {
+        key: "overdue_job_orders" as const,
+        count: overdueJobOrders.length,
+        label: "Job orders overdue",
+        detail:
+          oldestJobOverdueDays > 0
+            ? `Oldest is ${oldestJobOverdueDays} days past due`
+            : "Past their scheduled due date",
+      },
+      {
+        key: "overdue_maintenance" as const,
+        count: overdueMaintenance.length,
+        label: "Maintenance overdue",
+        detail:
+          highPriorityMaintenance > 0
+            ? `${highPriorityMaintenance} high-priority ${highPriorityMaintenance === 1 ? "item" : "items"}`
+            : "Outstanding scheduled service",
+      },
+      {
+        key: "waiting_for_parts" as const,
+        count: waitingForParts.length,
+        label: "Waiting for parts",
+        detail: waitingSince
+          ? `Oldest waiting since ${shortDate(waitingSince)}`
+          : "Parts are blocking service work",
+      },
+      {
+        key: "low_stock_inventory" as const,
+        count: lowStockItems.length,
+        label: "Low-stock inventory",
+        detail: `${lowStockItems.length === 1 ? "1 item has" : `${lowStockItems.length} items have`} ${LOW_STOCK_AVAILABLE_THRESHOLD} or fewer available`,
+      },
+    ].filter((item) => item.count > 0);
+
+    const jobById = new Map(jobOrders.map((job) => [job.id, job]));
+
     const activity: Activity[] = [
       ...jobOrders.flatMap((job) =>
         job.history.map((entry) => ({
           id: `job-${job.id}-${entry.id}`,
           user: entry.actor,
-          action: entry.fromStageId ? "updated job order" : "created job order",
+          verb: entry.fromStageId ? "moved" : "created",
           target: job.code,
+          suffix: entry.fromStageId
+            ? `to ${stageName(jobWorkflow, entry.toStageId)}`
+            : undefined,
+          detail: job.title,
           time: entry.at,
+          targetKind: "job_order" as const,
+          targetId: job.id,
         })),
       ),
-      ...workItems.map((item) => ({
-        id: `work-${item.id}`,
-        user: item.assignee ?? "System",
-        action: "updated work item on",
-        target: item.jobOrderCode,
-        time: item.updatedAt,
-      })),
+      ...maintenance.flatMap((item) =>
+        item.history.map((entry) => ({
+          id: `maintenance-${item.id}-${entry.id}`,
+          user: entry.actor,
+          verb: entry.fromStageId ? "moved maintenance" : "scheduled maintenance",
+          target: item.code,
+          suffix: entry.fromStageId
+            ? `to ${stageName(maintenanceWorkflow, entry.toStageId)}`
+            : undefined,
+          detail: `${item.equipment} · ${item.type}`,
+          time: entry.at,
+          targetKind: "maintenance" as const,
+          targetId: item.id,
+        })),
+      ),
+      ...partsRequests.flatMap((request) => {
+        const job = jobById.get(request.jobOrderId);
+        const target = job?.code ?? request.code;
+        const targetId = job?.id;
+        const created: Activity = {
+          id: `parts-created-${request.id}`,
+          user: request.requestedBy,
+          verb: "requested parts for",
+          target,
+          detail: `${request.code} · ${request.items.length} ${request.items.length === 1 ? "line item" : "line items"}`,
+          time: request.createdAt,
+          targetKind: targetId ? "job_order_parts" : undefined,
+          targetId,
+        };
+
+        if (!request.decision) return [created];
+
+        return [
+          created,
+          {
+            id: `parts-decision-${request.id}`,
+            user: request.decision.actorName,
+            verb:
+              request.status === "released"
+                ? "released parts for"
+                : "rejected parts for",
+            target,
+            detail: request.code,
+            time: request.decision.at,
+            targetKind: targetId ? ("job_order_parts" as const) : undefined,
+            targetId,
+          },
+        ];
+      }),
     ]
       .sort((a, b) => b.time.localeCompare(a.time))
-      .slice(0, 5);
+      .slice(0, 7);
 
     return {
       branchName: branch.displayName,
       region: branch.region,
       currentRevenue: latestRevenue,
       revenueChange: percentageChange(latestRevenue, previousRevenue),
-      openJobOrders: jobOrders.filter(
-        (job) => !["jo-completed", "jo-closed"].includes(job.currentStageId),
-      ).length,
+      openJobOrders: activeJobOrders.length,
+      overdueJobOrders: overdueJobOrders.length,
       equipmentUnits: equipment.length,
-      employees: usersPage.total,
-      attendanceRate: branch.attendanceRate,
+      equipmentUtilization:
+        equipment.length > 0 ? Math.round((equipmentInUse / equipment.length) * 100) : 0,
       inventoryOnHand: inventory.reduce((sum, item) => sum + item.onHand, 0),
-      workOverview: buildWorkOverview(periods, jobOrders, workItems),
+      lowStockItems: lowStockItems.length,
+      attention,
       revenueTrend: revenue.slice(-6).map((entry) => ({
-        month: MONTH_FORMATTER.format(
-          new Date(`${entry.period}-01T00:00:00Z`),
-        ),
+        month: MONTH_FORMATTER.format(new Date(`${entry.period}-01T00:00:00Z`)),
         value: Number((entry.amount / 1_000_000).toFixed(2)),
       })),
       equipmentStatus,
@@ -141,8 +259,15 @@ export const dashboardService = {
           code: job.code,
           title: job.title,
           customer: job.customer,
+          equipment: job.equipment,
+          technician: job.assignee || "Unassigned",
+          priority: job.priority,
           status: jobOrderStatus(job.currentStageId),
+          dueDate: job.dueDate,
           date: job.createdAt,
+          overdue:
+            !["jo-completed", "jo-closed"].includes(job.currentStageId) &&
+            job.dueDate < today,
         })),
       activities: activity,
       upcomingMaintenance: [...maintenance]
@@ -155,6 +280,7 @@ export const dashboardService = {
           type: item.type,
           due: item.scheduledDate,
           priority: item.priority,
+          overdue: item.scheduledDate < today,
         })),
     };
   },

@@ -39,8 +39,14 @@ export function CompanySwitcher({ className }: CompanySwitcherProps) {
           )}
           data-onboarding="company-switcher"
         >
-          <span className="truncate text-sm">
-            {active?.displayName ?? "Select branch"}
+          <span className="flex min-w-0 items-center gap-2">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full bg-brand"
+              aria-hidden="true"
+            />
+            <span className="truncate text-sm">
+              {active?.displayName ?? "Select branch"}
+            </span>
           </span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         </Button>

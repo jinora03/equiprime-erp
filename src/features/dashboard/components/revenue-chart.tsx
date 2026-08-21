@@ -1,6 +1,6 @@
 import {
-  Area,
-  AreaChart,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -10,14 +10,8 @@ import { CHART_COLORS, type RevenueTrendPoint } from "../data";
 
 export function RevenueChart({ data }: { data: RevenueTrendPoint[] }) {
   return (
-    <ResponsiveContainer width="100%" height={120}>
-      <AreaChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
-        <defs>
-          <linearGradient id="gRev" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={CHART_COLORS.success} stopOpacity={0.3} />
-            <stop offset="95%" stopColor={CHART_COLORS.success} stopOpacity={0} />
-          </linearGradient>
-        </defs>
+    <ResponsiveContainer width="100%" height={104}>
+      <LineChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
         <XAxis
           dataKey="month"
           tickLine={false}
@@ -27,21 +21,22 @@ export function RevenueChart({ data }: { data: RevenueTrendPoint[] }) {
         <Tooltip
           formatter={(value: number) => [`₱${value}M`, "Revenue"]}
           contentStyle={{
-            borderRadius: 12,
+            borderRadius: 8,
             background: "hsl(var(--popover))",
             color: "hsl(var(--popover-foreground))",
             border: "1px solid hsl(var(--border))",
             fontSize: 12,
           }}
         />
-        <Area
+        <Line
           type="monotone"
           dataKey="value"
-          stroke={CHART_COLORS.success}
-          strokeWidth={2.5}
-          fill="url(#gRev)"
+          stroke={CHART_COLORS.primary}
+          strokeWidth={2}
+          dot={false}
+          activeDot={{ r: 3 }}
         />
-      </AreaChart>
+      </LineChart>
     </ResponsiveContainer>
   );
 }

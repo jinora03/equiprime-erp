@@ -22,7 +22,7 @@ import { PageHeader } from "@/shared/components/page-header";
 import { EmptyState } from "@/shared/components/empty-state";
 import { TableSkeleton } from "@/shared/components/table-skeleton";
 import { useInventory } from "../hooks";
-import { availableStock } from "../types";
+import { availableStock, isLowStock } from "../types";
 
 const ALL = "all";
 
@@ -88,7 +88,7 @@ export function InventoryPage() {
             <TableBody>
               {filtered.map((item) => {
                 const available = availableStock(item);
-                const low = available <= 5;
+                const low = isLowStock(item);
                 return (
                   <TableRow key={item.id}>
                     <TableCell>

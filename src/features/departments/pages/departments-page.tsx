@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PermissionGuard } from "@/components/permission-guard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -20,13 +21,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissions } from "@/hooks/use-permissions";
-import { PageHeader } from "@/shared/components/page-header";
-import { PermissionGuard } from "@/components/permission-guard";
 import { ConfirmDialog } from "@/shared/components/confirm-dialog";
 import { EmptyState } from "@/shared/components/empty-state";
+import { PageHeader } from "@/shared/components/page-header";
 import type { Department } from "@/types";
-import { useDeleteDepartment, useDepartments } from "../hooks";
 import { DepartmentFormDialog } from "../components/department-form-dialog";
+import { useDeleteDepartment, useDepartments } from "../hooks";
 
 export function DepartmentsPage() {
   const { can } = usePermissions();
@@ -78,7 +78,7 @@ export function DepartmentsPage() {
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-44 rounded-xl" />
+            <Skeleton key={i} className="h-40 rounded-lg" />
           ))}
         </div>
       ) : departments.length === 0 ? (
@@ -99,23 +99,17 @@ export function DepartmentsPage() {
           {departments.map((dept) => (
             <Card
               key={dept.id}
-              className="group overflow-hidden transition-shadow hover:shadow-elevated"
+              className="group transition-colors hover:border-primary/25"
             >
-              <div className="h-1.5" style={{ backgroundColor: dept.color }} />
               <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="flex h-11 w-11 items-center justify-center rounded-xl text-sm font-semibold text-white"
-                      style={{ backgroundColor: dept.color }}
-                    >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border bg-muted text-xs font-semibold tracking-wide text-primary">
                       {dept.code}
                     </span>
-                    <div>
-                      <h3 className="font-semibold text-foreground">
-                        {dept.name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground">
+                    <div className="min-w-0">
+                      <h3 className="truncate font-semibold text-foreground">{dept.name}</h3>
+                      <p className="mt-0.5 text-xs uppercase tracking-wide text-muted-foreground">
                         {dept.code}
                       </p>
                     </div>
@@ -126,7 +120,8 @@ export function DepartmentsPage() {
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          className="opacity-0 transition-opacity group-hover:opacity-100"
+                          aria-label={`Actions for ${dept.name}`}
+                          className="shrink-0 sm:opacity-70 sm:transition-opacity sm:group-hover:opacity-100"
                         >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
@@ -153,23 +148,28 @@ export function DepartmentsPage() {
                   ) : null}
                 </div>
 
-                <p className="mt-4 line-clamp-2 min-h-[2.5rem] text-sm text-muted-foreground">
+                <p className="mt-4 line-clamp-2 min-h-[2.5rem] text-sm leading-relaxed text-muted-foreground">
                   {dept.description}
                 </p>
 
-                <div className="mt-4 flex items-center justify-between border-t pt-4 text-sm">
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    {dept.member_count} members
-                  </span>
-                  {dept.head ? (
-                    <span className="text-xs text-muted-foreground">
-                      Head:{" "}
-                      <span className="font-medium text-foreground">
-                        {dept.head}
-                      </span>
-                    </span>
-                  ) : null}
+                <div className="mt-5 grid grid-cols-2 gap-4 border-t pt-4">
+                  <div>
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Members
+                    </p>
+                    <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-foreground">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      {dept.member_count}
+                    </p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Department head
+                    </p>
+                    <p className="mt-1 truncate text-sm font-medium text-foreground">
+                      {dept.head || "Not assigned"}
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

@@ -1,4 +1,4 @@
-/** Shared dashboard presentation types plus branch-scoped revenue seed data. */
+/** Shared dashboard presentation types for organization-scoped operational data. */
 
 export const CHART_COLORS = {
   primary: "hsl(var(--chart-primary))",
@@ -8,13 +8,6 @@ export const CHART_COLORS = {
   neutral: "hsl(var(--chart-neutral))",
   danger: "hsl(var(--chart-danger))",
 };
-
-export interface WorkOverviewPoint {
-  label: string;
-  jobOrders: number;
-  workItems: number;
-  completed: number;
-}
 
 export interface RevenueTrendPoint {
   month: string;
@@ -28,25 +21,38 @@ export interface EquipmentStatusPoint {
 }
 
 export type JobOrderStatus = "Open" | "In Progress" | "Completed" | "On Hold";
+export type DashboardPriority = "High" | "Medium" | "Low";
 
 export interface RecentJobOrder {
   id: number;
   code: string;
   title: string;
   customer: string;
+  equipment: string;
+  technician: string;
+  priority: DashboardPriority;
   status: JobOrderStatus;
+  dueDate: string;
   date: string;
+  overdue: boolean;
 }
+
+export type DashboardActivityTargetKind =
+  | "job_order"
+  | "job_order_parts"
+  | "maintenance";
 
 export interface Activity {
   id: string;
   user: string;
-  action: string;
+  verb: string;
   target: string;
+  suffix?: string;
+  detail?: string;
   time: string;
+  targetKind?: DashboardActivityTargetKind;
+  targetId?: number;
 }
-
-export type DashboardPriority = "High" | "Medium" | "Low";
 
 export interface MaintenanceItem {
   id: number;
@@ -54,6 +60,20 @@ export interface MaintenanceItem {
   type: string;
   due: string;
   priority: DashboardPriority;
+  overdue: boolean;
+}
+
+export type DashboardAttentionKey =
+  | "overdue_job_orders"
+  | "overdue_maintenance"
+  | "waiting_for_parts"
+  | "low_stock_inventory";
+
+export interface DashboardAttentionItem {
+  key: DashboardAttentionKey;
+  count: number;
+  label: string;
+  detail: string;
 }
 
 export interface DashboardSnapshot {
@@ -62,11 +82,12 @@ export interface DashboardSnapshot {
   currentRevenue: number;
   revenueChange: number;
   openJobOrders: number;
+  overdueJobOrders: number;
   equipmentUnits: number;
-  employees: number;
-  attendanceRate: number;
+  equipmentUtilization: number;
   inventoryOnHand: number;
-  workOverview: WorkOverviewPoint[];
+  lowStockItems: number;
+  attention: DashboardAttentionItem[];
   revenueTrend: RevenueTrendPoint[];
   equipmentStatus: EquipmentStatusPoint[];
   recentJobOrders: RecentJobOrder[];

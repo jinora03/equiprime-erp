@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ClipboardList, KanbanSquare, Plus, Rows3 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,9 +33,11 @@ import { JobOrderKanbanCard } from "../components/job-order-kanban-card";
 
 export function JobOrdersPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { can, permissions } = usePermissions();
   const canMove = can("job-orders:update");
+  const canCreate = can("job-orders:create");
 
   const { data: jobOrders = [], isLoading } = useRecords(
     "job-orders",
@@ -45,7 +47,21 @@ export function JobOrdersPage() {
   const moveStage = useMoveRecordStage("job-orders", jobOrderService);
 
   const [view, setView] = useState<"list" | "kanban">("list");
-  const [createOpen, setCreateOpen] = useState(false);
+  const createRequested = searchParams.get("create") === "1";
+  const [createOpen, setCreateOpen] = useState(createRequested && canCreate);
+
+  useEffect(() => {
+    if (createRequested && canCreate) setCreateOpen(true);
+  }, [canCreate, createRequested]);
+
+  const setCreateDialogOpen = (open: boolean) => {
+    setCreateOpen(open);
+    if (!open && createRequested) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("create");
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   const stageOf = (id: string) =>
     workflow?.stages.find((s) => s.id === id) ?? null;
@@ -97,7 +113,7 @@ export function JobOrdersPage() {
                 </Button>
               </div>
               <PermissionGuard permission="job-orders:create">
-                <Button onClick={() => setCreateOpen(true)}>
+                <Button onClick={() => setCreateDialogOpen(true)}>
                   <Plus className="h-4 w-4" /> New job order
                 </Button>
               </PermissionGuard>
@@ -175,7 +191,7 @@ export function JobOrdersPage() {
         />
       ) : null}
 
-      <JobOrderFormDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <JobOrderFormDialog open={createOpen} onOpenChange={setCreateDialogOpen} />
     </div>
   );
 }

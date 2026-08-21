@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Plus, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
@@ -29,9 +30,11 @@ import { maintenanceService } from "../service";
 import { MaintenanceFormDialog } from "../components/maintenance-form-dialog";
 
 export function MaintenancePage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { can, permissions } = usePermissions();
   const canMove = can("maintenance:update");
+  const canCreate = can("maintenance:create");
 
   const { data: records = [], isLoading } = useRecords(
     "maintenance",
@@ -41,7 +44,21 @@ export function MaintenancePage() {
   const moveStage = useMoveRecordStage("maintenance", maintenanceService);
 
   const [selected, setSelected] = useState<Maintenance | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
+  const createRequested = searchParams.get("create") === "1";
+  const [createOpen, setCreateOpen] = useState(createRequested && canCreate);
+
+  useEffect(() => {
+    if (createRequested && canCreate) setCreateOpen(true);
+  }, [canCreate, createRequested]);
+
+  const setCreateDialogOpen = (open: boolean) => {
+    setCreateOpen(open);
+    if (!open && createRequested) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("create");
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   const stageOf = (id: string) =>
     workflow?.stages.find((s) => s.id === id) ?? null;
@@ -73,7 +90,7 @@ export function MaintenancePage() {
         description="Preventive maintenance schedule — each follows the Maintenance Workflow."
         actions={
           <PermissionGuard permission="maintenance:create">
-            <Button onClick={() => setCreateOpen(true)}>
+            <Button onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4" /> Schedule maintenance
             </Button>
           </PermissionGuard>
@@ -133,7 +150,7 @@ export function MaintenancePage() {
         )}
       </Card>
 
-      <MaintenanceFormDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <MaintenanceFormDialog open={createOpen} onOpenChange={setCreateDialogOpen} />
 
       <WorkflowDetailSheet
         open={Boolean(selected)}
