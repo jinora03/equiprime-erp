@@ -21,7 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  ScrollableTabsList,
+  Tabs,
+  TabsContent,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { COMPANY_NAME } from "@/constants/app";
 import { useTheme } from "@/contexts/theme-context";
 import { PageHeader } from "@/shared/components/page-header";
@@ -43,7 +48,7 @@ export function SettingsPage() {
       />
 
       <Tabs defaultValue="general">
-        <TabsList className="flex-wrap">
+        <ScrollableTabsList>
           <TabsTrigger value="general">
             <Building2 className="h-4 w-4" /> General
           </TabsTrigger>
@@ -59,7 +64,7 @@ export function SettingsPage() {
           <TabsTrigger value="integrations">
             <Plug className="h-4 w-4" /> Integrations
           </TabsTrigger>
-        </TabsList>
+        </ScrollableTabsList>
 
         {/* General */}
         <TabsContent value="general">

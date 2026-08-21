@@ -27,7 +27,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  ScrollableTabsList,
+  Tabs,
+  TabsContent,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { ROUTES } from "@/constants/routes";
 import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -271,7 +276,7 @@ export function JobOrderDetailPage() {
       </Card>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="flex h-auto flex-wrap justify-start gap-1">
+        <ScrollableTabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="workflow">Workflow</TabsTrigger>
           <TabsTrigger value="work-items">
@@ -287,7 +292,7 @@ export function JobOrderDetailPage() {
           <TabsTrigger value="attachments">Attachments</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
-        </TabsList>
+        </ScrollableTabsList>
 
         {/* Overview */}
         <TabsContent value="overview">
@@ -404,7 +409,7 @@ export function JobOrderDetailPage() {
         {/* Labor */}
         <TabsContent value="labor">
           <Card>
-            <Table>
+            <Table className="min-w-[640px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Mechanic</TableHead>

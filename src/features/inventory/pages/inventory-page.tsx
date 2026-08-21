@@ -74,7 +74,7 @@ export function InventoryPage() {
             className="m-4"
           />
         ) : (
-          <Table>
+          <Table className="min-w-[760px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Item</TableHead>

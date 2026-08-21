@@ -91,7 +91,7 @@ export function ProjectsPage() {
             className="m-4"
           />
         ) : (
-          <Table>
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Project</TableHead>

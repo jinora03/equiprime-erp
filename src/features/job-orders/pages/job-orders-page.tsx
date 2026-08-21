@@ -134,7 +134,7 @@ export function JobOrdersPage() {
         />
       ) : view === "list" ? (
         <Card>
-          <Table>
+          <Table className="min-w-[780px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Job Order</TableHead>
