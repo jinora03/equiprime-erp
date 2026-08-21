@@ -16,7 +16,11 @@ import {
   useOrganizationStore,
 } from "@/store/organization.store";
 
-export function CompanySwitcher() {
+interface CompanySwitcherProps {
+  className?: string;
+}
+
+export function CompanySwitcher({ className }: CompanySwitcherProps) {
   const scope = useOrganizationScope();
   const setOrganizationScope = useOrganizationStore(
     (state) => state.setOrganizationScope,
@@ -29,7 +33,10 @@ export function CompanySwitcher() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          className="hidden h-9 max-w-[200px] justify-between gap-2 lg:flex"
+          className={cn(
+            "h-9 max-w-[220px] justify-between gap-2",
+            className,
+          )}
           data-onboarding="company-switcher"
         >
           <span className="truncate text-sm">

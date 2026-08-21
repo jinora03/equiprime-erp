@@ -24,8 +24,8 @@ export function AppLayout() {
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "hidden shrink-0 transition-[width] duration-300 ease-in-out lg:block",
-          sidebarCollapsed ? "w-[76px]" : "w-64",
+          "hidden shrink-0 border-r border-sidebar-border transition-[width] duration-300 ease-in-out lg:block",
+          sidebarCollapsed ? "w-[76px]" : "w-[17rem]",
         )}
       >
         <SidebarContent collapsed={sidebarCollapsed} />
@@ -35,7 +35,7 @@ export function AppLayout() {
       <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
         <SheetContent
           side="left"
-          className="w-72 border-sidebar-border bg-sidebar p-0 [&>button]:text-sidebar-foreground [&>button:hover]:bg-white/10 [&>button:hover]:text-white"
+          className="w-[17rem] border-sidebar-border bg-sidebar p-0 sm:w-72 [&>button]:text-sidebar-foreground [&>button:hover]:bg-white/10 [&>button:hover]:text-white"
         >
           <SidebarContent inSheet onNavigate={() => setMobileSidebarOpen(false)} />
         </SheetContent>
@@ -50,7 +50,7 @@ export function AppLayout() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="mx-auto w-full max-w-[1600px] p-4 sm:p-6 lg:p-8"
+            className="mx-auto w-full max-w-[1600px] p-4 sm:p-5 lg:p-6 xl:p-8"
           >
             <Outlet />
           </motion.div>

@@ -6,6 +6,7 @@ import { ROUTES } from "@/constants/routes";
 import { NAV_SECTIONS } from "@/constants/navigation";
 import { usePermissions } from "@/hooks/use-permissions";
 import { BrandLogo } from "@/shared/components/brand-logo";
+import { CompanySwitcher } from "./company-switcher";
 import equiprimeLogo from "@/assets/equiprime-logo.jpg";
 import heavyEquipment from "@/assets/heavy-equipment.png";
 import {
@@ -75,19 +76,25 @@ export function SidebarContent({
           </Link>
         </div>
 
+        {inSheet ? (
+          <div className="relative z-10 border-b border-sidebar-border px-3 py-3 lg:hidden">
+            <CompanySwitcher className="flex w-full max-w-none border-sidebar-border bg-white/[0.04] text-sidebar-foreground hover:bg-white/[0.08] hover:text-white" />
+          </div>
+        ) : null}
+
         {/* Nav */}
         <nav
-          className="relative z-10 flex-1 space-y-5 overflow-y-auto px-3 py-4"
+          className="relative z-10 flex-1 space-y-4 overflow-y-auto px-2.5 py-4"
           data-onboarding="sidebar-navigation"
         >
           {sections.map((section) => (
             <div key={section.id} className="space-y-1">
               {!collapsed ? (
-                <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-muted">
+                <p className="px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-muted">
                   {section.label}
                 </p>
               ) : (
-                <div className="mx-2 mb-1 border-t border-sidebar-border/60" />
+                <div className="mx-2.5 mb-1 border-t border-sidebar-border/60" />
               )}
               {section.items.map((item) => (
                 <SidebarLink
@@ -148,15 +155,15 @@ function SidebarLink({
       <NavLink
         to={item.path}
         onClick={onNavigate}
-        className="group mx-auto block h-10 w-10 rounded-lg"
+        className="group mx-auto block h-10 w-10 rounded-md"
       >
         {({ isActive }) => (
           <span
             className={cn(
-              "flex h-full w-full items-center justify-center rounded-lg transition-colors",
+              "flex h-full w-full items-center justify-center rounded-md transition-colors",
               isActive
-                ? "bg-sidebar-accent text-slate-900 shadow-sm"
-                : "text-sidebar-foreground hover:bg-white/10 hover:text-white",
+                ? "bg-sidebar-accent/[0.16] text-sidebar-accent"
+                : "text-sidebar-foreground/90 hover:bg-white/[0.07] hover:text-white",
             )}
           >
             <Icon className="h-5 w-5 shrink-0" />
@@ -168,10 +175,10 @@ function SidebarLink({
     return (
       <Tooltip>
         <TooltipTrigger asChild>{collapsedLink}</TooltipTrigger>
-        <TooltipContent side="right" className="flex items-center gap-2">
+        <TooltipContent side="right" sideOffset={8} className="flex items-center gap-2">
           {item.label}
           {item.comingSoon ? (
-            <span className="text-[10px] text-slate-400">Soon</span>
+            <span className="text-[10px] text-muted-foreground">Coming soon</span>
           ) : null}
         </TooltipContent>
       </Tooltip>
@@ -184,21 +191,24 @@ function SidebarLink({
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
-          "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+          "group relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
           isActive
-            ? "bg-sidebar-accent font-semibold text-slate-900 shadow-sm"
-            : "text-sidebar-foreground/90 hover:bg-white/10 hover:text-white",
+            ? "bg-sidebar-accent/[0.14] font-semibold text-sidebar-accent"
+            : "text-sidebar-foreground/90 hover:bg-white/[0.07] hover:text-white",
         )
       }
     >
       <Icon className="h-[18px] w-[18px] shrink-0 text-current" />
-      <span className="flex-1 truncate">{item.label}</span>
+      <span className="min-w-0 flex-1 truncate">{item.label}</span>
       {item.comingSoon ? (
-        <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-medium text-sidebar-muted">
-          Under Construction
+        <span
+          className="shrink-0 text-[9px] font-semibold uppercase tracking-[0.08em] text-sidebar-muted/75"
+          title="Coming soon"
+        >
+          Soon
         </span>
       ) : item.badge ? (
-        <span className="rounded-full bg-sidebar-accent px-1.5 py-0.5 text-[10px] font-semibold text-slate-900">
+        <span className="rounded-full bg-sidebar-accent px-1.5 py-0.5 text-[10px] font-semibold text-slate-950">
           {item.badge}
         </span>
       ) : null}

@@ -36,7 +36,7 @@ export function Breadcrumbs() {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="hidden items-center gap-1.5 text-sm text-muted-foreground md:flex"
+      className="hidden min-w-0 items-center gap-1.5 overflow-hidden text-sm text-muted-foreground md:flex"
     >
       <Link
         to={ROUTES.DASHBOARD}
@@ -51,7 +51,7 @@ export function Breadcrumbs() {
             <Fragment key={crumb.path}>
               <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
               {isLast ? (
-                <span className="font-medium text-foreground">
+                <span className="max-w-[240px] truncate font-medium text-foreground xl:max-w-[360px]">
                   {crumb.label}
                 </span>
               ) : (

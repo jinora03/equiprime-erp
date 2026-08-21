@@ -17,7 +17,7 @@ export function Topbar() {
     useUIStore();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-background px-3 sm:px-4 lg:px-5">
       {/* Mobile: open drawer */}
       <Button
         variant="ghost"
@@ -45,15 +45,13 @@ export function Topbar() {
         )}
       </Button>
 
-      <div className="hidden lg:block">
-        <CompanySwitcher />
-      </div>
+      <CompanySwitcher className="hidden lg:flex" />
 
-      <div className="mx-1 hidden md:block">
+      <div className="mx-1 hidden min-w-0 md:block">
         <Breadcrumbs />
       </div>
 
-      <div className="ml-auto flex items-center gap-0.5">
+      <div className="ml-auto flex shrink-0 items-center gap-0.5">
         <ThemeToggle />
         <NotificationsMenu />
         <div className="mx-1 h-6 w-px bg-border" />
