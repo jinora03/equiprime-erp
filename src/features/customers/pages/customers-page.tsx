@@ -39,14 +39,16 @@ export function CustomersPage() {
             className="m-4"
           />
         ) : (
-          <Table>
+          <Table className="min-w-[760px]">
             <TableHeader>
               <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead className="text-right">Equipment</TableHead>
+                <TableHead className="min-w-[220px]">Customer</TableHead>
+                <TableHead className="min-w-[150px]">Contact</TableHead>
+                <TableHead className="min-w-[190px]">Email</TableHead>
+                <TableHead className="min-w-[145px]">Phone</TableHead>
+                <TableHead className="w-[100px] text-right">
+                  Equipment
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -64,17 +66,22 @@ export function CustomersPage() {
                         {customer.name}
                       </p>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                       {customer.contact}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                       {customer.email}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                       {customer.phone}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Badge variant="secondary">{equipmentCount}</Badge>
+                      <Badge
+                        variant="secondary"
+                        className="min-w-7 justify-center tabular-nums"
+                      >
+                        {equipmentCount}
+                      </Badge>
                     </TableCell>
                   </TableRow>
                 );

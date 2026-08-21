@@ -253,8 +253,8 @@ export function DashboardPage() {
         })}
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.65fr)]">
-        <Card className="border-warning/20 shadow-sm">
+      <section className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.65fr)]">
+        <Card className="min-w-0 border-warning/20 shadow-sm">
           <CardHeader>
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-warning" aria-hidden="true" />
@@ -337,7 +337,7 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <div>
               <CardTitle>Recent Job Orders</CardTitle>
@@ -351,9 +351,9 @@ export function DashboardPage() {
               </Button>
             ) : null}
           </CardHeader>
-          <CardContent className="px-0">
-            <div className="overflow-x-auto">
-              <div className="min-w-[640px]">
+          <CardContent className="min-w-0 px-0">
+            <div className="w-full max-w-full overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:thin]">
+              <div className="min-w-[680px]">
                 <div className="grid grid-cols-[minmax(220px,1.35fr)_minmax(140px,0.9fr)_90px_100px] gap-4 border-y bg-muted/30 px-4 py-1.5 text-xs font-medium text-muted-foreground">
                   <span>Job order</span>
                   <span>Equipment / mechanic</span>
@@ -363,7 +363,7 @@ export function DashboardPage() {
                 <div className="divide-y">
                   {(dashboard?.recentJobOrders ?? []).map((job) => {
                     const row = (
-                      <div className="grid grid-cols-[minmax(220px,1.35fr)_minmax(140px,0.9fr)_90px_100px] items-center gap-4 px-4 py-2">
+                      <div className="grid min-h-[82px] grid-cols-[minmax(220px,1.35fr)_minmax(140px,0.9fr)_90px_100px] items-center gap-4 px-4 py-2">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs text-muted-foreground">

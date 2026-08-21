@@ -25,7 +25,12 @@ export function WorkflowTimeline({
     ordered.find((s) => s.id === currentStageId)?.order ?? 0;
 
   return (
-    <div className={cn("flex w-full overflow-x-auto pb-1", className)}>
+    <div
+      className={cn(
+        "flex w-full overflow-x-auto overscroll-x-contain pb-4 [scrollbar-width:thin]",
+        className,
+      )}
+    >
       {ordered.map((stage, i) => {
         const state =
           stage.order < currentOrder

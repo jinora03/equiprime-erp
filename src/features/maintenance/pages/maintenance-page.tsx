@@ -108,7 +108,7 @@ export function MaintenancePage() {
             className="m-4"
           />
         ) : (
-          <Table>
+          <Table className="min-w-[740px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Reference</TableHead>

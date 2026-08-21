@@ -58,7 +58,7 @@ export function EquipmentPage() {
             className="m-4"
           />
         ) : (
-          <Table>
+          <Table className="min-w-[720px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Equipment</TableHead>

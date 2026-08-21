@@ -118,7 +118,7 @@ export function JobOrderWorkItemsTab({
         />
       ) : (
         <Card>
-          <Table>
+          <Table className="min-w-[980px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Task</TableHead>

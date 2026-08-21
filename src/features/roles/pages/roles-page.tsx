@@ -109,7 +109,7 @@ export function RolesPage() {
         {isLoading ? (
           <TableSkeleton columns={hasActions ? 5 : 4} />
         ) : (
-          <Table>
+          <Table className="min-w-[720px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Role</TableHead>

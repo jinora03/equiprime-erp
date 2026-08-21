@@ -56,7 +56,7 @@ export function WorkflowsPage() {
         {isLoading ? (
           <TableSkeleton columns={6} />
         ) : (
-          <Table>
+          <Table className="min-w-[780px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Workflow Name</TableHead>

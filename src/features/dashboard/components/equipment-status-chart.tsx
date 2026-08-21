@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import type { EquipmentStatusPoint } from "../data";
 
 export function EquipmentStatusChart({
@@ -40,21 +41,31 @@ export function EquipmentStatusChart({
         </div>
       </div>
 
-      <ul className="grid grid-cols-2 gap-x-4 gap-y-3">
-        {data.map((item) => {
-          const percentage = total > 0 ? Math.round((item.value / total) * 100) : 0;
+      <ul className="grid grid-cols-2 overflow-hidden rounded-md border bg-background">
+        {data.map((item, index) => {
+          const percentage =
+            total > 0 ? Math.round((item.value / total) * 100) : 0;
           return (
-            <li key={item.name} className="min-w-0 text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
+            <li
+              key={item.name}
+              className={cn(
+                "flex min-h-[78px] min-w-0 flex-col justify-between p-3",
+                index % 2 === 0 && "border-r",
+                index < 2 && "border-b",
+              )}
+            >
+              <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
                   style={{ backgroundColor: item.color }}
                 />
                 <span className="truncate">{item.name}</span>
               </div>
-              <p className="mt-1 pl-4 font-medium tabular-nums text-foreground">
-                {item.value}{" "}
-                <span className="font-normal text-muted-foreground">· {percentage}%</span>
+              <p className="mt-2 flex items-baseline gap-1.5 tabular-nums">
+                <span className="text-base font-semibold text-foreground">
+                  {item.value}
+                </span>
+                <span className="text-xs text-muted-foreground">{percentage}%</span>
               </p>
             </li>
           );

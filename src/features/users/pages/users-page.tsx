@@ -220,14 +220,14 @@ export function UsersPage() {
             }
           />
         ) : (
-          <Table>
+          <Table className="min-w-[860px]">
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last login</TableHead>
+                <TableHead className="min-w-[260px]">User</TableHead>
+                <TableHead className="min-w-[140px]">Department</TableHead>
+                <TableHead className="min-w-[120px]">Role</TableHead>
+                <TableHead className="min-w-[110px]">Status</TableHead>
+                <TableHead className="min-w-[120px]">Last login</TableHead>
                 {hasRowActions ? (
                   <TableHead className="w-[60px] text-right">Actions</TableHead>
                 ) : null}
@@ -253,16 +253,18 @@ export function UsersPage() {
                       </div>
                     </Link>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                     {user.department}
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-foreground">{user.role}</span>
+                    <span className="whitespace-nowrap text-sm text-foreground">
+                      {user.role}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={user.status} />
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                     {formatRelativeTime(user.last_login)}
                   </TableCell>
                   {hasRowActions ? (
