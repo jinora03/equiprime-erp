@@ -30,6 +30,7 @@ export function CompanySwitcher() {
         <Button
           variant="outline"
           className="hidden h-9 max-w-[200px] justify-between gap-2 lg:flex"
+          data-onboarding="company-switcher"
         >
           <span className="truncate text-sm">
             {active?.displayName ?? "Select branch"}

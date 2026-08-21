@@ -38,7 +38,10 @@ export function SidebarContent({
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="relative flex h-full flex-col overflow-hidden bg-sidebar text-sidebar-foreground">
+      <div
+        className="relative flex h-full flex-col overflow-hidden bg-sidebar text-sidebar-foreground"
+        data-onboarding="sidebar"
+      >
         {/* Subtle heavy-equipment backdrop */}
         <img
           src={heavyEquipment}

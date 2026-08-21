@@ -25,6 +25,7 @@ export function Topbar() {
         className="lg:hidden"
         onClick={() => setMobileSidebarOpen(true)}
         aria-label="Open menu"
+        data-onboarding="mobile-menu"
       >
         <Menu className="h-5 w-5" />
       </Button>

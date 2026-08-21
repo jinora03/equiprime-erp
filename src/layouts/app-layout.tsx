@@ -7,6 +7,7 @@ import { useUIStore } from "@/store/ui.store";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SidebarContent } from "./components/sidebar-content";
 import { Topbar } from "./components/topbar";
+import { OnboardingRoot } from "@/features/onboarding/onboarding-root";
 
 export function AppLayout() {
   const { sidebarCollapsed, mobileSidebarOpen, setMobileSidebarOpen } =
@@ -55,6 +56,7 @@ export function AppLayout() {
           </motion.div>
         </main>
       </div>
+      <OnboardingRoot />
     </div>
   );
 }

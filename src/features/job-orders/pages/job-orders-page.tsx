@@ -72,37 +72,39 @@ export function JobOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Job Orders"
-        description="Service and repair jobs — the primary record for all field work."
-        actions={
-          <div className="flex items-center gap-2">
-            <div className="inline-flex rounded-lg border bg-muted/40 p-0.5">
-              <Button
-                variant={view === "list" ? "default" : "ghost"}
-                size="sm"
-                className="h-8"
-                onClick={() => setView("list")}
-              >
-                <Rows3 className="h-4 w-4" /> List
-              </Button>
-              <Button
-                variant={view === "kanban" ? "default" : "ghost"}
-                size="sm"
-                className="h-8"
-                onClick={() => setView("kanban")}
-              >
-                <KanbanSquare className="h-4 w-4" /> Kanban
-              </Button>
+      <div data-onboarding="job-orders">
+        <PageHeader
+          title="Job Orders"
+          description="Service and repair jobs — the primary record for all field work."
+          actions={
+            <div className="flex items-center gap-2">
+              <div className="inline-flex rounded-lg border bg-muted/40 p-0.5">
+                <Button
+                  variant={view === "list" ? "default" : "ghost"}
+                  size="sm"
+                  className="h-8"
+                  onClick={() => setView("list")}
+                >
+                  <Rows3 className="h-4 w-4" /> List
+                </Button>
+                <Button
+                  variant={view === "kanban" ? "default" : "ghost"}
+                  size="sm"
+                  className="h-8"
+                  onClick={() => setView("kanban")}
+                >
+                  <KanbanSquare className="h-4 w-4" /> Kanban
+                </Button>
+              </div>
+              <PermissionGuard permission="job-orders:create">
+                <Button onClick={() => setCreateOpen(true)}>
+                  <Plus className="h-4 w-4" /> New job order
+                </Button>
+              </PermissionGuard>
             </div>
-            <PermissionGuard permission="job-orders:create">
-              <Button onClick={() => setCreateOpen(true)}>
-                <Plus className="h-4 w-4" /> New job order
-              </Button>
-            </PermissionGuard>
-          </div>
-        }
-      />
+          }
+        />
+      </div>
 
       {isLoading ? (
         <Card>

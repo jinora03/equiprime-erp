@@ -87,10 +87,12 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Dashboard"
-        description={`Welcome back, ${user?.first_name ?? "there"}! ${dashboard ? `${dashboard.branchName} · ${dashboard.region}` : "Loading branch data…"}`}
-      />
+      <div data-onboarding="dashboard">
+        <PageHeader
+          title="Dashboard"
+          description={`Welcome back, ${user?.first_name ?? "there"}! ${dashboard ? `${dashboard.branchName} · ${dashboard.region}` : "Loading branch data…"}`}
+        />
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">

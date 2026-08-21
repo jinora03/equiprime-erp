@@ -71,10 +71,12 @@ export function ApprovalsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="My Approvals"
-        description="Review business and workflow requests assigned to your role for the active branch."
-      />
+      <div data-onboarding="approvals">
+        <PageHeader
+          title="My Approvals"
+          description="Review business and workflow requests assigned to your role for the active branch."
+        />
+      </div>
 
       <Tabs value={tab} onValueChange={(value) => setTab(value as typeof tab)}>
         <TabsList>

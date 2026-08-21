@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, LogOut, Settings, UserCircle } from "lucide-react";
+import { ChevronDown, CircleHelp, LogOut, Settings, UserCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -13,10 +13,12 @@ import {
 import { ROUTES } from "@/constants/routes";
 import { useAuth } from "@/contexts/auth-context";
 import { UserAvatar } from "@/shared/components/user-avatar";
+import { useOnboardingStore } from "@/features/onboarding/onboarding.store";
 
 export function UserMenu() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const startTour = useOnboardingStore((state) => state.startTour);
 
   if (!user) return null;
 
@@ -28,7 +30,10 @@ export function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-2 rounded-lg p-1 pr-2 outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring">
+      <DropdownMenuTrigger
+        className="flex items-center gap-2 rounded-lg p-1 pr-2 outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+        data-onboarding="user-menu"
+      >
         <UserAvatar name={user.full_name} src={user.avatar} className="h-8 w-8" />
         <div className="hidden text-left leading-tight md:block">
           <p className="text-sm font-medium text-foreground">
@@ -55,6 +60,9 @@ export function UserMenu() {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate(ROUTES.SETTINGS)}>
           <Settings className="h-4 w-4" /> Settings
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={startTour}>
+          <CircleHelp className="h-4 w-4" /> Replay product tour
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
