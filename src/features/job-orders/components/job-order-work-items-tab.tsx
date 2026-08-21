@@ -41,13 +41,13 @@ import { WorkItemKanban } from "@/features/work-items/components/work-item-kanba
 interface JobOrderWorkItemsTabProps {
   jobOrderId: number;
   jobOrderCode: string;
-  technicianIds: number[];
+  mechanicIds: number[];
 }
 
 export function JobOrderWorkItemsTab({
   jobOrderId,
   jobOrderCode,
-  technicianIds,
+  mechanicIds,
 }: JobOrderWorkItemsTabProps) {
   const { can } = usePermissions();
   const canEdit = can("work-items:update");
@@ -122,7 +122,7 @@ export function JobOrderWorkItemsTab({
             <TableHeader>
               <TableRow>
                 <TableHead>Task</TableHead>
-                <TableHead>Technician</TableHead>
+                <TableHead>Mechanic</TableHead>
                 <TableHead>Priority</TableHead>
                 <TableHead className="min-w-[96px] text-right">Hours</TableHead>
                 <TableHead>Due</TableHead>
@@ -195,7 +195,7 @@ export function JobOrderWorkItemsTab({
         onOpenChange={setCreateOpen}
         jobOrderId={jobOrderId}
         jobOrderCode={jobOrderCode}
-        technicianIds={technicianIds}
+        mechanicIds={mechanicIds}
       />
     </div>
   );

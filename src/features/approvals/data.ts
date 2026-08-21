@@ -34,7 +34,7 @@ export const approvalTaskSeed: ApprovalTaskSeed[] = [
     confirmedConditions: [],
     requestedById: 10,
     requestedByName: "Jun Bautista",
-    requestedByRole: "Technician",
+    requestedByRole: "Mechanic",
     requestedAt: "2026-06-26T10:15:00Z",
   },
   {
@@ -49,7 +49,7 @@ export const approvalTaskSeed: ApprovalTaskSeed[] = [
     confirmedConditions: ["qa_passed"],
     requestedById: 10,
     requestedByName: "Jun Bautista",
-    requestedByRole: "Technician",
+    requestedByRole: "Mechanic",
     requestedAt: "2026-06-30T15:20:00Z",
   },
   {
@@ -64,7 +64,7 @@ export const approvalTaskSeed: ApprovalTaskSeed[] = [
     confirmedConditions: [],
     requestedById: 23,
     requestedByName: "Joel Manalo",
-    requestedByRole: "Technician",
+    requestedByRole: "Mechanic",
     requestedAt: "2026-07-01T07:05:00Z",
   },
 ];

@@ -19,7 +19,7 @@ import type { NavItem } from "@/types";
 
 interface SidebarContentProps {
   collapsed?: boolean;
-  onNavigate?: () => void;
+  onNavigate?: (path: string) => void;
   /** True when rendered inside the mobile drawer (reserves room for its close button). */
   inSheet?: boolean;
 }
@@ -61,7 +61,11 @@ export function SidebarContent({
           <Link
             to={ROUTES.DASHBOARD}
             className={cn("block", collapsed && "flex items-center justify-center")}
-            onClick={onNavigate}
+            onClick={(event) => {
+              if (!onNavigate) return;
+              event.preventDefault();
+              onNavigate(ROUTES.DASHBOARD);
+            }}
             aria-label={APP_NAME}
           >
             {collapsed ? (
@@ -140,7 +144,7 @@ function SidebarLink({
 }: {
   item: NavItem;
   collapsed: boolean;
-  onNavigate?: () => void;
+  onNavigate?: (path: string) => void;
 }) {
   const Icon = item.icon;
 
@@ -154,7 +158,11 @@ function SidebarLink({
     const collapsedLink = (
       <NavLink
         to={item.path}
-        onClick={onNavigate}
+        onClick={(event) => {
+          if (!onNavigate) return;
+          event.preventDefault();
+          onNavigate(item.path);
+        }}
         className="group mx-auto block h-10 w-10 rounded-md"
       >
         {({ isActive }) => (
@@ -188,7 +196,11 @@ function SidebarLink({
   return (
     <NavLink
       to={item.path}
-      onClick={onNavigate}
+      onClick={(event) => {
+        if (!onNavigate) return;
+        event.preventDefault();
+        onNavigate(item.path);
+      }}
       className={({ isActive }) =>
         cn(
           "group relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",

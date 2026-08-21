@@ -13,4 +13,13 @@ export const equipmentSeed: Equipment[] = [
   { id: 9, code: "CR-02", name: "Crane CR-02", model: "STC250", type: "Crane", companyId: "equiprime", branchId: "cebu", status: "idle", customerId: 7, customerName: "Skyline Construction" },
   { id: 10, code: "DV-11", name: "Excavator DV-11", model: "SE220", type: "Excavator", companyId: "equiprime", branchId: "davao", status: "in_use", customerId: 8, customerName: "Davao Earthworks" },
   { id: 11, code: "WL-03", name: "Wheel Loader WL-03", model: "L936", type: "Wheel Loader", companyId: "equiprime", branchId: "davao", status: "idle", customerId: 8, customerName: "Davao Earthworks" },
+  { id: 12, code: "GR-14", name: "Motor Grader GR-14", model: "SG21-3", type: "Motor Grader", companyId: "equiprime", branchId: "main", status: "in_use", customerId: 9, customerName: "Northline Infrastructure" },
+  { id: 13, code: "FL-07", name: "Forklift FL-07", model: "CPCD50", type: "Forklift", companyId: "equiprime", branchId: "main", status: "idle", customerId: 10, customerName: "HarborWorks Construction" },
+  { id: 14, code: "GEN-04", name: "Generator GEN-04", model: "C150D5", type: "Generator", companyId: "equiprime", branchId: "main", status: "in_use", customerId: 11, customerName: "SolidRock Aggregates" },
+  { id: 15, code: "CP-03", name: "Compactor CP-03", model: "SSR120", type: "Compactor", companyId: "equiprime", branchId: "main", status: "under_service", customerId: 12, customerName: "Pacific Equipment Leasing" },
+  { id: 16, code: "EX-18", name: "Excavator EX-18", model: "SE260LC", type: "Excavator", companyId: "equiprime", branchId: "main", status: "idle", customerId: 9, customerName: "Northline Infrastructure" },
+  { id: 17, code: "FL-C02", name: "Forklift FL-C02", model: "CPCD35", type: "Forklift", companyId: "equiprime", branchId: "cebu", status: "in_use", customerId: 13, customerName: "Visayas Concrete Works" },
+  { id: 18, code: "GR-C01", name: "Motor Grader GR-C01", model: "SG18-3", type: "Motor Grader", companyId: "equiprime", branchId: "cebu", status: "under_service", customerId: 13, customerName: "Visayas Concrete Works" },
+  { id: 19, code: "EX-D15", name: "Excavator EX-D15", model: "SE215W", type: "Excavator", companyId: "equiprime", branchId: "davao", status: "in_use", customerId: 14, customerName: "Mindanao Quarry Services" },
+  { id: 20, code: "GEN-D03", name: "Generator GEN-D03", model: "C100D5", type: "Generator", companyId: "equiprime", branchId: "davao", status: "under_service", customerId: 14, customerName: "Mindanao Quarry Services" },
 ];

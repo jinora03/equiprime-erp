@@ -36,7 +36,7 @@ export function WorkflowsPage() {
   const canManage = can("workflows:manage");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Workflows"
         description="Configure the business processes that power your Service modules."

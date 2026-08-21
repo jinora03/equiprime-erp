@@ -39,7 +39,7 @@ export function NotificationsPage() {
     );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Notifications"
         description="Stay on top of activity across your workspace."

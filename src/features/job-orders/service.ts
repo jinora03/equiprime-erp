@@ -13,6 +13,7 @@ import { userService } from "@/services/user.service";
 import { workflowService } from "@/services/workflow.service";
 import { getActiveOrganizationScope } from "@/store/organization.store";
 import { jobOrderSeed } from "./data";
+import { serviceVehicleService } from "./service-vehicle-service";
 import type { JobOrder, JobOrderInput } from "./types";
 
 const store = createRecordStore<JobOrder>("job-orders", jobOrderSeed, {
@@ -45,12 +46,16 @@ export const jobOrderService = {
   async create(input: JobOrderInput): Promise<JobOrder> {
     const now = new Date().toISOString();
     const scope = getActiveOrganizationScope();
-    const [workflow, customer, equipment, technicians] = await Promise.all([
-      workflowService.get(input.workflowId),
-      customerService.get(input.customerId, scope),
-      equipmentService.get(input.equipmentId, scope),
-      userService.listTechnicians(scope),
-    ]);
+    const [workflow, customer, equipment, mechanics, serviceVehicle] =
+      await Promise.all([
+        workflowService.get(input.workflowId),
+        customerService.get(input.customerId, scope),
+        equipmentService.get(input.equipmentId, scope),
+        userService.listMechanics(scope),
+        input.serviceVehicleId
+          ? serviceVehicleService.get(input.serviceVehicleId, scope)
+          : Promise.resolve(null),
+      ]);
     if (workflow.moduleId !== "job-orders" || workflow.status !== "active") {
       throw new Error("Select an active Job Orders workflow.");
     }
@@ -58,21 +63,24 @@ export const jobOrderService = {
     if (!equipment || equipment.customerId !== customer.id) {
       throw new Error("Select equipment that belongs to the selected customer.");
     }
+    if (input.serviceVehicleId && !serviceVehicle) {
+      throw new Error("Select an active service vehicle from this branch.");
+    }
 
-    const technicianById = new Map(
-      technicians.map((technician) => [technician.id, technician]),
+    const mechanicById = new Map(
+      mechanics.map((mechanic) => [mechanic.id, mechanic]),
     );
-    const selectedTechnicians = input.assigneeIds.flatMap((id) => {
-      const technician = technicianById.get(id);
-      return technician ? [technician] : [];
+    const selectedMechanics = input.assigneeIds.flatMap((id) => {
+      const mechanic = mechanicById.get(id);
+      return mechanic ? [mechanic] : [];
     });
-    if (selectedTechnicians.length !== input.assigneeIds.length) {
+    if (selectedMechanics.length !== input.assigneeIds.length) {
       throw new Error(
-        "One or more selected technicians are not available in this branch.",
+        "One or more selected mechanics are not available in this branch.",
       );
     }
-    const assigneeNames = selectedTechnicians.map(
-      (technician) => technician.full_name,
+    const assigneeNames = selectedMechanics.map(
+      (mechanic) => mechanic.full_name,
     );
 
     const firstStage = getInitialWorkflowStageId(workflow);
@@ -93,6 +101,10 @@ export const jobOrderService = {
       customerId: customer.id,
       equipment: equipment.name,
       equipmentId: equipment.id,
+      serviceVehicleId: serviceVehicle?.id ?? null,
+      serviceVehicle: serviceVehicle
+        ? `${serviceVehicle.code} · ${serviceVehicle.name}`
+        : null,
       workflowId: input.workflowId,
       priority: input.priority,
       dueDate: input.dueDate,

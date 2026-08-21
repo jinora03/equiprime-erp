@@ -41,7 +41,7 @@ export function EquipmentPage() {
   const customerById = new Map(customers.map((customer) => [customer.id, customer]));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Equipment"
         description="Customer-owned equipment registered to the active branch."

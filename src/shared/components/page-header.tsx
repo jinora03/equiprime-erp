@@ -19,16 +19,18 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between",
+        "flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between",
         className,
       )}
     >
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           {title}
         </h1>
         {description ? (
-          <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+          <p className="max-w-3xl text-sm leading-5 text-muted-foreground">
+            {description}
+          </p>
         ) : null}
       </div>
       {actions ? (

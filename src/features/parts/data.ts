@@ -19,7 +19,7 @@ export const partsRequestSeed: PartsRequest[] = [
     ],
     requestedById: 10,
     requestedBy: "Jun Bautista",
-    requestedByRole: "Technician",
+    requestedByRole: "Mechanic",
     createdAt: "2026-06-25T09:30:00Z",
     updatedAt: "2026-06-26T10:00:00Z",
     decision: {
@@ -43,7 +43,7 @@ export const partsRequestSeed: PartsRequest[] = [
     ],
     requestedById: 10,
     requestedBy: "Jun Bautista",
-    requestedByRole: "Technician",
+    requestedByRole: "Mechanic",
     createdAt: "2026-06-26T08:00:00Z",
     updatedAt: "2026-06-26T14:00:00Z",
     decision: {

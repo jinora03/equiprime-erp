@@ -70,7 +70,7 @@ export function ApprovalsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div data-onboarding="approvals">
         <PageHeader
           title="My Approvals"

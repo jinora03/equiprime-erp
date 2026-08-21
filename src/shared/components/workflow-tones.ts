@@ -1,43 +1,47 @@
 import type { WorkflowTone } from "@/types";
 
-/** Tailwind class sets per workflow stage tone (used by badges + timeline). */
+/**
+ * Workflow tone names are persisted demo data, but their rendering is mapped to
+ * the shared Equiprime brand/semantic palette so stages never introduce an
+ * unrelated rainbow of Tailwind colors.
+ */
 export const TONE: Record<
   WorkflowTone,
   { dot: string; badge: string; text: string }
 > = {
   slate: {
-    dot: "bg-slate-400",
-    badge: "bg-slate-500/10 text-slate-600 dark:text-slate-300",
-    text: "text-slate-600 dark:text-slate-300",
+    dot: "bg-muted-foreground/70",
+    badge: "bg-muted text-muted-foreground",
+    text: "text-muted-foreground",
   },
   blue: {
-    dot: "bg-blue-700 dark:bg-blue-400",
-    badge: "bg-blue-700/[0.08] text-blue-800 dark:bg-blue-400/10 dark:text-blue-300",
-    text: "text-blue-800 dark:text-blue-300",
+    dot: "bg-info",
+    badge: "bg-info/10 text-info",
+    text: "text-info",
   },
   amber: {
-    dot: "bg-amber-700 dark:bg-amber-400",
-    badge: "bg-amber-700/[0.09] text-amber-800 dark:bg-amber-400/10 dark:text-amber-300",
-    text: "text-amber-800 dark:text-amber-300",
+    dot: "bg-warning",
+    badge: "bg-warning/10 text-warning",
+    text: "text-warning",
   },
   violet: {
-    dot: "bg-violet-700 dark:bg-violet-400",
-    badge: "bg-violet-700/[0.08] text-violet-800 dark:bg-violet-400/10 dark:text-violet-300",
-    text: "text-violet-800 dark:text-violet-300",
+    dot: "bg-primary",
+    badge: "bg-primary/10 text-primary",
+    text: "text-primary",
   },
   green: {
-    dot: "bg-emerald-700 dark:bg-emerald-400",
-    badge: "bg-emerald-700/[0.08] text-emerald-800 dark:bg-emerald-400/10 dark:text-emerald-300",
-    text: "text-emerald-800 dark:text-emerald-300",
+    dot: "bg-success",
+    badge: "bg-success/10 text-success",
+    text: "text-success",
   },
   orange: {
-    dot: "bg-orange-700 dark:bg-orange-400",
-    badge: "bg-orange-700/[0.08] text-orange-800 dark:bg-orange-400/10 dark:text-orange-300",
-    text: "text-orange-800 dark:text-orange-300",
+    dot: "bg-warning",
+    badge: "bg-warning/10 text-warning",
+    text: "text-warning",
   },
   red: {
-    dot: "bg-red-700 dark:bg-red-400",
-    badge: "bg-red-700/[0.08] text-red-800 dark:bg-red-400/10 dark:text-red-300",
-    text: "text-red-800 dark:text-red-300",
+    dot: "bg-destructive",
+    badge: "bg-destructive/10 text-destructive",
+    text: "text-destructive",
   },
 };

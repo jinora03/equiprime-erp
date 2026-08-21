@@ -22,7 +22,7 @@ export function CustomersPage() {
   const isLoading = customersLoading || equipmentLoading;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Customers"
         description="Customer accounts for the active branch and the equipment registered to them."

@@ -42,17 +42,17 @@ export const workItemService = {
       throw new Error("Job order not found in the active branch.");
     }
 
-    const technicians = input.assigneeId
-      ? await userService.listTechnicians(scope)
+    const mechanics = input.assigneeId
+      ? await userService.listMechanics(scope)
       : [];
-    const technician = input.assigneeId
-      ? technicians.find((candidate) => candidate.id === input.assigneeId)
+    const mechanic = input.assigneeId
+      ? mechanics.find((candidate) => candidate.id === input.assigneeId)
       : null;
-    if (input.assigneeId && !technician) {
-      throw new Error("Select an active technician from this branch.");
+    if (input.assigneeId && !mechanic) {
+      throw new Error("Select an active mechanic from this branch.");
     }
     if (input.assigneeId && !jobOrder.assigneeIds.includes(input.assigneeId)) {
-      throw new Error("Assign this technician to the job order first.");
+      throw new Error("Assign this mechanic to the job order first.");
     }
 
     counter += 1;
@@ -64,8 +64,8 @@ export const workItemService = {
       jobOrderCode: jobOrder.code,
       companyId: scope.companyId,
       branchId: scope.branchId,
-      assigneeId: technician?.id ?? null,
-      assignee: technician?.full_name ?? null,
+      assigneeId: mechanic?.id ?? null,
+      assignee: mechanic?.full_name ?? null,
       priority: input.priority,
       estimatedHours: input.estimatedHours ?? 0,
       actualHours: 0,

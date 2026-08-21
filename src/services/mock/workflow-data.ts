@@ -32,7 +32,7 @@ export const WORKFLOWS: Workflow[] = [
       stage("jo-draft", "Draft", 1, "slate", "Logged, not yet submitted."),
       stage("jo-submitted", "Submitted", 2, "blue", "Submitted for approval."),
       stage("jo-approved", "Approved", 3, "violet", "Approved to proceed."),
-      stage("jo-assigned", "Assigned", 4, "blue", "Assigned to a technician."),
+      stage("jo-assigned", "Assigned", 4, "blue", "Assigned to a mechanic."),
       stage("jo-diagnosing", "Diagnosing", 5, "amber", "Fault diagnosis underway."),
       stage("jo-waiting-parts", "Waiting for Parts", 6, "orange", "Awaiting parts."),
       stage("jo-repair", "Repair", 7, "amber", "Repair in progress."),
@@ -190,7 +190,7 @@ export const WORKFLOWS: Workflow[] = [
     updatedAt: "2026-06-29T09:45:00Z",
     stages: [
       stage("mt-scheduled", "Scheduled", 1, "slate", "Booked on the calendar."),
-      stage("mt-assigned", "Assigned", 2, "blue", "Technician assigned."),
+      stage("mt-assigned", "Assigned", 2, "blue", "Mechanic assigned."),
       stage("mt-maintenance", "Maintenance", 3, "amber", "Service in progress."),
       stage("mt-inspection", "Inspection", 4, "violet", "Post-service inspection."),
       stage("mt-completed", "Completed", 5, "green", "Signed off and returned to service."),

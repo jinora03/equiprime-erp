@@ -87,7 +87,7 @@ export function JobOrdersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div data-onboarding="job-orders">
         <PageHeader
           title="Job Orders"
@@ -162,7 +162,12 @@ export function JobOrdersPage() {
                     {jo.customer}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {jo.equipment}
+                    <p>{jo.equipment}</p>
+                    {jo.serviceVehicle ? (
+                      <p className="mt-0.5 text-xs text-muted-foreground/80">
+                        {jo.serviceVehicle}
+                      </p>
+                    ) : null}
                   </TableCell>
                   <TableCell>
                     <PriorityBadge priority={jo.priority} />

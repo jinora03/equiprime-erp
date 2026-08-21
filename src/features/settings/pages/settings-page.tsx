@@ -267,7 +267,7 @@ export function SettingsPage() {
               {[
                 { name: "Email & SMTP", desc: "Transactional email delivery" },
                 { name: "Accounting Sync", desc: "QuickBooks / Xero export" },
-                { name: "SMS Gateway", desc: "Field technician alerts" },
+                { name: "SMS Gateway", desc: "Field mechanic alerts" },
                 { name: "Webhooks", desc: "Push events to your systems" },
               ].map((integration) => (
                 <div

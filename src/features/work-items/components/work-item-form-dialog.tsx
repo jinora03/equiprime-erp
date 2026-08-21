@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useTechnicians } from "@/features/users/hooks";
+import { useMechanics } from "@/features/users/hooks";
 import { useCreateWorkItem } from "../hooks";
 
 const schema = z.object({
@@ -51,7 +51,7 @@ interface WorkItemFormDialogProps {
   /** The parent job order — work items cannot exist independently. */
   jobOrderId: number;
   jobOrderCode: string;
-  technicianIds: number[];
+  mechanicIds: number[];
 }
 
 export function WorkItemFormDialog({
@@ -59,12 +59,12 @@ export function WorkItemFormDialog({
   onOpenChange,
   jobOrderId,
   jobOrderCode,
-  technicianIds,
+  mechanicIds,
 }: WorkItemFormDialogProps) {
   const create = useCreateWorkItem();
-  const { data: technicians = [] } = useTechnicians();
-  const assignedTechnicians = technicians.filter((technician) =>
-    technicianIds.includes(technician.id),
+  const { data: mechanics = [] } = useMechanics();
+  const assignedMechanics = mechanics.filter((mechanic) =>
+    mechanicIds.includes(mechanic.id),
   );
 
   const form = useForm<FormValues>({
@@ -132,7 +132,7 @@ export function WorkItemFormDialog({
                 name="assigneeId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Technician</FormLabel>
+                    <FormLabel>Mechanic</FormLabel>
                     <Select
                       value={field.value || "unassigned"}
                       onValueChange={(value) =>
@@ -146,20 +146,20 @@ export function WorkItemFormDialog({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {assignedTechnicians.map((technician) => (
+                        {assignedMechanics.map((mechanic) => (
                           <SelectItem
-                            key={technician.id}
-                            value={String(technician.id)}
+                            key={mechanic.id}
+                            value={String(mechanic.id)}
                           >
-                            {technician.full_name}
+                            {mechanic.full_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      {assignedTechnicians.length > 0
-                        ? "Only technicians assigned to this job order are listed."
-                        : "Assign technicians to the job order to make them available here."}
+                      {assignedMechanics.length > 0
+                        ? "Only mechanics assigned to this job order are listed."
+                        : "Assign mechanics to the job order to make them available here."}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

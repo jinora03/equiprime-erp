@@ -62,7 +62,7 @@ export function DepartmentsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Departments"
         description="Operational units that organize your team and workflows."

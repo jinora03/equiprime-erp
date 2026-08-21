@@ -35,16 +35,18 @@ import { useAuth } from "@/contexts/auth-context";
 import { useCreateRecord } from "@/hooks/use-workflow-records";
 import { useCustomers } from "@/features/customers/hooks";
 import { useEquipmentByCustomer } from "@/features/equipment/hooks";
-import { useTechnicians } from "@/features/users/hooks";
+import { useMechanics } from "@/features/users/hooks";
 import { useWorkflows } from "@/features/workflows/hooks";
 import { jobOrderService } from "../service";
-import { TechnicianMultiSelect } from "./technician-multi-select";
+import { useServiceVehicles } from "../use-service-vehicles";
+import { MechanicMultiSelect } from "./mechanic-multi-select";
 
 const schema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   customerId: z.string().min(1, "Select a customer"),
   equipmentId: z.string().min(1, "Select equipment"),
+  serviceVehicleId: z.string().optional(),
   assigneeIds: z.array(z.number()),
   priority: z.enum(["High", "Medium", "Low"]),
   workflowId: z.string().min(1, "Select a workflow"),
@@ -64,7 +66,8 @@ export function JobOrderFormDialog({
   const { user } = useAuth();
   const create = useCreateRecord("job-orders", jobOrderService.create);
   const { data: customers = [] } = useCustomers();
-  const { data: technicians = [] } = useTechnicians();
+  const { data: mechanics = [] } = useMechanics();
+  const { data: serviceVehicles = [] } = useServiceVehicles();
   const { data: workflows = [] } = useWorkflows();
   const jobWorkflows = workflows.filter(
     (w) => w.moduleId === "job-orders" && w.status === "active",
@@ -77,6 +80,7 @@ export function JobOrderFormDialog({
       description: "",
       customerId: "",
       equipmentId: "",
+      serviceVehicleId: "",
       assigneeIds: [],
       priority: "Medium",
       workflowId: "",
@@ -116,6 +120,9 @@ export function JobOrderFormDialog({
         description: values.description,
         customerId: customer.id,
         equipmentId: eq.id,
+        serviceVehicleId: values.serviceVehicleId
+          ? Number(values.serviceVehicleId)
+          : null,
         assigneeIds: values.assigneeIds,
         priority: values.priority,
         workflowId: Number(values.workflowId),
@@ -249,20 +256,54 @@ export function JobOrderFormDialog({
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="serviceVehicleId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Service vehicle</FormLabel>
+                  <Select
+                    value={field.value || "none"}
+                    onValueChange={(value) =>
+                      field.onChange(value === "none" ? "" : value)
+                    }
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a service vehicle" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">No service vehicle</SelectItem>
+                      {serviceVehicles.map((vehicle) => (
+                        <SelectItem key={vehicle.id} value={String(vehicle.id)}>
+                          {vehicle.code} · {vehicle.name} · {vehicle.plateNumber}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Equiprime field vehicle used by the assigned mechanics.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="assigneeIds"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Assigned technicians</FormLabel>
-                    <TechnicianMultiSelect
-                      technicians={technicians}
+                    <FormLabel>Assigned mechanics</FormLabel>
+                    <MechanicMultiSelect
+                      mechanics={mechanics}
                       value={field.value}
                       onChange={field.onChange}
                     />
                     <FormDescription>
-                      Active employees from the Technician department in this branch.
+                      Active employees from the Mechanic department in this branch.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

@@ -67,7 +67,7 @@ export function ProjectsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Projects"
         description="Service and installation projects — each follows the Project Workflow."

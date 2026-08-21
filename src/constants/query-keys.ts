@@ -17,8 +17,8 @@ export const queryKeys = {
       ["users", "list", scopeKey, filters] as const,
     detail: (id: number, scopeKey = "") =>
       ["users", "detail", scopeKey, id] as const,
-    technicians: (scopeKey = "") =>
-      ["users", "technicians", scopeKey] as const,
+    mechanics: (scopeKey = "") =>
+      ["users", "mechanics", scopeKey] as const,
   },
   departments: {
     all: ["departments"] as const,
@@ -65,6 +65,10 @@ export const queryKeys = {
     list: (scopeKey = "") => ["equipment", "list", scopeKey] as const,
     byCustomer: (customerId: number, scopeKey = "") =>
       ["equipment", "customer", scopeKey, customerId] as const,
+  },
+  serviceVehicles: {
+    all: ["service-vehicles"] as const,
+    list: (scopeKey = "") => ["service-vehicles", "list", scopeKey] as const,
   },
   warehouses: {
     all: ["warehouses"] as const,

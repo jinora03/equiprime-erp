@@ -50,7 +50,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     id: "job-orders",
     title: "Follow service work end to end",
     description:
-      "Job Orders connect customers, equipment, technicians, Work Items, parts, and configured workflow stages in one service record.",
+      "Job Orders connect customers, equipment, mechanics, Work Items, parts, and configured workflow stages in one service record.",
     icon: ClipboardList,
     target: '[data-onboarding="job-orders"]',
     route: ROUTES.JOB_ORDERS,

@@ -29,7 +29,7 @@ export interface RecentJobOrder {
   title: string;
   customer: string;
   equipment: string;
-  technician: string;
+  mechanic: string;
   priority: DashboardPriority;
   status: JobOrderStatus;
   dueDate: string;

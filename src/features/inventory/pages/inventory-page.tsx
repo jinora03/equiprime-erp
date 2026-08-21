@@ -42,7 +42,7 @@ export function InventoryPage() {
       : items.filter((i) => i.warehouseName === warehouse);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Inventory"
         description="Warehouse stock levels. Only released parts requests consume on-hand stock."

@@ -300,11 +300,15 @@ export function JobOrderDetailPage() {
                 <Detail label="Customer" value={jobOrder.customer} />
                 <Detail label="Equipment" value={jobOrder.equipment} />
                 <Detail
+                  label="Service vehicle"
+                  value={jobOrder.serviceVehicle ?? "Not assigned"}
+                />
+                <Detail
                   label="Priority"
                   value={<PriorityBadge priority={jobOrder.priority} />}
                 />
                 <Detail
-                  label="Technicians"
+                  label="Mechanics"
                   value={jobOrder.assignee ?? "Unassigned"}
                 />
                 <Detail label="Due date" value={formatDate(jobOrder.dueDate)} />
@@ -388,7 +392,7 @@ export function JobOrderDetailPage() {
           <JobOrderWorkItemsTab
             jobOrderId={jobOrder.id}
             jobOrderCode={jobOrder.code}
-            technicianIds={jobOrder.assigneeIds}
+            mechanicIds={jobOrder.assigneeIds}
           />
         </TabsContent>
 
@@ -403,7 +407,7 @@ export function JobOrderDetailPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Technician</TableHead>
+                  <TableHead>Mechanic</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead className="text-right">Hours</TableHead>
                   <TableHead className="text-right">Rate</TableHead>
@@ -413,7 +417,7 @@ export function JobOrderDetailPage() {
               <TableBody>
                 {SAMPLE_LABOR.map((l) => (
                   <TableRow key={l.id}>
-                    <TableCell className="font-medium">{l.technician}</TableCell>
+                    <TableCell className="font-medium">{l.mechanic}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(l.date)}
                     </TableCell>

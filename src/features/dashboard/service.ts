@@ -260,7 +260,7 @@ export const dashboardService = {
           title: job.title,
           customer: job.customer,
           equipment: job.equipment,
-          technician: job.assignee || "Unassigned",
+          mechanic: job.assignee || "Unassigned",
           priority: job.priority,
           status: jobOrderStatus(job.currentStageId),
           dueDate: job.dueDate,

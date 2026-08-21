@@ -7,7 +7,7 @@ import { ROUTES } from "@/constants/routes";
 export function UnauthorizedPage() {
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+      <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
         <ShieldX className="h-8 w-8" />
       </div>
       <p className="mt-6 text-sm font-semibold uppercase tracking-widest text-destructive">

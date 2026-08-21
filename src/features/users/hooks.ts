@@ -34,12 +34,12 @@ export function useUser(id: number, enabled = true) {
 }
 
 
-export function useTechnicians() {
+export function useMechanics() {
   const scope = useOrganizationScope();
   const scopeKey = organizationScopeKey(scope);
   return useQuery({
-    queryKey: queryKeys.users.technicians(scopeKey),
-    queryFn: () => userService.listTechnicians(scope),
+    queryKey: queryKeys.users.mechanics(scopeKey),
+    queryFn: () => userService.listMechanics(scope),
   });
 }
 

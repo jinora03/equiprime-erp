@@ -84,7 +84,7 @@ export function MaintenancePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Maintenance"
         description="Preventive maintenance schedule — each follows the Maintenance Workflow."

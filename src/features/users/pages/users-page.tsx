@@ -122,7 +122,7 @@ export function UsersPage() {
   const hasRowActions = canEdit || canDelete;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="User Management"
         description="Manage team members, their departments, roles, and access."

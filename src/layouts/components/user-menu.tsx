@@ -31,7 +31,7 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex items-center gap-2 rounded-lg p-1 pr-2 outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex items-center gap-2 rounded-md p-1 pr-2 outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
         data-onboarding="user-menu"
       >
         <UserAvatar name={user.full_name} src={user.avatar} className="h-8 w-8" />

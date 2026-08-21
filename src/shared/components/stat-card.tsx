@@ -20,6 +20,8 @@ interface StatCardProps {
   /** Optional 0–100 operational progress indicator. */
   progress?: number | undefined;
   progressClassName?: string;
+  /** Visual state for operational exceptions; neutral is the default. */
+  tone?: "neutral" | "attention" | "critical";
 }
 
 export function StatCard({
@@ -36,6 +38,7 @@ export function StatCard({
   interactive = false,
   progress,
   progressClassName,
+  tone = "neutral",
 }: StatCardProps) {
   const isPositive = (trend ?? 0) >= 0;
   const progressValue =
@@ -44,18 +47,20 @@ export function StatCard({
   return (
     <Card
       className={cn(
-        "group h-full overflow-hidden p-5 shadow-sm",
+        "group h-full overflow-hidden p-3.5 shadow-sm",
+        tone === "attention" && "border-warning/25 bg-warning/[0.045]",
+        tone === "critical" && "border-destructive/25 bg-destructive/[0.04]",
         interactive &&
           "transition-[background-color,border-color,box-shadow] hover:border-primary/30 hover:bg-muted/20 hover:shadow-md",
         className,
       )}
     >
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
         {Icon ? (
           <Icon
             className={cn(
-              "h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground",
+              "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground",
               iconClassName,
             )}
             aria-hidden="true"
@@ -65,7 +70,7 @@ export function StatCard({
 
       <p
         className={cn(
-          "mt-2 truncate text-2xl font-semibold tracking-tight text-foreground",
+          "mt-1 truncate text-xl font-semibold tracking-tight text-foreground",
           valueClassName,
         )}
       >
@@ -73,7 +78,7 @@ export function StatCard({
       </p>
 
       {typeof trend === "number" ? (
-        <div className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
           <span
             className={cn(
               "inline-flex items-center gap-0.5 font-medium",
@@ -93,7 +98,7 @@ export function StatCard({
 
       {progressValue !== null ? (
         <div
-          className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"
+          className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
@@ -108,7 +113,12 @@ export function StatCard({
       ) : null}
 
       {detail ? (
-        <p className={cn("mt-3 text-xs text-muted-foreground", detailClassName)}>
+        <p
+          className={cn(
+            "mt-1.5 text-xs leading-4 text-muted-foreground",
+            detailClassName,
+          )}
+        >
           {detail}
         </p>
       ) : null}

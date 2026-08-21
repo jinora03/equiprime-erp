@@ -13,7 +13,7 @@ export interface JobOrderPart {
 
 export interface JobOrderLabor {
   id: number;
-  technician: string;
+  mechanic: string;
   date: string;
   hours: number;
   rate: number;
@@ -36,9 +36,9 @@ export const SAMPLE_PARTS: JobOrderPart[] = [
 ];
 
 export const SAMPLE_LABOR: JobOrderLabor[] = [
-  { id: 1, technician: "Jun Bautista", date: "2026-06-25", hours: 6, rate: 650 },
-  { id: 2, technician: "Rafael Mercado", date: "2026-06-26", hours: 4, rate: 650 },
-  { id: 3, technician: "Jun Bautista", date: "2026-06-27", hours: 3.5, rate: 650 },
+  { id: 1, mechanic: "Jun Bautista", date: "2026-06-25", hours: 6, rate: 650 },
+  { id: 2, mechanic: "Rafael Mercado", date: "2026-06-26", hours: 4, rate: 650 },
+  { id: 3, mechanic: "Jun Bautista", date: "2026-06-27", hours: 3.5, rate: 650 },
 ];
 
 export const SAMPLE_ATTACHMENTS: JobOrderAttachment[] = [

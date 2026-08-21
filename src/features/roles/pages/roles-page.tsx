@@ -83,7 +83,7 @@ export function RolesPage() {
       : `${role.permissions.length} permissions`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Roles"
         description="Define roles and the permissions bundled into each."

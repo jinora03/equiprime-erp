@@ -26,10 +26,9 @@ export function ComingSoon({
 }: ComingSoonProps) {
   return (
     <div className="flex min-h-[70vh] items-center justify-center">
-      <div className="relative w-full max-w-xl overflow-hidden rounded-2xl border bg-card p-10 text-center shadow-card">
-        <div className="bg-grid pointer-events-none absolute inset-0 opacity-60" />
-        <div className="relative">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl gradient-brand text-primary-foreground shadow-elevated">
+      <div className="w-full max-w-xl rounded-lg border bg-card p-8 text-center sm:p-10">
+        <div>
+          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Icon className="h-7 w-7" />
           </div>
 

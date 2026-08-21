@@ -29,6 +29,18 @@ function resolve(theme: Theme): ResolvedTheme {
   return theme === "system" ? getSystemTheme() : theme;
 }
 
+/** Apply a theme atomically so token-driven surfaces do not animate between modes. */
+function applyResolvedTheme(applied: ResolvedTheme) {
+  const root = document.documentElement;
+  root.classList.add("theme-switching");
+  root.classList.toggle("dark", applied === "dark");
+  root.style.colorScheme = applied;
+
+  // Force the new token values to resolve while transitions are disabled.
+  void root.offsetHeight;
+  root.classList.remove("theme-switching");
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(
     () => (localStorage.getItem(THEME_STORAGE_KEY) as Theme | null) ?? "light",
@@ -40,9 +52,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const applied = resolve(theme);
     setResolvedTheme(applied);
-    const root = document.documentElement;
-    root.classList.toggle("dark", applied === "dark");
-    root.style.colorScheme = applied;
+    applyResolvedTheme(applied);
   }, [theme]);
 
   // React to OS changes while in "system" mode.
@@ -52,7 +62,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const onChange = () => {
       const applied = getSystemTheme();
       setResolvedTheme(applied);
-      document.documentElement.classList.toggle("dark", applied === "dark");
+      applyResolvedTheme(applied);
     };
     mql.addEventListener("change", onChange);
     return () => mql.removeEventListener("change", onChange);

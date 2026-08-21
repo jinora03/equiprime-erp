@@ -138,10 +138,10 @@ export function DashboardPage() {
         dashboard && dashboard.overdueJobOrders > 0
           ? "font-medium text-destructive"
           : "text-success",
-      className:
+      tone:
         dashboard && dashboard.overdueJobOrders > 0
-          ? "border-destructive/15"
-          : undefined,
+          ? ("critical" as const)
+          : ("neutral" as const),
       route: ROUTES.JOB_ORDERS,
       permission: "job-orders:view" as PermissionKey,
     },
@@ -170,10 +170,14 @@ export function DashboardPage() {
           : "text-success",
       valueClassName:
         dashboard && dashboard.lowStockItems > 0 ? "text-warning" : undefined,
-      className:
+      tone:
         dashboard && dashboard.lowStockItems > 0
-          ? "border-warning/25 bg-warning/5"
-          : "border-success/15",
+          ? ("attention" as const)
+          : ("neutral" as const),
+      className:
+        dashboard && dashboard.lowStockItems === 0
+          ? "border-success/15"
+          : undefined,
       route: ROUTES.INVENTORY,
       permission: "inventory:view" as PermissionKey,
     },
@@ -211,7 +215,7 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div data-onboarding="dashboard">
         <PageHeader
           title="Dashboard"
@@ -226,7 +230,7 @@ export function DashboardPage() {
 
       <section
         aria-label="Primary operational metrics"
-        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
       >
         {primaryStats.map(({ route, permission, ...stat }) => {
           const interactive = Boolean(route && permission && can(permission));
@@ -249,7 +253,7 @@ export function DashboardPage() {
         })}
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.65fr)]">
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.65fr)]">
         <Card className="border-warning/20 shadow-sm">
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -260,12 +264,12 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent className="px-3">
             {(dashboard?.attention ?? []).length > 0 ? (
-              <div className="space-y-2 pb-3">
+              <div className="space-y-1.5 pb-2">
                 {(dashboard?.attention ?? []).map((item) => {
                   const meta = ATTENTION_META[item.key];
                   const Icon = meta.icon;
                   const content = (
-                    <div className="flex items-center gap-3 px-3.5 py-3.5">
+                    <div className="flex items-center gap-3 px-3 py-2.5">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <Icon
@@ -350,16 +354,16 @@ export function DashboardPage() {
           <CardContent className="px-0">
             <div className="overflow-x-auto">
               <div className="min-w-[640px]">
-                <div className="grid grid-cols-[minmax(220px,1.35fr)_minmax(140px,0.9fr)_90px_100px] gap-4 border-y bg-muted/30 px-5 py-2 text-xs font-medium text-muted-foreground">
+                <div className="grid grid-cols-[minmax(220px,1.35fr)_minmax(140px,0.9fr)_90px_100px] gap-4 border-y bg-muted/30 px-4 py-1.5 text-xs font-medium text-muted-foreground">
                   <span>Job order</span>
-                  <span>Equipment / technician</span>
+                  <span>Equipment / mechanic</span>
                   <span>Priority</span>
                   <span>Due date</span>
                 </div>
                 <div className="divide-y">
                   {(dashboard?.recentJobOrders ?? []).map((job) => {
                     const row = (
-                      <div className="grid grid-cols-[minmax(220px,1.35fr)_minmax(140px,0.9fr)_90px_100px] items-center gap-4 px-5 py-3">
+                      <div className="grid grid-cols-[minmax(220px,1.35fr)_minmax(140px,0.9fr)_90px_100px] items-center gap-4 px-4 py-2">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs text-muted-foreground">
@@ -379,7 +383,7 @@ export function DashboardPage() {
                             {job.equipment}
                           </p>
                           <p className="mt-1 truncate text-muted-foreground">
-                            {job.technician}
+                            {job.mechanic}
                           </p>
                         </div>
                         <Badge variant={PRIORITY[job.priority]} className="w-fit">
@@ -417,7 +421,7 @@ export function DashboardPage() {
         </Card>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-3">
+      <section className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex-row items-start justify-between space-y-0">
             <div>
@@ -461,7 +465,7 @@ export function DashboardPage() {
                 {(dashboard?.upcomingMaintenance ?? []).map((item) => (
                   <li
                     key={item.id}
-                    className="flex items-center justify-between gap-3 px-3 py-3"
+                    className="flex items-center justify-between gap-3 px-3 py-2"
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-foreground">
@@ -553,7 +557,7 @@ export function DashboardPage() {
                 );
 
                 return (
-                  <li key={item.id} className="flex gap-3 px-3 py-3.5">
+                  <li key={item.id} className="flex gap-3 px-3 py-2.5">
                     <UserAvatar name={item.user} className="h-8 w-8 text-[10px]" />
                     <div className="min-w-0 flex-1 sm:flex sm:items-start sm:justify-between sm:gap-6">
                       <div className="min-w-0">
