@@ -29,6 +29,8 @@ export const SERVICE_THRESHOLDS = {
   noActivityHours: 24,
   /** Job order sitting in "Waiting for Parts" longer than this (hours). */
   waitingPartsHours: 24,
+  /** Active job order due within this many days is flagged as "due soon". */
+  dueSoonDays: 2,
   /** Window (days) for the "completed recently" metric. */
   completedWindowDays: 7,
 } as const;
@@ -47,7 +49,9 @@ export type BottleneckKind =
   | "waiting_parts"
   | "no_activity"
   | "work_item_overdue"
-  | "job_order_overdue";
+  | "job_order_overdue"
+  | "due_soon"
+  | "unassigned";
 
 export type BottleneckSeverity = "critical" | "warning";
 
@@ -133,6 +137,9 @@ export function deriveServiceMetrics(input: DeriveInput): ServiceMetrics {
 export function detectBottlenecks(input: DeriveInput): Bottleneck[] {
   const now = input.now ?? Date.now();
   const today = isoDay(now);
+  const dueSoonCutoff = isoDay(
+    new Date(now).getTime() + SERVICE_THRESHOLDS.dueSoonDays * MS_PER_DAY,
+  );
   const jobById = new Map(input.jobOrders.map((job) => [job.id, job]));
   const out: Bottleneck[] = [];
 
@@ -192,7 +199,7 @@ export function detectBottlenecks(input: DeriveInput): Bottleneck[] {
       });
     }
 
-    // 4. Past due date.
+    // 4. Past due date, or approaching it.
     if (Boolean(job.dueDate) && job.dueDate < today) {
       out.push({
         id: `overdue-${job.id}`,
@@ -205,10 +212,37 @@ export function detectBottlenecks(input: DeriveInput): Bottleneck[] {
         elapsedMs: 0,
         severity: "critical",
       });
+    } else if (Boolean(job.dueDate) && job.dueDate <= dueSoonCutoff) {
+      out.push({
+        id: `due-soon-${job.id}`,
+        jobOrderId: job.id,
+        code: job.code,
+        title: job.title,
+        kind: "due_soon",
+        reason: "Due soon",
+        detail: `Due ${job.dueDate}`,
+        elapsedMs: 0,
+        severity: "warning",
+      });
+    }
+
+    // 5. Active but no mechanic assigned yet.
+    if (job.assigneeIds.length === 0) {
+      out.push({
+        id: `unassigned-${job.id}`,
+        jobOrderId: job.id,
+        code: job.code,
+        title: job.title,
+        kind: "unassigned",
+        reason: "No mechanic assigned",
+        detail: "Awaiting assignment",
+        elapsedMs: elapsedMs(job.createdAt, now),
+        severity: "warning",
+      });
     }
   }
 
-  // 5. Overdue work items (surfaced against their job order).
+  // 6. Overdue work items (surfaced against their job order).
   for (const item of input.workItems) {
     if (item.status === "completed") continue;
     if (!item.dueDate || item.dueDate >= today) continue;
@@ -229,10 +263,19 @@ export function detectBottlenecks(input: DeriveInput): Bottleneck[] {
     critical: 0,
     warning: 1,
   };
-  return out.sort((a, b) => {
+  const sorted = out.sort((a, b) => {
     if (severityRank[a.severity] !== severityRank[b.severity]) {
       return severityRank[a.severity] - severityRank[b.severity];
     }
     return b.elapsedMs - a.elapsedMs;
+  });
+
+  // One row per job order — after sorting, the first entry is its most
+  // important reason, so the list stays actionable instead of repeating a job.
+  const seen = new Set<number>();
+  return sorted.filter((bottleneck) => {
+    if (seen.has(bottleneck.jobOrderId)) return false;
+    seen.add(bottleneck.jobOrderId);
+    return true;
   });
 }

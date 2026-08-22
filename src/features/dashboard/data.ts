@@ -78,6 +78,15 @@ export interface DashboardAttentionItem {
   detail: string;
 }
 
+/** One active workflow stage with its current job-order count (Shot 7). */
+export interface JobOrderStageBucket {
+  stageId: string;
+  name: string;
+  count: number;
+  /** Highlight tone for exception stages (e.g. Waiting for Parts). */
+  tone: "default" | "warning";
+}
+
 export interface DashboardSnapshot {
   branchName: string;
   region: string;
@@ -94,6 +103,8 @@ export interface DashboardSnapshot {
   serviceMetrics: ServiceMetrics;
   /** Per-record operational bottlenecks with reasons + elapsed context (Shot 5). */
   bottlenecks: Bottleneck[];
+  /** Active job orders grouped by workflow stage — the service pipeline (Shot 7). */
+  jobOrdersByStage: JobOrderStageBucket[];
   revenueTrend: RevenueTrendPoint[];
   equipmentStatus: EquipmentStatusPoint[];
   recentJobOrders: RecentJobOrder[];
