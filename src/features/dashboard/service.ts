@@ -4,6 +4,7 @@ import { isLowStock, LOW_STOCK_AVAILABLE_THRESHOLD } from "@/features/inventory/
 import { jobOrderService } from "@/features/job-orders/service";
 import { maintenanceService } from "@/features/maintenance/service";
 import { partsRequestService } from "@/features/parts/service";
+import { workItemService } from "@/features/work-items/service";
 import { revenueSeed } from "@/services/mock/revenue-data";
 import { organizationService } from "@/services/organization.service";
 import { workflowService } from "@/services/workflow.service";
@@ -14,6 +15,7 @@ import {
   type DashboardSnapshot,
   type JobOrderStatus,
 } from "./data";
+import { deriveServiceMetrics, detectBottlenecks } from "./service-metrics";
 
 const MONTH_FORMATTER = new Intl.DateTimeFormat("en", {
   month: "short",
@@ -65,6 +67,7 @@ export const dashboardService = {
       inventory,
       maintenance,
       partsRequests,
+      workItems,
       jobWorkflow,
       maintenanceWorkflow,
     ] = await Promise.all([
@@ -74,6 +77,7 @@ export const dashboardService = {
       inventoryService.list(scope),
       maintenanceService.list(scope),
       partsRequestService.listForApproval(scope),
+      workItemService.list(undefined, scope),
       workflowService.getByModule("job-orders"),
       workflowService.getByModule("maintenance"),
     ]);
@@ -162,6 +166,17 @@ export const dashboardService = {
       },
     ].filter((item) => item.count > 0);
 
+    const serviceMetrics = deriveServiceMetrics({
+      jobOrders,
+      partsRequests,
+      workItems,
+    });
+    const bottlenecks = detectBottlenecks({
+      jobOrders,
+      partsRequests,
+      workItems,
+    }).slice(0, 8);
+
     const jobById = new Map(jobOrders.map((job) => [job.id, job]));
 
     const activity: Activity[] = [
@@ -246,6 +261,8 @@ export const dashboardService = {
       inventoryOnHand: inventory.reduce((sum, item) => sum + item.onHand, 0),
       lowStockItems: lowStockItems.length,
       attention,
+      serviceMetrics,
+      bottlenecks,
       revenueTrend: revenue.slice(-6).map((entry) => ({
         month: MONTH_FORMATTER.format(new Date(`${entry.period}-01T00:00:00Z`)),
         value: Number((entry.amount / 1_000_000).toFixed(2)),

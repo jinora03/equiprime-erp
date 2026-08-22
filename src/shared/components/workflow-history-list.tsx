@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/format";
+import { elapsedMs, formatDuration } from "@/utils/duration";
 import type { WorkflowHistory, WorkflowStage } from "@/types";
 
 interface WorkflowHistoryListProps {
@@ -62,6 +63,12 @@ export function WorkflowHistoryList({
             <p className="mt-0.5 text-xs text-muted-foreground">
               {entry.actor} · {formatRelativeTime(entry.at)}
             </p>
+            {i < items.length - 1 ? (
+              <p className="mt-0.5 text-[11px] font-medium text-muted-foreground/80">
+                {formatDuration(elapsedMs(items[i + 1].at, entry.at))} in{" "}
+                {stageName(entry.fromStageId)}
+              </p>
+            ) : null}
           </div>
         </li>
       ))}
