@@ -14,6 +14,7 @@ import {
   Forklift,
   Handshake,
   LayoutDashboard,
+  ListChecks,
   Settings,
   ShieldCheck,
   ShoppingCart,
@@ -44,6 +45,13 @@ export const NAV_SECTIONS: NavSection[] = [
         path: ROUTES.DASHBOARD,
         icon: LayoutDashboard,
         permission: viewKey("dashboard"),
+      },
+      {
+        id: "my-work",
+        label: "My Work",
+        path: ROUTES.MY_WORK,
+        icon: ListChecks,
+        permission: viewKey("my-work"),
       },
       {
         id: "approvals",

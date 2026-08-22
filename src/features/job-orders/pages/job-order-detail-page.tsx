@@ -37,7 +37,7 @@ import { ROUTES } from "@/constants/routes";
 import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useRequestApproval } from "@/features/approvals/hooks";
-import { useMoveRecordStage, useRecords } from "@/hooks/use-workflow-records";
+import { useMoveRecordStage } from "@/hooks/use-workflow-records";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PriorityBadge } from "@/shared/components/priority-badge";
 import { WorkflowHistoryList } from "@/shared/components/workflow-history-list";
@@ -62,6 +62,7 @@ import { jobOrderService } from "../service";
 import { SAMPLE_ATTACHMENTS, SAMPLE_LABOR } from "../detail-data";
 import { JobOrderWorkItemsTab } from "../components/job-order-work-items-tab";
 import { JobOrderPartsTab } from "../components/job-order-parts-tab";
+import { useJobOrders } from "../hooks";
 
 const TABS = [
   "overview",
@@ -86,10 +87,7 @@ export function JobOrderDetailPage() {
     ? (searchParams.get("tab") as string)
     : "overview";
 
-  const { data: jobOrders = [], isLoading } = useRecords(
-    "job-orders",
-    jobOrderService,
-  );
+  const { data: jobOrders = [], isLoading } = useJobOrders();
   const { data: jobWorkflow } = useWorkflowByModule("job-orders");
   const { data: workItems = [] } = useWorkItems(jobOrderId);
   const { data: partsRequests = [] } = usePartsRequests(jobOrderId);
@@ -156,7 +154,7 @@ export function JobOrderDetailPage() {
       <EmptyState
         icon={ClipboardList}
         title="Job order not found"
-        description="This job order may have been removed."
+        description="This job order may have been removed or is not available to your account."
         action={
           <Button asChild variant="outline">
             <Link to={ROUTES.JOB_ORDERS}>
@@ -184,6 +182,7 @@ export function JobOrderDetailPage() {
         id: jobOrder.id,
         toStageId,
         actor: user?.full_name ?? "System",
+        actorId: user?.id,
         actorRole: user?.role,
         permissions,
         evidence,
@@ -403,7 +402,10 @@ export function JobOrderDetailPage() {
 
         {/* Parts */}
         <TabsContent value="parts">
-          <JobOrderPartsTab jobOrderId={jobOrder.id} />
+          <JobOrderPartsTab
+            jobOrderId={jobOrder.id}
+            assigneeIds={jobOrder.assigneeIds}
+          />
         </TabsContent>
 
         {/* Labor */}

@@ -27,6 +27,7 @@ interface ModuleDef {
 
 export const MODULE_DEFS: ModuleDef[] = [
   { module: "dashboard", label: "Dashboard", group: "Overview", actions: VIEW_ONLY },
+  { module: "my-work", label: "My Work", group: "Overview", actions: VIEW_ONLY },
   { module: "approvals", label: "My Approvals", group: "Overview", actions: ["view", "act"] },
 
   // Business

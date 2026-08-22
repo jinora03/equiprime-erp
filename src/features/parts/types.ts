@@ -1,3 +1,5 @@
+import type { PermissionKey } from "@/types";
+
 export type PartsRequestStatus =
   | "draft"
   | "pending"
@@ -40,10 +42,13 @@ export interface PartsRequest {
 
 export interface PartsRequestInput {
   jobOrderId: number;
+  /** Assignees of the target job order — used for record-level access checks. */
+  jobOrderAssigneeIds: number[];
   items: PartsRequestItem[];
   requestedBy: {
     id: number;
     name: string;
     role: string;
+    permissions: PermissionKey[];
   };
 }

@@ -16,7 +16,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { DEMO_CREDENTIALS } from "@/constants/app";
+import {
+  DEMO_ACCOUNTS,
+  DEMO_PASSWORD,
+  USE_MOCK,
+} from "@/constants/app";
 import { ROUTES } from "@/constants/routes";
 import { useAuth } from "@/contexts/auth-context";
 import equiprimeLogo from "@/assets/equiprime-logo.jpg";
@@ -33,7 +37,8 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [submittingSource, setSubmittingSource] = useState<string | null>(null);
+  const submitting = submittingSource !== null;
 
   const from =
     (location.state as { from?: { pathname: string } } | null)?.from
@@ -44,8 +49,8 @@ export function LoginPage() {
     defaultValues: { email: "", password: "" },
   });
 
-  const onSubmit = async (values: LoginForm) => {
-    setSubmitting(true);
+  const signIn = async (values: LoginForm, source: string) => {
+    setSubmittingSource(source);
     try {
       const user = await login({
         email: values.email,
@@ -57,16 +62,22 @@ export function LoginPage() {
       const message =
         error instanceof Error ? error.message : "Unable to sign in.";
       toast.error("Sign in failed", { description: message });
-      form.setError("password", { message });
+      if (source === "form") form.setError("password", { message });
     } finally {
-      setSubmitting(false);
+      setSubmittingSource(null);
     }
   };
 
-  const fillDemo = () => {
-    form.setValue("email", DEMO_CREDENTIALS.email);
-    form.setValue("password", DEMO_CREDENTIALS.password);
-  };
+  const onSubmit = (values: LoginForm) => signIn(values, "form");
+
+  const handleDemoAccount = (account: (typeof DEMO_ACCOUNTS)[number]) => {
+  form.clearErrors();
+  form.reset({ email: account.email, password: DEMO_PASSWORD });
+  void signIn(
+    { email: account.email, password: DEMO_PASSWORD },
+    account.key,
+  );
+};
 
   return (
     <div className="space-y-8">
@@ -152,7 +163,7 @@ export function LoginPage() {
           />
 
           <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? (
+            {submittingSource === "form" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <LogIn className="h-4 w-4" />
@@ -162,21 +173,47 @@ export function LoginPage() {
         </form>
       </Form>
 
-      <div className="rounded-lg border border-dashed bg-muted/40 p-4">
-        <p className="text-xs font-medium text-foreground">Demo account</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {DEMO_CREDENTIALS.email} · {DEMO_CREDENTIALS.password}
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="mt-3"
-          onClick={fillDemo}
-        >
-          Use demo credentials
-        </Button>
-      </div>
+      {USE_MOCK ? (
+        <div className="rounded-lg border border-dashed bg-muted/40 p-4">
+          <p className="text-xs font-medium text-foreground">Demo accounts</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            Sign in directly with a role-specific account to test permissions
+            and workflow behavior.
+          </p>
+
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {DEMO_ACCOUNTS.map((account) => (
+              <Button
+                key={account.key}
+                type="button"
+                variant="outline"
+                className="h-auto w-full justify-start whitespace-normal px-3 py-3 text-left"
+                disabled={submitting}
+                onClick={() => handleDemoAccount(account)}
+              >
+                {submittingSource === account.key ? (
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                ) : null}
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">{account.label}</span>
+                  <span className="mt-0.5 block break-all text-xs font-normal text-muted-foreground">
+                    {account.email}
+                  </span>
+                  <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                    {account.description}
+                  </span>
+                </span>
+              </Button>
+            ))}
+          </div>
+
+          <p className="mt-3 text-xs text-muted-foreground">
+            Shared password: <span className="font-mono">{DEMO_PASSWORD}</span>.
+            Mock changes stay in memory while switching accounts and reset when
+            the page is reloaded.
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

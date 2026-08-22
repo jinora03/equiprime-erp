@@ -63,3 +63,12 @@ export function getWorkItemStatusAction(
   const exhaustiveStatus: never = status;
   return exhaustiveStatus;
 }
+
+/** Fixed lifecycle rule shared by every Work Item interaction surface. */
+export function canTransitionWorkItemStatus(
+  from: WorkItemStatus,
+  to: WorkItemStatus,
+): boolean {
+  if (from === to) return true;
+  return getWorkItemStatusAction(from).nextStatus === to;
+}

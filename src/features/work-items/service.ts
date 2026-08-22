@@ -2,11 +2,19 @@ import type { JobOrder } from "@/features/job-orders/types";
 import { delay, nextId } from "@/services/mock/delay";
 import { matchesOrganizationScope } from "@/services/mock/scope";
 import { findRegisteredWorkflowRecord } from "@/services/workflow-record-registry";
+import {
+  canUpdateWorkItem,
+  type ServiceWorkActor,
+} from "@/services/service-work-access";
 import { userService } from "@/services/user.service";
 import { getActiveOrganizationScope } from "@/store/organization.store";
 import type { OrganizationScope } from "@/types";
 import { workItemSeed } from "./data";
-import type { WorkItemStatus } from "./statuses";
+import {
+  canTransitionWorkItemStatus,
+  getWorkItemStatus,
+  type WorkItemStatus,
+} from "./statuses";
 import type { WorkItem, WorkItemInput } from "./types";
 
 /**
@@ -29,6 +37,21 @@ export const workItemService = {
       )
       .map((w) => ({ ...w }));
     return delay(rows);
+  },
+
+  listAssignedTo(
+    userId: number,
+    scope?: OrganizationScope,
+  ): Promise<WorkItem[]> {
+    return delay(
+      data
+        .filter(
+          (workItem) =>
+            workItem.assigneeId === userId &&
+            matchesOrganizationScope(workItem, scope),
+        )
+        .map((workItem) => ({ ...workItem })),
+    );
   },
 
   async create(input: WorkItemInput): Promise<WorkItem> {
@@ -79,12 +102,28 @@ export const workItemService = {
     return delay({ ...record });
   },
 
-  updateStatus(id: number, status: WorkItemStatus): Promise<WorkItem> {
+  updateStatus(
+    id: number,
+    status: WorkItemStatus,
+    actor: ServiceWorkActor,
+  ): Promise<WorkItem> {
     const record = data.find(
       (workItem) =>
         workItem.id === id && matchesOrganizationScope(workItem),
     );
     if (!record) return Promise.reject(new Error("Work item not found"));
+    if (!canUpdateWorkItem(actor, record)) {
+      return Promise.reject(
+        new Error("You can only update work items available to your account."),
+      );
+    }
+    if (!canTransitionWorkItemStatus(record.status, status)) {
+      const from = getWorkItemStatus(record.status).label;
+      const to = getWorkItemStatus(status).label;
+      return Promise.reject(
+        new Error(`Work item cannot move directly from ${from} to ${to}.`),
+      );
+    }
     record.status = status;
     record.updatedAt = new Date().toISOString();
     return delay({ ...record });

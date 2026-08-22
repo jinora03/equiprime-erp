@@ -19,18 +19,22 @@ import { cn } from "@/lib/utils";
 import { PriorityBadge } from "@/shared/components/priority-badge";
 import { TONE } from "@/shared/components/workflow-tones";
 import { formatDate } from "@/utils/format";
-import { WORK_ITEM_STATUSES, type WorkItemStatus } from "../statuses";
+import {
+  canTransitionWorkItemStatus,
+  WORK_ITEM_STATUSES,
+  type WorkItemStatus,
+} from "../statuses";
 import type { WorkItem } from "../types";
 
 interface WorkItemKanbanProps {
   items: WorkItem[];
-  canMove?: boolean;
+  canMove?: boolean | ((item: WorkItem) => boolean);
   onMove: (id: number, status: WorkItemStatus) => void;
 }
 
 /**
  * Work item Kanban. Columns come from the fixed status config (not hardcoded);
- * dragging a card calls `onMove` which persists optimistically (no rollback).
+ * callers may authorize movement per item; the mutation service re-checks it.
  * Columns fill the width and stay comfortably sized.
  */
 export function WorkItemKanban({ items, canMove = false, onMove }: WorkItemKanbanProps) {
@@ -47,6 +51,8 @@ export function WorkItemKanban({ items, canMove = false, onMove }: WorkItemKanba
   }, [items]);
 
   const activeItem = items.find((i) => i.id === activeId) ?? null;
+  const canMoveItem = (item: WorkItem) =>
+    typeof canMove === "function" ? canMove(item) : canMove;
 
   const handleDragStart = (e: DragStartEvent) => setActiveId(Number(e.active.id));
   const handleDragEnd = (e: DragEndEvent) => {
@@ -55,7 +61,14 @@ export function WorkItemKanban({ items, canMove = false, onMove }: WorkItemKanba
     if (!over) return;
     const status = String(over.id) as WorkItemStatus;
     const item = items.find((i) => i.id === Number(active.id));
-    if (item && item.status !== status) onMove(item.id, status);
+    if (
+      item &&
+      canMoveItem(item) &&
+      item.status !== status &&
+      canTransitionWorkItemStatus(item.status, status)
+    ) {
+      onMove(item.id, status);
+    }
   };
 
   return (
@@ -76,7 +89,7 @@ export function WorkItemKanban({ items, canMove = false, onMove }: WorkItemKanba
             count={byStatus[status.id]?.length ?? 0}
           >
             {(byStatus[status.id] ?? []).map((item) =>
-              canMove ? (
+              canMoveItem(item) ? (
                 <DraggableCard key={item.id} id={item.id}>
                   <ItemCard item={item} draggable />
                 </DraggableCard>
