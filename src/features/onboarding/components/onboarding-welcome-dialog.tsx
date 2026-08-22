@@ -27,7 +27,7 @@ export function OnboardingWelcomeDialog({
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onSkip()}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md">
         <DialogHeader>
-          <span className="mb-2 flex h-11 w-11 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <span className="mb-2 flex h-11 w-11 items-center justify-center rounded-md bg-brand-emphasis/10 text-brand-emphasis">
             <Sparkles className="h-5 w-5" />
           </span>
           <DialogTitle>Welcome to Equiprime</DialogTitle>
@@ -39,19 +39,19 @@ export function OnboardingWelcomeDialog({
 
         <div className="space-y-3 rounded-lg border bg-muted/30 p-4 text-sm">
           <div className="flex gap-3">
-            <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-emphasis" />
             <p className="text-muted-foreground">
               See how company and branch scope changes connected demo data.
             </p>
           </div>
           <div className="flex gap-3">
-            <GitBranch className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <GitBranch className="mt-0.5 h-4 w-4 shrink-0 text-brand-emphasis" />
             <p className="text-muted-foreground">
               Follow Job Orders through service workflows and related records.
             </p>
           </div>
           <div className="flex gap-3">
-            <ClipboardCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <ClipboardCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand-emphasis" />
             <p className="text-muted-foreground">
               Approval guidance appears only when your role can access it.
             </p>

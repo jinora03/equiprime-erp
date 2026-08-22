@@ -73,7 +73,7 @@ export function CompanySwitcher({ className }: CompanySwitcherProps) {
             </div>
             <Check
               className={cn(
-                "h-4 w-4 text-primary",
+                "h-4 w-4 text-brand",
                 active?.id === branch.id ? "opacity-100" : "opacity-0",
               )}
             />

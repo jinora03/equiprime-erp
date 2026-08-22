@@ -28,7 +28,7 @@ export function ComingSoon({
     <div className="flex min-h-[70vh] items-center justify-center">
       <div className="w-full max-w-xl rounded-lg border bg-card p-8 text-center sm:p-10">
         <div>
-          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-lg bg-brand-emphasis/10 text-brand-emphasis">
             <Icon className="h-7 w-7" />
           </div>
 
