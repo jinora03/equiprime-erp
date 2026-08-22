@@ -32,17 +32,13 @@ export function useMoveRecordStage<T extends WorkflowRecord>(
   store: Pick<RecordStore<T>, "moveStage">,
 ) {
   const qc = useQueryClient();
-  const scope = useOrganizationScope();
-  const listKey = queryKeys.records.list(
-    moduleId,
-    organizationScopeKey(scope),
-  );
 
   return useMutation({
     mutationFn: (vars: {
       id: number;
       toStageId: string;
       actor: string;
+      actorId?: number;
       permissions: PermissionKey[];
       actorRole?: string | null;
       note?: string;
@@ -50,6 +46,7 @@ export function useMoveRecordStage<T extends WorkflowRecord>(
     }) =>
       store.moveStage(vars.id, vars.toStageId, {
         actor: vars.actor,
+        actorId: vars.actorId,
         permissions: vars.permissions,
         actorRole: vars.actorRole,
         note: vars.note,
@@ -59,14 +56,19 @@ export function useMoveRecordStage<T extends WorkflowRecord>(
     // Do not optimistically move a card before the service has validated the
     // workflow transition. Invalid drops therefore never become UI state.
     onSuccess: (updated) => {
-      qc.setQueryData<T[]>(listKey, (old) =>
-        old?.map((record) => (record.id === updated.id ? updated : record)),
+      qc.setQueriesData<T[]>(
+        { queryKey: queryKeys.records.lists(moduleId) },
+        (old) =>
+          old?.map((record) =>
+            record.id === updated.id ? updated : record,
+          ),
       );
     },
     onSettled: () =>
       Promise.all([
         qc.invalidateQueries({ queryKey: queryKeys.records.all(moduleId) }),
         qc.invalidateQueries({ queryKey: queryKeys.dashboard.all }),
+        qc.invalidateQueries({ queryKey: queryKeys.myWork.all }),
       ]),
   });
 }
@@ -82,6 +84,7 @@ export function useCreateRecord<T extends WorkflowRecord, I>(
       Promise.all([
         qc.invalidateQueries({ queryKey: queryKeys.records.all(moduleId) }),
         qc.invalidateQueries({ queryKey: queryKeys.dashboard.all }),
+        qc.invalidateQueries({ queryKey: queryKeys.myWork.all }),
       ]),
   });
 }

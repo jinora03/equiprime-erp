@@ -43,8 +43,9 @@ export const queryKeys = {
   // Generic keys for workflow-driven business records (job-orders, projects, …)
   records: {
     all: (moduleId: string) => ["records", moduleId] as const,
-    list: (moduleId: string, scopeKey = "") =>
-      ["records", moduleId, "list", scopeKey] as const,
+    lists: (moduleId: string) => ["records", moduleId, "list"] as const,
+    list: (moduleId: string, scopeKey = "", actorKey = "") =>
+      ["records", moduleId, "list", scopeKey, actorKey] as const,
     detail: (moduleId: string, id: number) =>
       ["records", moduleId, "detail", id] as const,
   },
@@ -86,6 +87,11 @@ export const queryKeys = {
     all: ["approvals"] as const,
     list: (scopeKey = "", actorKey = "") =>
       ["approvals", "list", scopeKey, actorKey] as const,
+  },
+  myWork: {
+    all: ["my-work"] as const,
+    list: (scopeKey = "", actorKey = "") =>
+      ["my-work", "list", scopeKey, actorKey] as const,
   },
   notifications: {
     all: ["notifications"] as const,

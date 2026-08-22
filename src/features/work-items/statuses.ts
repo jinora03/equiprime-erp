@@ -17,7 +17,7 @@ export interface WorkItemStatusDef {
 
 export const WORK_ITEM_STATUSES: WorkItemStatusDef[] = [
   { id: "not_started", label: "Not Started", tone: "slate" },
-  { id: "in_progress", label: "In Progress", tone: "amber" },
+  { id: "in_progress", label: "In Progress", tone: "blue" },
   { id: "completed", label: "Completed", tone: "green" },
 ];
 
@@ -62,4 +62,13 @@ export function getWorkItemStatusAction(
 
   const exhaustiveStatus: never = status;
   return exhaustiveStatus;
+}
+
+/** Fixed lifecycle rule shared by every Work Item interaction surface. */
+export function canTransitionWorkItemStatus(
+  from: WorkItemStatus,
+  to: WorkItemStatus,
+): boolean {
+  if (from === to) return true;
+  return getWorkItemStatusAction(from).nextStatus === to;
 }

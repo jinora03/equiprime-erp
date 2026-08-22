@@ -1,5 +1,7 @@
 /** Shared dashboard presentation types for organization-scoped operational data. */
 
+import type { Bottleneck, ServiceMetrics } from "./service-metrics";
+
 export const CHART_COLORS = {
   primary: "hsl(var(--chart-primary))",
   brand: "hsl(var(--chart-brand))",
@@ -88,6 +90,10 @@ export interface DashboardSnapshot {
   inventoryOnHand: number;
   lowStockItems: number;
   attention: DashboardAttentionItem[];
+  /** Service-focused operational metrics (Shot 5). */
+  serviceMetrics: ServiceMetrics;
+  /** Per-record operational bottlenecks with reasons + elapsed context (Shot 5). */
+  bottlenecks: Bottleneck[];
   revenueTrend: RevenueTrendPoint[];
   equipmentStatus: EquipmentStatusPoint[];
   recentJobOrders: RecentJobOrder[];

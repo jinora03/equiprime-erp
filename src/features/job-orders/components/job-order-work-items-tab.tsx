@@ -1,11 +1,8 @@
 import { useState } from "react";
 import {
-  Check,
   KanbanSquare,
   ListChecks,
-  Play,
   Plus,
-  RotateCcw,
   Rows3,
 } from "lucide-react";
 
@@ -19,24 +16,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { usePermissions } from "@/hooks/use-permissions";
 import { PermissionGuard } from "@/components/permission-guard";
-import { EmptyState } from "@/shared/components/empty-state";
-import { PriorityBadge } from "@/shared/components/priority-badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { formatDate } from "@/utils/format";
+import { useAuth } from "@/contexts/auth-context";
+import { WorkItemFormDialog } from "@/features/work-items/components/work-item-form-dialog";
+import { WorkItemKanban } from "@/features/work-items/components/work-item-kanban";
+import { WorkItemStatusActionButton } from "@/features/work-items/components/work-item-status-action-button";
+import { WorkItemStatusChip } from "@/features/work-items/components/work-item-status-chip";
 import {
   useUpdateWorkItemStatus,
   useWorkItems,
 } from "@/features/work-items/hooks";
-import {
-  getWorkItemStatusAction,
-  isWorkItemComplete,
-  type WorkItemStatus,
-} from "@/features/work-items/statuses";
-import { WorkItemStatusChip } from "@/features/work-items/components/work-item-status-chip";
-import { WorkItemFormDialog } from "@/features/work-items/components/work-item-form-dialog";
-import { WorkItemKanban } from "@/features/work-items/components/work-item-kanban";
+import { isWorkItemComplete } from "@/features/work-items/statuses";
+import type { WorkItem } from "@/features/work-items/types";
+import { canUpdateWorkItem } from "@/services/service-work-access";
+import { EmptyState } from "@/shared/components/empty-state";
+import { PriorityBadge } from "@/shared/components/priority-badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatDate } from "@/utils/format";
 
 interface JobOrderWorkItemsTabProps {
   jobOrderId: number;
@@ -49,8 +45,7 @@ export function JobOrderWorkItemsTab({
   jobOrderCode,
   mechanicIds,
 }: JobOrderWorkItemsTabProps) {
-  const { can } = usePermissions();
-  const canEdit = can("work-items:update");
+  const { user, permissions } = useAuth();
 
   const { data: items = [], isLoading } = useWorkItems(jobOrderId);
   const updateStatus = useUpdateWorkItemStatus();
@@ -60,12 +55,23 @@ export function JobOrderWorkItemsTab({
     isWorkItemComplete(item.status),
   ).length;
 
+  const canManageItem = (item: WorkItem) =>
+    user != null &&
+    canUpdateWorkItem(
+      {
+        userId: user.id,
+        role: user.role,
+        permissions,
+      },
+      item,
+    );
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div className="inline-flex rounded-lg border bg-muted/40 p-0.5">
           <Button
-            variant={view === "table" ? "default" : "ghost"}
+            variant={view === "table" ? "selection" : "ghost"}
             size="sm"
             className="h-8"
             onClick={() => setView("table")}
@@ -73,7 +79,7 @@ export function JobOrderWorkItemsTab({
             <Rows3 className="h-4 w-4" /> Table
           </Button>
           <Button
-            variant={view === "kanban" ? "default" : "ghost"}
+            variant={view === "kanban" ? "selection" : "ghost"}
             size="sm"
             className="h-8"
             onClick={() => setView("kanban")}
@@ -113,7 +119,7 @@ export function JobOrderWorkItemsTab({
       ) : view === "kanban" ? (
         <WorkItemKanban
           items={items}
-          canMove={canEdit}
+          canMove={canManageItem}
           onMove={(id, status) => updateStatus.mutate({ id, status })}
         />
       ) : (
@@ -163,7 +169,7 @@ export function JobOrderWorkItemsTab({
                   <TableCell>
                     <div className="flex flex-wrap items-center gap-2">
                       <WorkItemStatusChip status={item.status} />
-                      {canEdit ? (
+                      {canManageItem(item) ? (
                         <WorkItemStatusActionButton
                           status={item.status}
                           disabled={
@@ -198,38 +204,5 @@ export function JobOrderWorkItemsTab({
         mechanicIds={mechanicIds}
       />
     </div>
-  );
-}
-
-function WorkItemStatusActionButton({
-  status,
-  disabled,
-  onChange,
-}: {
-  status: WorkItemStatus;
-  disabled: boolean;
-  onChange: (status: WorkItemStatus) => void;
-}) {
-  const action = getWorkItemStatusAction(status);
-  const Icon =
-    action.label === "Start"
-      ? Play
-      : action.label === "Complete"
-        ? Check
-        : RotateCcw;
-
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      className="h-7 gap-1.5 px-2 text-xs"
-      disabled={disabled}
-      onClick={() => onChange(action.nextStatus)}
-      aria-label={`${action.label} work item`}
-    >
-      <Icon className="h-3.5 w-3.5" />
-      {action.label}
-    </Button>
   );
 }

@@ -1,3 +1,4 @@
+import { DEMO_CREDENTIALS } from "@/constants/app";
 import {
   WILDCARD,
   buildCatalog,
@@ -76,13 +77,13 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "permissions:manage",
   ],
   Manager: [
-    ...viewKeys("dashboard", "crm", "customers", "equipment", "sales", "reports"),
+    ...viewKeys("dashboard", "my-work", "crm", "customers", "equipment", "sales", "reports"),
     "approvals:view", "approvals:act",
     ...permissionKeysFor("job-orders", "work-items", "projects", "maintenance"),
     "equipment:update",
   ],
   Supervisor: [
-    ...viewKeys("dashboard", "equipment"),
+    ...viewKeys("dashboard", "my-work", "equipment"),
     "job-orders:view", "job-orders:update",
     "work-items:view", "work-items:update",
     "projects:view",
@@ -100,7 +101,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "sales:view", "sales:create", "sales:update",
   ],
   Mechanic: [
-    ...viewKeys("dashboard", "equipment"),
+    ...viewKeys("dashboard", "my-work", "equipment"),
     "job-orders:view", "job-orders:update",
     "work-items:view", "work-items:update",
     "maintenance:view", "maintenance:update",
@@ -111,6 +112,11 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "inventory:view", "inventory:update", "warehouse:view", "warehouse:update",
   ],
   Viewer: [...viewKeys("dashboard", "reports")],
+  "Warehouse Manager": [
+    ...viewKeys("dashboard", "job-orders", "purchasing"),
+    "approvals:view", "approvals:act",
+    ...permissionKeysFor("inventory", "warehouse"),
+  ],
 };
 
 const ROLE_SEED: Array<[string, string, boolean]> = [
@@ -125,6 +131,7 @@ const ROLE_SEED: Array<[string, string, boolean]> = [
   ["Mechanic", "Executes job orders and logs work items.", false],
   ["Warehouse Staff", "Manages inventory and warehouse stock.", false],
   ["Viewer", "Read-only access to dashboards and reports.", false],
+  ["Warehouse Manager", "Oversees warehouse and inventory operations and can act on assigned approvals.", false],
 ];
 
 export const roles: Role[] = ROLE_SEED.map(([name, description, is_system], i) => ({
@@ -154,7 +161,7 @@ const USER_SEED: UserSeed[] = [
   ["Maria", "Santos", "maria.santos@equiprime.ph", "Accounting", "Accountant", "active", "Chief Accountant", 1, "main"],
   ["Liza", "Reyes", "liza.reyes@equiprime.ph", "HR", "HR Officer", "active", "HR Manager", 0, "main"],
   ["Ramon", "Cruz", "ramon.cruz@equiprime.ph", "Inventory", "Warehouse Staff", "active", "Inventory Lead", 2, "main"],
-  ["Andres", "Lim", "andres.lim@equiprime.ph", "Warehouse", "Warehouse Staff", "active", "Warehouse Supervisor", 3, "main"],
+  ["Andres", "Lim", "andres.lim@equiprime.ph", "Warehouse", "Warehouse Manager", "active", "Warehouse Manager", 3, "main"],
   ["Grace", "Tan", "grace.tan@equiprime.ph", "Purchasing", "Manager", "active", "Purchasing Manager", 1, "main"],
   ["Paolo", "Mendoza", "paolo.mendoza@equiprime.ph", "Sales", "Sales Executive", "active", "Senior Sales Executive", 0, "main"],
   ["Carlos", "Aquino", "carlos.aquino@equiprime.ph", "Service", "Supervisor", "active", "Service Supervisor", 4, "main"],
@@ -206,7 +213,7 @@ export const users: User[] = USER_SEED.map(
 );
 
 /** Shared demo password for every seeded account. */
-export const DEMO_PASSWORD = "Password123!";
+export const DEMO_PASSWORD = DEMO_CREDENTIALS.password;
 
 // --------------------------------------------------------------------------- //
 // Permission matrix

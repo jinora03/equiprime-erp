@@ -24,7 +24,7 @@ export const inventorySeed: InventoryItem[] = [
   { id: 20, sku: "PRT-VBELT", name: "V-Belt Set", category: "Components", unit: "set", companyId: "equiprime", branchId: "main", warehouseId: 1, warehouseName: "Main Warehouse", onHand: 9, reserved: 4 },
   { id: 21, sku: "PRT-BRAKEKT", name: "Brake Service Kit", category: "Components", unit: "kit", companyId: "equiprime", branchId: "main", warehouseId: 2, warehouseName: "Site Warehouse", onHand: 6, reserved: 2 },
   { id: 22, sku: "PRT-COOLANT", name: "Heavy-Duty Coolant", category: "Lubricants", unit: "L", companyId: "equiprime", branchId: "main", warehouseId: 1, warehouseName: "Main Warehouse", onHand: 85, reserved: 10 },
-  { id: 23, sku: "PRT-HYDHOSE", name: "Hydraulic Hose Assembly", category: "Hydraulics", unit: "pc", companyId: "equiprime", branchId: "main", warehouseId: 2, warehouseName: "Site Warehouse", onHand: 24, reserved: 6 },
+  { id: 23, sku: "PRT-HYDHOSE", name: "Hydraulic Hose Assembly", category: "Hydraulics", unit: "pc", companyId: "equiprime", branchId: "main", warehouseId: 2, warehouseName: "Site Warehouse", onHand: 24, reserved: 9 },
   { id: 24, sku: "PRT-BAT12V", name: "12V Equipment Battery", category: "Electrical", unit: "pc", companyId: "equiprime", branchId: "main", warehouseId: 1, warehouseName: "Main Warehouse", onHand: 11, reserved: 2 },
   { id: 25, sku: "CEB-FUELFLT", name: "Fuel Filter", category: "Filters", unit: "pc", companyId: "equiprime", branchId: "cebu", warehouseId: 3, warehouseName: "Cebu Warehouse", onHand: 28, reserved: 3 },
   { id: 26, sku: "CEB-HYDHOSE", name: "Hydraulic Hose Assembly", category: "Hydraulics", unit: "pc", companyId: "equiprime", branchId: "cebu", warehouseId: 3, warehouseName: "Cebu Warehouse", onHand: 14, reserved: 2 },

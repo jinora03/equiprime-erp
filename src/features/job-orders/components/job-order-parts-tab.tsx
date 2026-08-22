@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
-import { usePermissions } from "@/hooks/use-permissions";
+import { canUpdateJobOrder } from "@/services/service-work-access";
 import { EmptyState } from "@/shared/components/empty-state";
 import { TONE } from "@/shared/components/workflow-tones";
 import { formatRelativeTime } from "@/utils/format";
@@ -27,10 +27,23 @@ import type { PartsRequestItem } from "@/features/parts/types";
 
 interface DraftPart extends PartsRequestItem {}
 
-export function JobOrderPartsTab({ jobOrderId }: { jobOrderId: number }) {
-  const { user } = useAuth();
-  const { can } = usePermissions();
-  const canRequest = can("job-orders:update");
+export function JobOrderPartsTab({
+  jobOrderId,
+  assigneeIds,
+}: {
+  jobOrderId: number;
+  assigneeIds: number[];
+}) {
+  const { user, permissions } = useAuth();
+  // Record-level access: raising a request requires update access to THIS job
+  // order (mechanics are limited to their assigned records). Mirrors the
+  // service-side enforcement in partsRequestService.create.
+  const canRequest = user
+    ? canUpdateJobOrder(
+        { userId: user.id, role: user.role, permissions },
+        { assigneeIds },
+      )
+    : false;
 
   const { data: inventory = [] } = useInventory();
   const { data: requests = [] } = usePartsRequests(jobOrderId);
@@ -74,11 +87,13 @@ export function JobOrderPartsTab({ jobOrderId }: { jobOrderId: number }) {
       if (!user) throw new Error("Sign in before requesting parts.");
       await createRequest.mutateAsync({
         jobOrderId,
+        jobOrderAssigneeIds: assigneeIds,
         items: draft,
         requestedBy: {
           id: user.id,
           name: user.full_name,
           role: user.role,
+          permissions,
         },
       });
       toast.success("Parts request created", {

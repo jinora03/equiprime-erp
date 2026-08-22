@@ -16,7 +16,7 @@ import {
 import { jobOrderDetailPath } from "@/constants/routes";
 import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
-import { useMoveRecordStage, useRecords } from "@/hooks/use-workflow-records";
+import { useMoveRecordStage } from "@/hooks/use-workflow-records";
 import { PageHeader } from "@/shared/components/page-header";
 import { PermissionGuard } from "@/components/permission-guard";
 import { EmptyState } from "@/shared/components/empty-state";
@@ -26,7 +26,9 @@ import { WorkflowKanban } from "@/shared/components/workflow-kanban";
 import { WorkflowStageBadge } from "@/shared/components/workflow-stage-badge";
 import { formatDate } from "@/utils/format";
 import { useWorkflowByModule } from "@/features/workflows/hooks";
+import { isAssignedOnlyServiceActor } from "@/services/service-work-access";
 import type { JobOrder } from "../types";
+import { useJobOrders } from "../hooks";
 import { jobOrderService } from "../service";
 import { JobOrderFormDialog } from "../components/job-order-form-dialog";
 import { JobOrderKanbanCard } from "../components/job-order-kanban-card";
@@ -39,12 +41,16 @@ export function JobOrdersPage() {
   const canMove = can("job-orders:update");
   const canCreate = can("job-orders:create");
 
-  const { data: jobOrders = [], isLoading } = useRecords(
-    "job-orders",
-    jobOrderService,
-  );
+  const { data: jobOrders = [], isLoading } = useJobOrders();
   const { data: workflow } = useWorkflowByModule("job-orders");
   const moveStage = useMoveRecordStage("job-orders", jobOrderService);
+  const assignedOnly =
+    user != null &&
+    isAssignedOnlyServiceActor({
+      userId: user.id,
+      role: user.role,
+      permissions,
+    });
 
   const [view, setView] = useState<"list" | "kanban">("list");
   const createRequested = searchParams.get("create") === "1";
@@ -74,6 +80,7 @@ export function JobOrdersPage() {
         id,
         toStageId,
         actor: user?.full_name ?? "System",
+        actorId: user?.id,
         actorRole: user?.role,
         permissions,
       });
@@ -129,8 +136,12 @@ export function JobOrdersPage() {
       ) : jobOrders.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
-          title="No job orders yet"
-          description="Create a job order to start tracking it through the workflow."
+          title={assignedOnly ? "No assigned job orders" : "No job orders yet"}
+          description={
+            assignedOnly
+              ? "There are no job orders assigned to you in this branch."
+              : "Create a job order to start tracking it through the workflow."
+          }
         />
       ) : view === "list" ? (
         <Card>

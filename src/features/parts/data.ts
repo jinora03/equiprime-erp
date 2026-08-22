@@ -4,7 +4,15 @@ import type { PartsRequest } from "./types";
  * Seed parts requests. Inventory effects of these seeds are already reflected in
  * the inventory seed's `reserved`/`onHand` — runtime approval decisions apply
  * deltas on top. Parts approvals are surfaced through My Approvals.
+ *
+ * Timestamps are relative to "now" so pending requests always show a realistic,
+ * recent wait (hours/days, never weeks) on the service dashboard.
  */
+const HOUR_MS = 3_600_000;
+const NOW = Date.now();
+const hoursAgo = (hours: number): string =>
+  new Date(NOW - hours * HOUR_MS).toISOString();
+
 export const partsRequestSeed: PartsRequest[] = [
   {
     id: 1,
@@ -20,14 +28,14 @@ export const partsRequestSeed: PartsRequest[] = [
     requestedById: 10,
     requestedBy: "Jun Bautista",
     requestedByRole: "Mechanic",
-    createdAt: "2026-06-25T09:30:00Z",
-    updatedAt: "2026-06-26T10:00:00Z",
+    createdAt: hoursAgo(70),
+    updatedAt: hoursAgo(58),
     decision: {
       approvalRole: "Warehouse Staff",
       actorId: 5,
       actorName: "Ramon Cruz",
       actorRole: "Warehouse Staff",
-      at: "2026-06-26T10:00:00Z",
+      at: hoursAgo(58),
       note: "Stock confirmed and released.",
     },
   },
@@ -44,15 +52,31 @@ export const partsRequestSeed: PartsRequest[] = [
     requestedById: 10,
     requestedBy: "Jun Bautista",
     requestedByRole: "Mechanic",
-    createdAt: "2026-06-26T08:00:00Z",
-    updatedAt: "2026-06-26T14:00:00Z",
+    createdAt: hoursAgo(66),
+    updatedAt: hoursAgo(60),
     decision: {
       approvalRole: "Warehouse Staff",
       actorId: 6,
       actorName: "Andres Lim",
       actorRole: "Warehouse Staff",
-      at: "2026-06-26T14:00:00Z",
+      at: hoursAgo(60),
       note: "Use the existing allocated stock first.",
     },
+  },
+  {
+    id: 3,
+    code: "PR-2026-0003",
+    companyId: "equiprime",
+    branchId: "main",
+    jobOrderId: 12,
+    status: "pending",
+    items: [
+      { inventoryItemId: 23, sku: "PRT-HYDHOSE", name: "Hydraulic Hose Assembly", unit: "pc", quantity: 3 },
+    ],
+    requestedById: 30,
+    requestedBy: "Arvin Delgado",
+    requestedByRole: "Mechanic",
+    createdAt: hoursAgo(26),
+    updatedAt: hoursAgo(26),
   },
 ];

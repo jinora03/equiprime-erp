@@ -8,6 +8,11 @@ import {
   historyEntry,
   nextRecordId,
 } from "@/services/workflow-records";
+import {
+  canUpdateJobOrder,
+  canViewJobOrder,
+  type ServiceWorkActor,
+} from "@/services/service-work-access";
 import { getInitialWorkflowStageId } from "@/services/workflow-rules";
 import { userService } from "@/services/user.service";
 import { workflowService } from "@/services/workflow.service";
@@ -15,6 +20,7 @@ import { getActiveOrganizationScope } from "@/store/organization.store";
 import { jobOrderSeed } from "./data";
 import { serviceVehicleService } from "./service-vehicle-service";
 import type { JobOrder, JobOrderInput } from "./types";
+import type { OrganizationScope } from "@/types";
 
 const store = createRecordStore<JobOrder>("job-orders", jobOrderSeed, {
   resolveWorkflow: (record) =>
@@ -41,8 +47,36 @@ let counter = Math.max(
   ...jobOrderSeed.map((job) => Number(job.code.split("-").at(-1) ?? 0)),
 );
 
+const actorFromMove = (
+  input: Parameters<typeof store.moveStage>[2],
+): ServiceWorkActor => ({
+  userId: input.actorId ?? -1,
+  role: input.actorRole ?? "",
+  permissions: input.permissions,
+});
+
 export const jobOrderService = {
   ...store,
+  async listForActor(
+    actor: ServiceWorkActor,
+    scope?: OrganizationScope,
+  ): Promise<JobOrder[]> {
+    const records = await store.list(scope);
+    return records.filter((record) => canViewJobOrder(actor, record));
+  },
+
+  async moveStage(
+    id: number,
+    toStageId: string,
+    input: Parameters<typeof store.moveStage>[2],
+  ): Promise<JobOrder> {
+    const record = await store.get(id);
+    if (!canUpdateJobOrder(actorFromMove(input), record)) {
+      throw new Error("You can only update job orders available to your account.");
+    }
+    return store.moveStage(id, toStageId, input);
+  },
+
   async create(input: JobOrderInput): Promise<JobOrder> {
     const now = new Date().toISOString();
     const scope = getActiveOrganizationScope();

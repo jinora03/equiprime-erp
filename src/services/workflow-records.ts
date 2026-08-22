@@ -51,6 +51,7 @@ export function historyEntry(
 
 export interface WorkflowMoveInput {
   actor: string;
+  actorId?: number;
   permissions: PermissionKey[];
   actorRole?: string | null;
   note?: string;

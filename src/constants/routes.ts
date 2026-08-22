@@ -5,6 +5,7 @@ export const ROUTES = {
 
   // Phase 1 — real pages
   DASHBOARD: "/dashboard",
+  MY_WORK: "/my-work",
   APPROVALS: "/approvals",
   USERS: "/users",
   USER_DETAIL: "/users/:id",

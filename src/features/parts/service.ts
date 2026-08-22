@@ -1,5 +1,9 @@
 import { inventoryService } from "@/features/inventory/service";
 import { delay, nextId } from "@/services/mock/delay";
+import {
+  canUpdateJobOrder,
+  type ServiceWorkActor,
+} from "@/services/service-work-access";
 import { getActiveOrganizationScope } from "@/store/organization.store";
 import type { ApprovalActor, OrganizationScope } from "@/types";
 import { partsRequestSeed } from "./data";
@@ -45,6 +49,21 @@ export const partsRequestService = {
   },
 
   async create(input: PartsRequestInput): Promise<PartsRequest> {
+    // Record-level access: raising a parts request requires update access to the
+    // target job order. Enforced in the service (not UI-only) so mechanics can
+    // only request parts for job orders assigned to them — consistent with the
+    // job-orders and work-items services (services/service-work-access.ts).
+    const actor: ServiceWorkActor = {
+      userId: input.requestedBy.id,
+      role: input.requestedBy.role,
+      permissions: input.requestedBy.permissions,
+    };
+    if (!canUpdateJobOrder(actor, { assigneeIds: input.jobOrderAssigneeIds })) {
+      throw new Error(
+        "You can only request parts for job orders assigned to you.",
+      );
+    }
+
     const now = new Date().toISOString();
     const scope = getActiveOrganizationScope();
     counter += 1;
