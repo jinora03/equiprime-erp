@@ -48,16 +48,16 @@
     --destructive-foreground: 0 0% 100%;
     --success: 149 42% 34%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 62% 42%;
+    --warning: 28 78% 43%;
     --warning-foreground: 0 0% 100%;
     --info: 214 42% 38%;
     --info-foreground: 0 0% 100%;
 
-    /* Muted business-chart palette aligned with the navy/gold brand. */
+    /* Muted business-chart palette: brand gold stays distinct from semantic warning orange. */
     --chart-primary: 214 55% 34%;
     --chart-brand: 42 39% 46%;
     --chart-success: 149 38% 35%;
-    --chart-warning: 32 48% 43%;
+    --chart-warning: 28 58% 46%;
     --chart-neutral: 215 18% 46%;
     --chart-danger: 4 48% 45%;
 
@@ -111,7 +111,7 @@
     --destructive-foreground: 0 0% 100%;
     --success: 149 38% 48%;
     --success-foreground: 216 45% 11%;
-    --warning: 38 54% 56%;
+    --warning: 30 76% 58%;
     --warning-foreground: 216 45% 11%;
     --info: 214 40% 62%;
     --info-foreground: 216 45% 11%;
@@ -119,7 +119,7 @@
     --chart-primary: 214 48% 58%;
     --chart-brand: 43 38% 58%;
     --chart-success: 149 34% 52%;
-    --chart-warning: 33 43% 58%;
+    --chart-warning: 30 60% 58%;
     --chart-neutral: 215 18% 58%;
     --chart-danger: 4 42% 58%;
 
