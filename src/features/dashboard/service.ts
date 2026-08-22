@@ -177,19 +177,6 @@ export const dashboardService = {
       workItems,
     }).slice(0, 8);
 
-    // Active service pipeline: job-order counts per non-terminal workflow stage.
-    const jobOrdersByStage = (jobWorkflow?.stages ?? [])
-      .filter((stage) => !["jo-completed", "jo-closed"].includes(stage.id))
-      .map((stage) => ({
-        stageId: stage.id,
-        name: stage.name,
-        count: jobOrders.filter((job) => job.currentStageId === stage.id).length,
-        tone:
-          stage.id === "jo-waiting-parts"
-            ? ("warning" as const)
-            : ("default" as const),
-      }));
-
     const jobById = new Map(jobOrders.map((job) => [job.id, job]));
 
     const activity: Activity[] = [
@@ -276,7 +263,6 @@ export const dashboardService = {
       attention,
       serviceMetrics,
       bottlenecks,
-      jobOrdersByStage,
       revenueTrend: revenue.slice(-6).map((entry) => ({
         month: MONTH_FORMATTER.format(new Date(`${entry.period}-01T00:00:00Z`)),
         value: Number((entry.amount / 1_000_000).toFixed(2)),

@@ -1,5 +1,6 @@
+import type { LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, ArrowRight, Plus, Wrench } from "lucide-react";
+import { AlertTriangle, ArrowRight, Clock, Plus, Wrench } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,10 +27,8 @@ import type { PermissionKey } from "@/types";
 import { formatDate } from "@/utils/format";
 import { formatDuration } from "@/utils/duration";
 import { EquipmentStatusChart } from "../components/equipment-status-chart";
-import {
-  type DashboardAttentionKey,
-  type DashboardPriority,
-} from "../data";
+import { type DashboardPriority } from "../data";
+import type { Bottleneck } from "../service-metrics";
 import { useDashboardData } from "../hooks";
 
 const PRIORITY: Record<
@@ -41,13 +40,118 @@ const PRIORITY: Record<
   Low: "secondary",
 };
 
-/** Attention buckets keep their operational semantics: red = critical, orange = warning. */
-const ATTENTION_TONE: Record<DashboardAttentionKey, "critical" | "warning"> = {
-  overdue_job_orders: "critical",
-  overdue_maintenance: "warning",
-  waiting_for_parts: "warning",
-  low_stock_inventory: "warning",
-};
+/** A single job-order alert row, shared by the action + bottleneck cards. */
+function BottleneckRow({
+  item,
+  canView,
+}: {
+  item: Bottleneck;
+  canView: boolean;
+}) {
+  const content = (
+    <div className="flex items-center gap-3 px-3 py-2.5">
+      <div className="min-w-0 flex-1">
+        <Badge
+          variant={item.severity === "critical" ? "destructive" : "warning"}
+          className="px-1.5 py-0 text-[10px] uppercase tracking-[0.08em]"
+        >
+          {item.reason}
+        </Badge>
+        <p className="mt-1.5 truncate text-sm font-semibold text-foreground">
+          <span className="font-mono text-xs text-muted-foreground">
+            {item.code}
+          </span>{" "}
+          {item.title}
+        </p>
+        {item.detail ? (
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            {item.detail}
+          </p>
+        ) : null}
+      </div>
+      {item.elapsedMs > 0 ? (
+        <span
+          className={cn(
+            "shrink-0 text-sm font-semibold tabular-nums",
+            item.severity === "critical" ? "text-destructive" : "text-foreground",
+          )}
+        >
+          {formatDuration(item.elapsedMs)}
+        </span>
+      ) : null}
+      {canView ? (
+        <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+      ) : null}
+    </div>
+  );
+
+  return canView ? (
+    <Link
+      to={jobOrderDetailPath(item.jobOrderId)}
+      className="group block rounded-md border border-border bg-muted/20 transition-[background-color,border-color] hover:border-foreground/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+    >
+      {content}
+    </Link>
+  ) : (
+    <div className="rounded-md border border-border bg-muted/20">{content}</div>
+  );
+}
+
+/** Card wrapping a titled list of job-order alerts (Needs action / Bottlenecks). */
+function AlertsCard({
+  title,
+  description,
+  icon: Icon,
+  accent,
+  items,
+  canView,
+  emptyText,
+}: {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  accent: "critical" | "warning";
+  items: Bottleneck[];
+  canView: boolean;
+  emptyText: string;
+}) {
+  return (
+    <Card
+      className={cn(
+        "min-w-0 shadow-sm",
+        accent === "critical" ? "border-destructive/20" : "border-warning/20",
+      )}
+    >
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Icon
+            className={cn(
+              "h-4 w-4",
+              accent === "critical" ? "text-destructive" : "text-warning",
+            )}
+            aria-hidden="true"
+          />
+          <CardTitle>{title}</CardTitle>
+        </div>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="px-3">
+        {items.length > 0 ? (
+          <div className="space-y-1.5 pb-2">
+            {items.map((item) => (
+              <BottleneckRow key={item.id} item={item} canView={canView} />
+            ))}
+          </div>
+        ) : (
+          <div className="px-4 py-8 text-center">
+            <p className="text-sm font-medium text-foreground">All clear</p>
+            <p className="mt-1 text-xs text-muted-foreground">{emptyText}</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export function DashboardPage() {
   const { can } = usePermissions();
@@ -142,11 +246,13 @@ export function DashboardPage() {
   const canViewEquipment = can("equipment:view");
   const canViewMaintenance = can("maintenance:view");
 
-  const attention = dashboard?.attention ?? [];
-  const bottlenecks = (dashboard?.bottlenecks ?? []).slice(0, 6);
-  const stages = dashboard?.jobOrdersByStage ?? [];
-  const maxStageCount = Math.max(1, ...stages.map((stage) => stage.count));
-  const hasPipeline = stages.some((stage) => stage.count > 0);
+  const bottlenecks = dashboard?.bottlenecks ?? [];
+  const needsAction = bottlenecks
+    .filter((item) => item.severity === "critical")
+    .slice(0, 3);
+  const slipping = bottlenecks
+    .filter((item) => item.severity === "warning")
+    .slice(0, 3);
 
   return (
     <div className="space-y-4">
@@ -198,184 +304,27 @@ export function DashboardPage() {
             })}
           </section>
 
-          {attention.length > 0 ? (
-            <section
-              aria-label="Attention summary"
-              className="flex flex-wrap gap-2"
-            >
-              {attention.map((item) => (
-                <div
-                  key={item.key}
-                  className={cn(
-                    "flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs",
-                    ATTENTION_TONE[item.key] === "critical"
-                      ? "border-destructive/25 bg-destructive/[0.05]"
-                      : "border-warning/25 bg-warning/10",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "text-sm font-semibold tabular-nums",
-                      ATTENTION_TONE[item.key] === "critical"
-                        ? "text-destructive"
-                        : "text-warning",
-                    )}
-                  >
-                    {item.count}
-                  </span>
-                  <span className="font-medium text-foreground">
-                    {item.label}
-                  </span>
-                  <span className="hidden text-muted-foreground md:inline">
-                    · {item.detail}
-                  </span>
-                </div>
-              ))}
-            </section>
-          ) : null}
+          {/* Two balanced alert lists. */}
+          <section className="grid gap-4 lg:grid-cols-2">
+            <AlertsCard
+              title="Needs action now"
+              description="Blocked or overdue — act now"
+              icon={AlertTriangle}
+              accent="critical"
+              items={needsAction}
+              canView={canViewJobOrders}
+              emptyText="Nothing is blocked or overdue right now."
+            />
 
-          <section className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-            <Card className="min-w-0 border-warning/20 shadow-sm">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <AlertTriangle
-                    className="h-4 w-4 text-warning"
-                    aria-hidden="true"
-                  />
-                  <CardTitle>Needs action now</CardTitle>
-                </div>
-                <CardDescription>
-                  Job orders that are blocked or slipping — and why
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-3">
-                {bottlenecks.length > 0 ? (
-                  <div className="space-y-1.5 pb-2">
-                    {bottlenecks.map((item) => {
-                      const content = (
-                        <div className="flex items-center gap-3 px-3 py-2.5">
-                          <div className="min-w-0 flex-1">
-                            <Badge
-                              variant={
-                                item.severity === "critical"
-                                  ? "destructive"
-                                  : "warning"
-                              }
-                              className="px-1.5 py-0 text-[10px] uppercase tracking-[0.08em]"
-                            >
-                              {item.reason}
-                            </Badge>
-                            <p className="mt-1.5 truncate text-sm font-semibold text-foreground">
-                              <span className="font-mono text-xs text-muted-foreground">
-                                {item.code}
-                              </span>{" "}
-                              {item.title}
-                            </p>
-                            {item.detail ? (
-                              <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                                {item.detail}
-                              </p>
-                            ) : null}
-                          </div>
-                          {item.elapsedMs > 0 ? (
-                            <span
-                              className={cn(
-                                "shrink-0 text-sm font-semibold tabular-nums",
-                                item.severity === "critical"
-                                  ? "text-destructive"
-                                  : "text-foreground",
-                              )}
-                            >
-                              {formatDuration(item.elapsedMs)}
-                            </span>
-                          ) : null}
-                          {canViewJobOrders ? (
-                            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-                          ) : null}
-                        </div>
-                      );
-
-                      return canViewJobOrders ? (
-                        <Link
-                          key={item.id}
-                          to={jobOrderDetailPath(item.jobOrderId)}
-                          className="group block rounded-md border border-border bg-muted/20 transition-[background-color,border-color] hover:border-foreground/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                        >
-                          {content}
-                        </Link>
-                      ) : (
-                        <div
-                          key={item.id}
-                          className="rounded-md border border-border bg-muted/20"
-                        >
-                          {content}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="px-4 py-8 text-center">
-                    <p className="text-sm font-medium text-foreground">
-                      Nothing needs action
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      No job orders are blocked or overdue in this branch right now.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="min-w-0">
-              <CardHeader className="flex-row items-center justify-between space-y-0">
-                <div>
-                  <CardTitle>Job orders by stage</CardTitle>
-                  <CardDescription>Active service pipeline</CardDescription>
-                </div>
-                {canViewJobOrders ? (
-                  <Button asChild variant="ghost" size="sm">
-                    <Link to={ROUTES.JOB_ORDERS}>
-                      View <ArrowRight className="h-3.5 w-3.5" />
-                    </Link>
-                  </Button>
-                ) : null}
-              </CardHeader>
-              <CardContent>
-                {hasPipeline ? (
-                  <ul className="space-y-3">
-                    {stages.map((stage) => (
-                      <li key={stage.stageId}>
-                        <div className="mb-1 flex items-center justify-between text-xs">
-                          <span className="font-medium text-foreground">
-                            {stage.name}
-                          </span>
-                          <span className="tabular-nums text-muted-foreground">
-                            {stage.count}
-                          </span>
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-muted">
-                          <span
-                            className={cn(
-                              "block h-full rounded-full",
-                              stage.tone === "warning"
-                                ? "bg-warning"
-                                : "bg-primary",
-                            )}
-                            style={{
-                              width: `${(stage.count / maxStageCount) * 100}%`,
-                            }}
-                          />
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="px-1 py-8 text-center text-xs text-muted-foreground">
-                    No active job orders in this branch.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <AlertsCard
+              title="Bottlenecks"
+              description="Work that's stalling or slipping"
+              icon={Clock}
+              accent="warning"
+              items={slipping}
+              canView={canViewJobOrders}
+              emptyText="No job orders are slipping right now."
+            />
           </section>
 
           <section className="grid gap-4 lg:grid-cols-2">
