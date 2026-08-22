@@ -178,7 +178,7 @@ export function OnboardingTour({
       aria-live="polite"
     >
       <div
-        className="fixed z-[91] rounded-xl ring-2 ring-primary ring-offset-2 ring-offset-background transition-[top,left,width,height] duration-200 motion-reduce:transition-none"
+        className="fixed z-[91] rounded-xl ring-2 ring-brand-emphasis ring-offset-2 ring-offset-background transition-[top,left,width,height] duration-200 motion-reduce:transition-none"
         style={{
           top: highlight.top,
           left: highlight.left,

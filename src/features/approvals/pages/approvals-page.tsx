@@ -83,7 +83,7 @@ export function ApprovalsPage() {
           <TabsTrigger value="pending">
             Pending
             {pendingCount > 0 ? (
-              <Badge variant="brand" className="ml-1.5 px-1.5 py-0">
+              <Badge variant="warning" className="ml-1.5 px-1.5 py-0">
                 {pendingCount}
               </Badge>
             ) : null}

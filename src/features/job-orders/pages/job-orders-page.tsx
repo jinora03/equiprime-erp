@@ -96,7 +96,7 @@ export function JobOrdersPage() {
             <div className="flex items-center gap-2">
               <div className="inline-flex rounded-lg border bg-muted/40 p-0.5">
                 <Button
-                  variant={view === "list" ? "default" : "ghost"}
+                  variant={view === "list" ? "selection" : "ghost"}
                   size="sm"
                   className="h-8"
                   onClick={() => setView("list")}
@@ -104,7 +104,7 @@ export function JobOrdersPage() {
                   <Rows3 className="h-4 w-4" /> List
                 </Button>
                 <Button
-                  variant={view === "kanban" ? "default" : "ghost"}
+                  variant={view === "kanban" ? "selection" : "ghost"}
                   size="sm"
                   className="h-8"
                   onClick={() => setView("kanban")}

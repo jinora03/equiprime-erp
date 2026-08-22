@@ -87,7 +87,7 @@ export function NotificationsPage() {
                   onClick={() => toggleRead(n.id)}
                   className={cn(
                     "flex w-full items-start gap-4 px-5 py-4 text-left transition-colors hover:bg-muted/50",
-                    !n.read && "bg-primary/[0.03]",
+                    !n.read && "bg-brand/[0.03]",
                   )}
                 >
                   <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">

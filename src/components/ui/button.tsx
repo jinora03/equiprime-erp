@@ -10,6 +10,8 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
+          "bg-action text-action-foreground hover:bg-action-hover",
+        selection:
           "bg-primary text-primary-foreground hover:bg-primary-600",
         brand:
           "bg-brand text-brand-foreground hover:bg-brand-600",

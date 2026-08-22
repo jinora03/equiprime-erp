@@ -35,6 +35,13 @@
     --brand-600: 42 38% 44%;
     --brand-700: 40 44% 34%;
 
+    /* Semantic roles — component intent stays independent from palette values. */
+    --action: var(--primary);
+    --action-foreground: var(--primary-foreground);
+    --action-hover: var(--primary-600);
+    --brand-emphasis: var(--primary);
+    --progress: var(--primary);
+
     /* Neutrals */
     --secondary: 214 32% 95%;
     --secondary-foreground: 222 33% 24%;
@@ -99,6 +106,13 @@
     --brand-100: 44 24% 23%;
     --brand-600: 43 37% 52%;
     --brand-700: 44 42% 64%;
+
+    /* Dark mode promotes actions/highlights to gold; progress stays informational blue. */
+    --action: var(--brand);
+    --action-foreground: var(--brand-foreground);
+    --action-hover: var(--brand-600);
+    --brand-emphasis: var(--brand);
+    --progress: var(--primary);
 
     --secondary: 218 22% 17%;
     --secondary-foreground: 214 30% 92%;

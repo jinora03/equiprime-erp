@@ -44,7 +44,7 @@ export const OnboardingStepCard = forwardRef<HTMLElement, OnboardingStepCardProp
         style={isMobile ? undefined : style}
       >
         <div className="flex items-start gap-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-brand-emphasis/10 text-brand-emphasis">
             <Icon className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -80,7 +80,7 @@ export const OnboardingStepCard = forwardRef<HTMLElement, OnboardingStepCardProp
               key={dotIndex}
               className={cn(
                 "h-1.5 rounded-full transition-all motion-reduce:transition-none",
-                dotIndex === index ? "w-5 bg-primary" : "w-1.5 bg-muted-foreground/25",
+                dotIndex === index ? "w-5 bg-brand-emphasis" : "w-1.5 bg-muted-foreground/25",
               )}
             />
           ))}

@@ -7,7 +7,7 @@ interface BrandLogoProps {
 }
 
 /**
- * The Equiprime "EP" monogram mark — navy tile with an orange "P", echoing the
+ * The Equiprime "EP" monogram mark — navy tile with a muted-gold "P", echoing the
  * company logo. Used in the sidebar and on the auth screen.
  */
 export function BrandLogo({ className, size = 36 }: BrandLogoProps) {

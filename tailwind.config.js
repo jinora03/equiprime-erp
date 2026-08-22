@@ -39,6 +39,14 @@ export default {
           700: "hsl(var(--primary-700))",
           900: "hsl(var(--primary-900))",
         },
+        // Semantic component roles; the theme decides which palette they resolve to.
+        action: {
+          DEFAULT: "hsl(var(--action))",
+          foreground: "hsl(var(--action-foreground))",
+          hover: "hsl(var(--action-hover))",
+        },
+        "brand-emphasis": "hsl(var(--brand-emphasis))",
+        progress: "hsl(var(--progress))",
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",

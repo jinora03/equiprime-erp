@@ -110,7 +110,7 @@ export function NotificationsMenu() {
               );
               const className = cn(
                 "flex gap-3 px-4 py-3 transition-colors hover:bg-muted/50",
-                !notification.read && "bg-primary/[0.03]",
+                !notification.read && "bg-brand/[0.03]",
               );
 
               return "href" in notification ? (
