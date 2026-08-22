@@ -32,13 +32,10 @@ export const WORKFLOWS: Workflow[] = [
       stage("jo-draft", "Draft", 1, "slate", "Logged, not yet submitted."),
       stage("jo-submitted", "Submitted", 2, "blue", "Submitted for approval."),
       stage("jo-approved", "Approved", 3, "violet", "Approved to proceed."),
-      stage("jo-assigned", "Assigned", 4, "blue", "Assigned to a mechanic."),
-      stage("jo-diagnosing", "Diagnosing", 5, "amber", "Fault diagnosis underway."),
-      stage("jo-waiting-parts", "Waiting for Parts", 6, "orange", "Awaiting parts."),
-      stage("jo-repair", "Repair", 7, "amber", "Repair in progress."),
-      stage("jo-quality-check", "Quality Check", 8, "violet", "QA and sign-off."),
-      stage("jo-completed", "Completed", 9, "green", "Work completed."),
-      stage("jo-closed", "Closed", 10, "slate", "Closed and archived."),
+      stage("jo-repair", "Repair", 4, "blue", "Repair in progress."),
+      stage("jo-waiting-parts", "Waiting for Parts", 5, "orange", "Awaiting parts."),
+      stage("jo-completed", "Completed", 6, "green", "Work completed."),
+      stage("jo-closed", "Closed", 7, "slate", "Closed and archived."),
     ],
     transitions: [
       {
@@ -63,30 +60,6 @@ export const WORKFLOWS: Workflow[] = [
       {
         id: "jt3",
         fromStageId: "jo-approved",
-        toStageId: "jo-assigned",
-        label: "Assign",
-      },
-      {
-        id: "jt4",
-        fromStageId: "jo-assigned",
-        toStageId: "jo-diagnosing",
-        label: "Start diagnosis",
-      },
-      {
-        id: "jt5",
-        fromStageId: "jo-diagnosing",
-        toStageId: "jo-waiting-parts",
-        label: "Wait for parts",
-        conditions: [
-          {
-            type: "supervisor_approval",
-            label: "Supervisor approval recorded",
-          },
-        ],
-      },
-      {
-        id: "jt5-repair",
-        fromStageId: "jo-diagnosing",
         toStageId: "jo-repair",
         label: "Start repair",
       },
@@ -104,12 +77,6 @@ export const WORKFLOWS: Workflow[] = [
         approverRoles: ["Warehouse Staff"],
       },
       {
-        id: "jt6-reassess",
-        fromStageId: "jo-waiting-parts",
-        toStageId: "jo-diagnosing",
-        label: "Reassess diagnosis",
-      },
-      {
         id: "jt6-more-parts",
         fromStageId: "jo-repair",
         toStageId: "jo-waiting-parts",
@@ -118,28 +85,14 @@ export const WORKFLOWS: Workflow[] = [
       {
         id: "jt7",
         fromStageId: "jo-repair",
-        toStageId: "jo-quality-check",
-        label: "Send to Quality Check",
+        toStageId: "jo-completed",
+        label: "Complete job order",
         conditions: [
           {
             type: "all_work_items_completed",
             label: "At least one work item exists and all work items are completed",
           },
         ],
-      },
-      {
-        id: "jt8",
-        fromStageId: "jo-quality-check",
-        toStageId: "jo-completed",
-        label: "Pass QA & complete",
-        conditions: [{ type: "qa_passed", label: "QA passed" }],
-        approverRoles: ["Manager"],
-      },
-      {
-        id: "jt8-return",
-        fromStageId: "jo-quality-check",
-        toStageId: "jo-repair",
-        label: "QA failed — return to Repair",
       },
       {
         id: "jt9",
@@ -157,8 +110,8 @@ export const WORKFLOWS: Workflow[] = [
       {
         id: "jt10-reopen",
         fromStageId: "jo-closed",
-        toStageId: "jo-diagnosing",
-        label: "Reopen for diagnosis",
+        toStageId: "jo-repair",
+        label: "Reopen repair",
         approverRoles: ["Manager"],
       },
     ],

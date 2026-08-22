@@ -17,7 +17,7 @@ export interface WorkItemStatusDef {
 
 export const WORK_ITEM_STATUSES: WorkItemStatusDef[] = [
   { id: "not_started", label: "Not Started", tone: "slate" },
-  { id: "in_progress", label: "In Progress", tone: "amber" },
+  { id: "in_progress", label: "In Progress", tone: "blue" },
   { id: "completed", label: "Completed", tone: "green" },
 ];
 
