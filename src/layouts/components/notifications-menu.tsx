@@ -31,17 +31,17 @@ export function NotificationsMenu() {
     }));
   const notifications = [...approvalNotifications, ...NOTIFICATIONS];
   const unreadCount = notifications.filter((notification) => !notification.read).length;
-  const hasPendingApprovals = approvalNotifications.length > 0;
-  const footerHref = hasPendingApprovals && can("approvals:view")
-    ? ROUTES.APPROVALS
-    : can("notifications:view")
-      ? ROUTES.NOTIFICATIONS
-      : can("approvals:view")
-        ? ROUTES.APPROVALS
-        : null;
-  const footerLabel = footerHref === ROUTES.APPROVALS
-    ? "Open My Approvals"
-    : "Open notifications center";
+  // "View all" belongs to the notifications center. Only fall back to My
+  // Approvals for roles that cannot reach the center but still act on approvals
+  // (individual approval items already deep-link to My Approvals on their own).
+  const viewAllHref = can("notifications:view")
+    ? ROUTES.NOTIFICATIONS
+    : can("approvals:view")
+      ? ROUTES.APPROVALS
+      : null;
+  const viewAllLabel = viewAllHref === ROUTES.NOTIFICATIONS
+    ? "Open notifications center"
+    : "Open My Approvals";
 
   return (
     <Popover>
@@ -74,9 +74,9 @@ export function NotificationsMenu() {
               </span>
             ) : null}
           </div>
-          {footerHref ? (
+          {viewAllHref ? (
             <Link
-              to={footerHref}
+              to={viewAllHref}
               className="text-xs font-medium text-primary hover:underline"
             >
               View all
@@ -125,10 +125,10 @@ export function NotificationsMenu() {
             })}
           </div>
         </ScrollArea>
-        {footerHref ? (
+        {viewAllHref ? (
           <div className="border-t p-2">
             <Button asChild variant="ghost" size="sm" className="w-full">
-              <Link to={footerHref}>{footerLabel}</Link>
+              <Link to={viewAllHref}>{viewAllLabel}</Link>
             </Button>
           </div>
         ) : null}

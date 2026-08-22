@@ -19,6 +19,7 @@ import {
 import { ROUTES, jobOrderDetailPath } from "@/constants/routes";
 import { usePermissions } from "@/hooks/use-permissions";
 import { cn } from "@/lib/utils";
+import { ComingSoonPanel } from "@/shared/components/coming-soon-panel";
 import { PageHeader } from "@/shared/components/page-header";
 import { StatCard } from "@/shared/components/stat-card";
 import { UserAvatar } from "@/shared/components/user-avatar";
@@ -51,21 +52,6 @@ const PRIORITY: Record<
   Medium: "warning",
   Low: "secondary",
 };
-
-/** Placeholder for dashboard categories not yet built (Sales, HR, Inventory). */
-function ComingSoonPanel({ title }: { title: string }) {
-  return (
-    <Card>
-      <CardContent className="flex flex-col items-center gap-1 px-4 py-16 text-center">
-        <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="max-w-sm text-xs text-muted-foreground">
-          Coming soon. This prototype currently focuses on Service operations;
-          other areas will be built out in a later phase.
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
 
 export function DashboardPage() {
   const { can } = usePermissions();

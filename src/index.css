@@ -222,6 +222,16 @@
     );
   }
 
+  /* Dark mode: keep the auth brand panel a deep enterprise navy that matches the
+     dark sidebar chrome, instead of the bright primary-blue used in light mode. */
+  .dark .gradient-brand {
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--primary-700)) 0%,
+      hsl(var(--sidebar)) 100%
+    );
+  }
+
   /* Animated skeleton shimmer */
   .shimmer {
     position: relative;

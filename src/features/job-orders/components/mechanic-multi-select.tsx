@@ -8,6 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { PopoverScrollArea } from "@/components/ui/popover-scroll-area";
 import type { User } from "@/types";
 
 interface MechanicMultiSelectProps {
@@ -58,7 +59,7 @@ export function MechanicMultiSelect({
               No active mechanics are available for this branch.
             </p>
           ) : (
-            <div className="max-h-64 space-y-1 overflow-y-auto">
+            <PopoverScrollArea className="max-h-64 space-y-1">
               {mechanics.map((mechanic) => (
                 <div
                   key={mechanic.id}
@@ -83,7 +84,7 @@ export function MechanicMultiSelect({
                   </label>
                 </div>
               ))}
-            </div>
+            </PopoverScrollArea>
           )}
         </PopoverContent>
       </Popover>
