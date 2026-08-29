@@ -2,7 +2,7 @@ import { jobOrderService } from "@/features/job-orders/service";
 import type { JobOrder } from "@/features/job-orders/types";
 import { workItemService } from "@/features/work-items/service";
 import type { WorkItem } from "@/features/work-items/types";
-import type { ServiceWorkActor } from "@/services/service-work-access";
+import { requireMockSessionActor } from "@/services/mock/session-context";
 import type { OrganizationScope } from "@/types";
 
 export interface MyWorkSnapshot {
@@ -17,18 +17,16 @@ const JOB_ORDER_DONE_STAGES = new Set(["jo-completed", "jo-closed"]);
  * repositories. It owns no duplicate business state.
  */
 export const myWorkService = {
-  async get(
-    actor: ServiceWorkActor,
-    scope: OrganizationScope,
-  ): Promise<MyWorkSnapshot> {
+  async get(scope: OrganizationScope): Promise<MyWorkSnapshot> {
+    const actor = requireMockSessionActor();
     const [visibleJobOrders, assignedWorkItems] = await Promise.all([
-      jobOrderService.listForActor(actor, scope),
-      workItemService.listAssignedTo(actor.userId, scope),
+      jobOrderService.listForCurrentActor(scope),
+      workItemService.listAssignedTo(actor.id, scope),
     ]);
 
     const jobOrders = visibleJobOrders.filter(
       (jobOrder) =>
-        jobOrder.assigneeIds.includes(actor.userId) &&
+        jobOrder.assigneeIds.includes(actor.id) &&
         !JOB_ORDER_DONE_STAGES.has(jobOrder.currentStageId),
     );
     const activeJobIds = new Set(jobOrders.map((jobOrder) => jobOrder.id));

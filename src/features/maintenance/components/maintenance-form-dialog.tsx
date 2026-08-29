@@ -29,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuth } from "@/contexts/auth-context";
 import { useCreateRecord } from "@/hooks/use-workflow-records";
 import { maintenanceService } from "../service";
 
@@ -50,7 +49,6 @@ export function MaintenanceFormDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { user } = useAuth();
   const create = useCreateRecord("maintenance", maintenanceService.create);
 
   const form = useForm<FormValues>({
@@ -72,7 +70,6 @@ export function MaintenanceFormDialog({
     try {
       await create.mutateAsync({
         ...values,
-        actor: user?.full_name ?? "System",
       });
       toast.success("Maintenance scheduled", {
         description: "It now follows the Maintenance Workflow.",

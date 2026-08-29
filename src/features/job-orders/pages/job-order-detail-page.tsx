@@ -34,7 +34,6 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { ROUTES } from "@/constants/routes";
-import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useRequestApproval } from "@/features/approvals/hooks";
 import { useMoveRecordStage } from "@/hooks/use-workflow-records";
@@ -83,8 +82,7 @@ export function JobOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const jobOrderId = Number(id);
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { can, permissions } = usePermissions();
+  const { can } = usePermissions();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = TABS.includes(searchParams.get("tab") ?? "")
@@ -192,10 +190,6 @@ export function JobOrderDetailPage() {
       await moveJobStage.mutateAsync({
         id: jobOrder.id,
         toStageId,
-        actor: user?.full_name ?? "System",
-        actorId: user?.id,
-        actorRole: user?.role,
-        permissions,
         evidence,
       });
       toast.success(`Moved to ${stageName(toStageId)}`);
@@ -221,19 +215,13 @@ export function JobOrderDetailPage() {
     toStageId: string,
     evidence: WorkflowMoveEvidence,
   ) => {
-    if (!user || !pendingTransition) return;
+    if (!pendingTransition) return;
     try {
       const task = await requestApproval.mutateAsync({
         moduleId: "job-orders",
         recordId: jobOrder.id,
         toStageId,
         transitionId: pendingTransition.id,
-        actor: {
-          id: user.id,
-          name: user.full_name,
-          role: user.role,
-          permissions,
-        },
         confirmedConditions: evidence.confirmedConditions,
       });
       toast.success("Approval requested", {

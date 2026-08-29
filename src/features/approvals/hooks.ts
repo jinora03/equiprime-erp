@@ -7,38 +7,23 @@ import {
   useOrganizationScope,
 } from "@/store/organization.store";
 import type {
-  ApprovalActor,
   ApprovalDecisionInput,
   ApprovalRequestInput,
 } from "@/types";
 import { approvalService } from "./service";
 
-function useApprovalActor(): ApprovalActor | null {
-  const { user, permissions } = useAuth();
-  if (!user) return null;
-  return {
-    id: user.id,
-    name: user.full_name,
-    role: user.role,
-    permissions,
-  };
-}
-
 export function useMyApprovals() {
   const scope = useOrganizationScope();
-  const actor = useApprovalActor();
+  const { user, permissions } = useAuth();
   const scopeKey = organizationScopeKey(scope);
+  const actorKey = user
+    ? `${user.id}:${user.role}:${permissions.join("|")}`
+    : "anonymous";
 
   return useQuery({
-    queryKey: queryKeys.approvals.list(
-      scopeKey,
-      actor ? `${actor.id}:${actor.role}` : "anonymous",
-    ),
-    queryFn: () => {
-      if (!actor) return [];
-      return approvalService.listForActor(scope, actor);
-    },
-    enabled: !!actor,
+    queryKey: queryKeys.approvals.list(scopeKey, actorKey),
+    queryFn: () => approvalService.list(scope),
+    enabled: Boolean(user),
   });
 }
 

@@ -107,10 +107,6 @@ export function JobOrdersPage() {
       const updated = (await moveStage.mutateAsync({
         id,
         toStageId,
-        actor: user?.full_name ?? "System",
-        actorId: user?.id,
-        actorRole: user?.role,
-        permissions,
       })) as JobOrder;
       toast.success(`Moved to ${stageOf(updated)?.name ?? "new stage"}`);
     } catch (error) {

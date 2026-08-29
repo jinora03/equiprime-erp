@@ -13,7 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useMoveRecordStage, useRecords } from "@/hooks/use-workflow-records";
 import { PageHeader } from "@/shared/components/page-header";
@@ -34,8 +33,7 @@ import { MaintenanceFormDialog } from "../components/maintenance-form-dialog";
 
 export function MaintenancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user } = useAuth();
-  const { can, permissions } = usePermissions();
+  const { can } = usePermissions();
   const canMove = can("maintenance:update");
   const canCreate = can("maintenance:create");
 
@@ -85,9 +83,6 @@ export function MaintenancePage() {
       const updated = await moveStage.mutateAsync({
         id: selected.id,
         toStageId,
-        actor: user?.full_name ?? "System",
-        actorRole: user?.role,
-        permissions,
       });
       setSelected(updated as Maintenance);
       toast.success("Stage updated");

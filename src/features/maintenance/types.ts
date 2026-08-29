@@ -13,5 +13,4 @@ export interface MaintenanceInput {
   priority: Priority;
   scheduledDate: string;
   assignee?: string;
-  actor: string;
 }

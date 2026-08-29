@@ -1,5 +1,3 @@
-import type { PermissionKey } from "@/types";
-
 export type PartsRequestStatus =
   | "draft"
   | "pending"
@@ -45,10 +43,4 @@ export interface PartsRequest {
 export interface PartsRequestInput {
   jobOrderId: number;
   items: PartsRequestItem[];
-  requestedBy: {
-    id: number;
-    name: string;
-    role: string;
-    permissions: PermissionKey[];
-  };
 }

@@ -1,4 +1,5 @@
 import { delay } from "@/services/mock/delay";
+import { requireMockPermission } from "@/services/mock/session-context";
 import { WORKFLOWS } from "@/services/mock/workflow-data";
 import type { Workflow, WorkflowStage } from "@/types";
 
@@ -27,7 +28,6 @@ export interface WorkflowUpdateInput {
   description?: string;
   status?: Workflow["status"];
   stages?: WorkflowStage[];
-  actor: string;
 }
 
 function latestById(id: number): Workflow | undefined {
@@ -129,6 +129,7 @@ export const workflowService = {
   },
 
   async update(id: number, input: WorkflowUpdateInput): Promise<Workflow> {
+    const actor = requireMockPermission("workflows:manage");
     const current = latestById(id);
     if (!current) throw new Error("Workflow not found");
 
@@ -146,7 +147,7 @@ export const workflowService = {
     if (input.description !== undefined) next.description = input.description;
     if (input.status !== undefined) next.status = input.status;
     if (nextStages) next.stages = nextStages;
-    next.updatedBy = input.actor;
+    next.updatedBy = actor.name;
     next.updatedAt = new Date().toISOString();
     workflowVersions.push(next);
     return delay(cloneWorkflow(next));

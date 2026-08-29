@@ -1,6 +1,7 @@
 import { inventoryService } from "@/features/inventory/service";
 import type { JobOrder } from "@/features/job-orders/types";
 import { delay, nextId } from "@/services/mock/delay";
+import { requireMockSessionActor } from "@/services/mock/session-context";
 import {
   canUpdateJobOrder,
   type ServiceWorkActor,
@@ -56,6 +57,7 @@ export const partsRequestService = {
     }
 
     const scope = getActiveOrganizationScope();
+    const requester = requireMockSessionActor();
     // Record-level access is resolved from the registered Job Order instead of
     // trusting ownership/assignee data supplied by the UI. Laravel should make
     // this same check authoritatively when the real backend is connected.
@@ -72,9 +74,9 @@ export const partsRequestService = {
     }
 
     const actor: ServiceWorkActor = {
-      userId: input.requestedBy.id,
-      role: input.requestedBy.role,
-      permissions: input.requestedBy.permissions,
+      userId: requester.id,
+      role: requester.role,
+      permissions: requester.permissions,
     };
     if (!canUpdateJobOrder(actor, jobOrder)) {
       throw new Error(
@@ -98,9 +100,9 @@ export const partsRequestService = {
           : jobOrder.partsCycle + 1,
       status: "pending",
       items: input.items.map((item) => ({ ...item })),
-      requestedById: input.requestedBy.id,
-      requestedBy: input.requestedBy.name,
-      requestedByRole: input.requestedBy.role,
+      requestedById: requester.id,
+      requestedBy: requester.name,
+      requestedByRole: requester.role,
       createdAt: now,
       updatedAt: now,
     };

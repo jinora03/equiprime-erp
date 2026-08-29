@@ -20,17 +20,7 @@ export function useJobOrders() {
 
   return useQuery({
     queryKey: queryKeys.records.list("job-orders", scopeKey, actorKey),
-    queryFn: () =>
-      user
-        ? jobOrderService.listForActor(
-            {
-              userId: user.id,
-              role: user.role,
-              permissions,
-            },
-            scope,
-          )
-        : Promise.resolve([]),
+    queryFn: () => (user ? jobOrderService.listForCurrentActor(scope) : Promise.resolve([])),
     enabled: Boolean(user),
   });
 }

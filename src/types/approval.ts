@@ -61,13 +61,11 @@ export interface ApprovalRequestInput {
   recordId: number;
   toStageId: string;
   transitionId: string;
-  actor: ApprovalActor;
   confirmedConditions?: TransitionConditionType[];
 }
 
 export interface ApprovalDecisionInput {
   taskId: string;
   decision: "approve" | "reject";
-  actor: ApprovalActor;
   note?: string;
 }

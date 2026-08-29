@@ -1,8 +1,13 @@
 import type { JobOrder } from "@/features/job-orders/types";
 import { delay, nextId } from "@/services/mock/delay";
+import {
+  requireMockPermission,
+  requireMockSessionActor,
+} from "@/services/mock/session-context";
 import { matchesOrganizationScope } from "@/services/mock/scope";
 import { findRegisteredWorkflowRecord } from "@/services/workflow-record-registry";
 import {
+  canUpdateJobOrder,
   canUpdateWorkItem,
   type ServiceWorkActor,
 } from "@/services/service-work-access";
@@ -20,7 +25,7 @@ import type { WorkItem, WorkItemInput } from "./types";
 /**
  * WorkItemService — mock repository for a job order's work items. Bespoke (not
  * the workflow record store) because work items use fixed statuses. Swap the
- * `delay()` bodies for FastAPI calls later; the hooks + UI stay the same.
+ * `delay()` bodies for ERP API calls later; the hooks + UI stay the same.
  */
 
 const data: WorkItem[] = workItemSeed.map((w) => ({ ...w }));
@@ -56,6 +61,7 @@ export const workItemService = {
 
   async create(input: WorkItemInput): Promise<WorkItem> {
     const now = new Date().toISOString();
+    const session = requireMockPermission("work-items:create");
     const scope = getActiveOrganizationScope();
     const jobOrder = findRegisteredWorkflowRecord<JobOrder>(
       "job-orders",
@@ -63,6 +69,20 @@ export const workItemService = {
     );
     if (!jobOrder || !matchesOrganizationScope(jobOrder, scope)) {
       throw new Error("Job order not found in the active branch.");
+    }
+    if (
+      !canUpdateJobOrder(
+        {
+          userId: session.id,
+          role: session.role,
+          permissions: session.permissions,
+        },
+        jobOrder,
+      )
+    ) {
+      throw new Error(
+        "You can only add work items to job orders available to your account.",
+      );
     }
 
     const mechanics = input.assigneeId
@@ -105,8 +125,13 @@ export const workItemService = {
   updateStatus(
     id: number,
     status: WorkItemStatus,
-    actor: ServiceWorkActor,
   ): Promise<WorkItem> {
+    const session = requireMockSessionActor();
+    const actor: ServiceWorkActor = {
+      userId: session.id,
+      role: session.role,
+      permissions: session.permissions,
+    };
     const record = data.find(
       (workItem) =>
         workItem.id === id && matchesOrganizationScope(workItem),

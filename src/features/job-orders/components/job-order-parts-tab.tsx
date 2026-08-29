@@ -84,16 +84,9 @@ export function JobOrderPartsTab({
   const requestParts = async () => {
     if (draft.length === 0) return;
     try {
-      if (!user) throw new Error("Sign in before requesting parts.");
       await createRequest.mutateAsync({
         jobOrderId,
         items: draft,
-        requestedBy: {
-          id: user.id,
-          name: user.full_name,
-          role: user.role,
-          permissions,
-        },
       });
       toast.success("Parts request created", {
         description: "Stock reserved; awaiting approval.",

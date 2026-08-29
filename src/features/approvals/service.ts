@@ -5,6 +5,7 @@ import {
   findRegisteredWorkflowRecord,
   validateRegisteredApprovalRequest,
 } from "@/services/workflow-record-registry";
+import { requireMockSessionActor } from "@/services/mock/session-context";
 import { workflowService } from "@/services/workflow.service";
 import type {
   ApprovalActor,
@@ -187,21 +188,22 @@ async function enrichPartsRequest(
 async function decidePartsRequest(
   taskId: string,
   input: ApprovalDecisionInput,
+  actor: ApprovalActor,
 ): Promise<ApprovalTask> {
   const requestId = Number(taskId.slice("parts:".length));
   if (!Number.isInteger(requestId)) throw new Error("Parts approval task is invalid.");
   const request = partsRequestService.get(requestId);
   if (!request) throw new Error("Parts request not found.");
-  if (!actorCanSeeRoles(PARTS_APPROVER_ROLES, input.actor)) {
+  if (!actorCanSeeRoles(PARTS_APPROVER_ROLES, actor)) {
     throw new Error("This approval is assigned to a different role.");
   }
-  const approvalRole = isSuperAdmin(input.actor)
+  const approvalRole = isSuperAdmin(actor)
     ? PARTS_APPROVER_ROLES[0]
-    : input.actor.role;
+    : actor.role;
   await partsRequestService.decide(
     requestId,
     input.decision,
-    input.actor,
+    actor,
     approvalRole,
     input.note,
   );
@@ -221,10 +223,8 @@ function assertCanAct(actor: ApprovalActor) {
 }
 
 export const approvalService = {
-  async listForActor(
-    scope: OrganizationScope,
-    actor: ApprovalActor,
-  ): Promise<ApprovalTask[]> {
+  async list(scope: OrganizationScope): Promise<ApprovalTask[]> {
+    const actor = requireMockSessionActor();
     if (!hasPermission(actor.permissions, "approvals:view")) return [];
     const relevant = tasks.filter(
       (task) => inScope(task, scope) && actorCanSeeRoles(task.requiredRoles, actor),
@@ -242,13 +242,14 @@ export const approvalService = {
   },
 
   async request(input: ApprovalRequestInput): Promise<ApprovalTask> {
+    const actor = requireMockSessionActor();
     const evaluation = await validateRegisteredApprovalRequest(
       input.moduleId,
       input.recordId,
       input.toStageId,
       {
-        actorRole: input.actor.role,
-        permissions: input.actor.permissions,
+        actorRole: actor.role,
+        permissions: actor.permissions,
         confirmedConditions: input.confirmedConditions,
       },
     );
@@ -288,9 +289,9 @@ export const approvalService = {
       transitionId: input.transitionId,
       requiredRoles: [...evaluation.approverRoles],
       confirmedConditions: [...(input.confirmedConditions ?? [])],
-      requestedById: input.actor.id,
-      requestedByName: input.actor.name,
-      requestedByRole: input.actor.role,
+      requestedById: actor.id,
+      requestedByName: actor.name,
+      requestedByRole: actor.role,
       requestedAt: new Date().toISOString(),
       status: "pending",
       decisions: [],
@@ -300,31 +301,32 @@ export const approvalService = {
   },
 
   async decide(input: ApprovalDecisionInput): Promise<ApprovalTask> {
-    assertCanAct(input.actor);
+    const actor = requireMockSessionActor();
+    assertCanAct(actor);
     if (input.taskId.startsWith("parts:")) {
-      return decidePartsRequest(input.taskId, input);
+      return decidePartsRequest(input.taskId, input, actor);
     }
     const task = tasks.find((candidate) => candidate.id === input.taskId);
     if (!task) throw new Error("Approval task not found.");
     if (task.status !== "pending") throw new Error("This approval is already resolved.");
-    if (!actorCanSeeRoles(task.requiredRoles, input.actor)) {
+    if (!actorCanSeeRoles(task.requiredRoles, actor)) {
       throw new Error("This approval is assigned to a different role.");
     }
 
     const now = new Date().toISOString();
-    const role = isSuperAdmin(input.actor)
+    const role = isSuperAdmin(actor)
       ? task.requiredRoles.find(
           (requiredRole) =>
             !task.decisions.some((decision) => decision.role === requiredRole),
         )
-      : task.requiredRoles.find((requiredRole) => requiredRole === input.actor.role);
+      : task.requiredRoles.find((requiredRole) => requiredRole === actor.role);
     if (!role) throw new Error("Your role has already approved this request.");
 
     const decision: ApprovalDecision = {
       role,
-      actorId: input.actor.id,
-      actorName: input.actor.name,
-      actorRole: input.actor.role,
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
       at: now,
       note: input.note?.trim() || undefined,
     };
@@ -350,7 +352,7 @@ export const approvalService = {
         task.recordId,
         enriched.toStageId,
         {
-          actor: input.actor.name,
+          actor: actor.name,
           approvedRoles: [...approvedRoles],
           confirmedConditions: task.confirmedConditions,
           note:

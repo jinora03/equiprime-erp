@@ -16,7 +16,7 @@ import { ApprovalReviewDialog } from "../components/approval-review-dialog";
 import { useDecideApproval, useMyApprovals } from "../hooks";
 
 export function ApprovalsPage() {
-  const { user, permissions } = useAuth();
+  const { user } = useAuth();
   const { can, isSuperAdmin } = usePermissions();
   const { data: tasks = [], isLoading } = useMyApprovals();
   const decide = useDecideApproval();
@@ -32,17 +32,12 @@ export function ApprovalsPage() {
   );
   const pendingCount = tasks.filter((task) => task.status === "pending").length;
 
-  const actor = user
-    ? { id: user.id, name: user.full_name, role: user.role, permissions }
-    : null;
-
   const act = async (decision: "approve" | "reject", note?: string) => {
-    if (!selected || !actor) return;
+    if (!selected) return;
     try {
       const updated = await decide.mutateAsync({
         taskId: selected.id,
         decision,
-        actor,
         note,
       });
       setSelected(null);
