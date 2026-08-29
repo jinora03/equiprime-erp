@@ -16,7 +16,7 @@ import {
   type DashboardSnapshot,
   type JobOrderStatus,
 } from "./data";
-import { deriveServiceMetrics, detectBottlenecks } from "./service-metrics";
+import { deriveServiceMetrics, detectBottlenecks, detectNeedsAction } from "./service-metrics";
 
 const MONTH_FORMATTER = new Intl.DateTimeFormat("en", {
   month: "short",
@@ -174,6 +174,11 @@ export const dashboardService = {
       partsRequests,
       workItems,
     });
+    const needsAction = detectNeedsAction({
+      jobOrders,
+      partsRequests,
+      workItems,
+    }).slice(0, 8);
     const bottlenecks = detectBottlenecks({
       jobOrders,
       partsRequests,
@@ -266,6 +271,7 @@ export const dashboardService = {
       lowStockItems: lowStockItems.length,
       attention,
       serviceMetrics,
+      needsAction,
       bottlenecks,
       revenueTrend: revenue.slice(-6).map((entry) => ({
         month: MONTH_FORMATTER.format(new Date(`${entry.period}-01T00:00:00Z`)),

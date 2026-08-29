@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import {
-  Building2,
   CheckCircle2,
   Clock3,
+  Loader2,
   Eye,
   Inbox,
   ShieldCheck,
@@ -41,6 +41,7 @@ export function ApprovalsPage() {
   const [tab, setTab] = useState<"pending" | "history">("pending");
   const [selected, setSelected] = useState<ApprovalTask | null>(null);
   const [dialogMode, setDialogMode] = useState<ApprovalDialogMode>("review");
+  const [actingTaskId, setActingTaskId] = useState<string | null>(null);
 
   const branchById = new Map(branches.map((branch) => [branch.id, branch]));
   const visible = useMemo(
@@ -63,15 +64,19 @@ export function ApprovalsPage() {
     setDialogMode(mode);
   };
 
-  const act = async (decision: "approve" | "reject", note?: string) => {
-    if (!selected) return;
+  const act = async (
+    task: ApprovalTask,
+    decision: "approve" | "reject",
+    note?: string,
+  ) => {
+    setActingTaskId(task.id);
     try {
       const updated = await decide.mutateAsync({
-        taskId: selected.id,
+        taskId: task.id,
         decision,
         note,
       });
-      setSelected(null);
+      if (selected?.id === task.id) setSelected(null);
       if (decision === "reject") {
         toast.success("Approval rejected", {
           description: `${updated.recordCode} remains in ${updated.fromStageName}.`,
@@ -92,6 +97,8 @@ export function ApprovalsPage() {
       toast.error("Approval action failed", {
         description: getErrorMessage(error, "Try again."),
       });
+    } finally {
+      setActingTaskId(null);
     }
   };
 
@@ -120,12 +127,16 @@ export function ApprovalsPage() {
 
       {isLoading ? (
         <Card>
-          <CardContent className="p-6 text-sm text-muted-foreground">Loading approvals…</CardContent>
+          <CardContent className="p-6 text-sm text-muted-foreground">
+            Loading approvals…
+          </CardContent>
         </Card>
       ) : visible.length === 0 ? (
         <EmptyState
           icon={Inbox}
-          title={tab === "pending" ? "No approvals waiting" : "No approval history"}
+          title={
+            tab === "pending" ? "No approvals waiting" : "No approval history"
+          }
           description={
             tab === "pending"
               ? "There are no approval requests assigned to your role in this branch."
@@ -139,16 +150,23 @@ export function ApprovalsPage() {
               task.status === "pending" &&
               can("approvals:act") &&
               (isSuperAdmin ||
-                !task.decisions.some((decision) => decision.role === user?.role));
+                !task.decisions.some(
+                  (decision) => decision.role === user?.role,
+                ));
             const alreadyApproved =
               task.status === "pending" &&
               task.decisions.some((decision) => decision.role === user?.role);
-            const branch = branchById.get(task.branchId);
-            const approverSummary = task.approverAssignments
-              ?.flatMap((assignment) =>
-                assignment.people.map((person) => `${assignment.role} · ${person.name}`),
-              )
-              .join(", ");
+            const primaryAssignment = task.approverAssignments?.find(
+              (assignment) => assignment.people.length > 0,
+            );
+            const primaryApprover = primaryAssignment?.people[0];
+            const approverName =
+              primaryApprover?.name ?? task.requiredRoles.join(", ");
+            const approverRole =
+              primaryAssignment?.role ??
+              (task.requiredRoles.length === 1
+                ? task.requiredRoles[0]
+                : `${task.requiredRoles.length} required roles`);
 
             return (
               <Card key={task.id} className="overflow-hidden">
@@ -185,12 +203,15 @@ export function ApprovalsPage() {
                         </Badge>
                       </div>
 
-                      <p className="mt-1.5 font-semibold text-foreground">{task.recordTitle}</p>
+                      <p className="mt-1.5 font-semibold text-foreground">
+                        {task.recordTitle}
+                      </p>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        {task.transitionLabel}: {task.fromStageName} → {task.toStageName}
+                        {task.transitionLabel}: {task.fromStageName} →{" "}
+                        {task.toStageName}
                       </p>
 
-                      <div className="mt-4 grid gap-3 border-t pt-4 text-xs sm:grid-cols-2 xl:grid-cols-4">
+                      <div className="mt-4 grid gap-3 border-t pt-4 text-xs sm:grid-cols-3">
                         <ApprovalMeta
                           icon={UserRound}
                           label="Requested by"
@@ -199,15 +220,9 @@ export function ApprovalsPage() {
                         />
                         <ApprovalMeta
                           icon={ShieldCheck}
-                          label="Assigned approver"
-                          value={approverSummary || task.requiredRoles.join(", ")}
-                          detail={approverSummary ? "Role · person" : "Role assignment"}
-                        />
-                        <ApprovalMeta
-                          icon={Building2}
-                          label="Branch"
-                          value={branch?.displayName ?? task.branchId}
-                          detail={branch?.region}
+                          label="Approver"
+                          value={approverName}
+                          detail={approverRole}
                         />
                         <ApprovalMeta
                           icon={Clock3}
@@ -223,9 +238,15 @@ export function ApprovalsPage() {
                         <>
                           <Button
                             size="sm"
-                            onClick={() => openDecision(task, "approve")}
+                            disabled={decide.isPending}
+                            onClick={() => void act(task, "approve")}
                           >
-                            <CheckCircle2 className="h-4 w-4" /> Approve
+                            {actingTaskId === task.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="h-4 w-4" />
+                            )}
+                            Approve
                           </Button>
                           <Button
                             size="sm"
@@ -268,11 +289,19 @@ export function ApprovalsPage() {
         onOpenChange={(open) => !open && setSelected(null)}
         task={selected}
         mode={dialogMode}
-        branchName={selected ? branchById.get(selected.branchId)?.displayName : undefined}
+        branchName={
+          selected ? branchById.get(selected.branchId)?.displayName : undefined
+        }
         actionable={selectedCanAct}
         submitting={decide.isPending}
-        onApprove={(note) => act("approve", note)}
-        onReject={(note) => act("reject", note)}
+        onApprove={(note) => {
+          if (!selected) return;
+          return act(selected, "approve", note);
+        }}
+        onReject={(note) => {
+          if (!selected) return;
+          return act(selected, "reject", note);
+        }}
       />
     </div>
   );

@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { ApprovalTask } from "@/types";
 import { formatDateTime } from "@/utils/format";
 
-export type ApprovalDialogMode = "review" | "approve" | "reject";
+export type ApprovalDialogMode = "review" | "reject";
 
 interface ApprovalReviewDialogProps {
   open: boolean;
@@ -76,18 +76,11 @@ export function ApprovalReviewDialog({
 
   if (!task) return null;
 
-  const title =
-    mode === "approve"
-      ? "Confirm approval"
-      : mode === "reject"
-        ? "Reject approval"
-        : "Review approval";
+  const title = mode === "reject" ? "Reject approval" : "Review approval";
   const description =
-    mode === "approve"
-      ? `Confirm that ${task.recordCode} can move forward.`
-      : mode === "reject"
-        ? "Add a reason so the requester knows what needs to change."
-        : `Review this request without needing access to the full ${task.moduleLabel} source module.`;
+    mode === "reject"
+      ? "Add a reason so the requester knows what needs to change."
+      : `Review the full request context, then approve or reject from here.`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -154,20 +147,15 @@ export function ApprovalReviewDialog({
                 const assignment = task.approverAssignments?.find(
                   (candidate) => candidate.role === role,
                 );
+                const approver = assignment?.people[0];
                 return (
                   <div key={role} className="flex items-start justify-between gap-3 text-sm">
                     <div>
-                      <p className="font-medium text-foreground">{role}</p>
+                      <p className="font-medium text-foreground">
+                        {approver?.name ?? role}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {assignment?.people.length
-                          ? assignment.people
-                              .map((person) =>
-                                person.jobTitle
-                                  ? `${person.name} · ${person.jobTitle}`
-                                  : person.name,
-                              )
-                              .join(", ")
-                          : "No active approver found in this branch"}
+                        {approver ? role : "No active approver found"}
                       </p>
                     </div>
                     <Badge variant={approved ? "success" : "outline"}>
@@ -179,35 +167,23 @@ export function ApprovalReviewDialog({
             </div>
           </div>
 
-          {mode !== "approve" ? (
-            <div className="space-y-2">
-              <label htmlFor="approval-note" className="text-sm font-medium text-foreground">
-                {mode === "reject" ? "Rejection reason" : "Decision note"}
-              </label>
-              <Textarea
-                id="approval-note"
-                value={note}
-                onChange={(event) => setNote(event.target.value)}
-                placeholder={
-                  mode === "reject"
-                    ? "Explain what needs to be corrected before resubmission."
-                    : "Optional for approval; required when rejecting."
-                }
-                rows={3}
-                autoFocus={mode === "reject"}
-              />
-            </div>
-          ) : (
-            <div className="rounded-lg border border-success/20 bg-success/5 p-3 text-sm text-foreground">
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-                <p>
-                  Approving will record your decision as the authenticated approver and
-                  continue the workflow once every required role has approved.
-                </p>
-              </div>
-            </div>
-          )}
+          <div className="space-y-2">
+            <label htmlFor="approval-note" className="text-sm font-medium text-foreground">
+              {mode === "reject" ? "Rejection reason" : "Decision note"}
+            </label>
+            <Textarea
+              id="approval-note"
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              placeholder={
+                mode === "reject"
+                  ? "Explain what needs to be corrected before resubmission."
+                  : "Optional note for this decision."
+              }
+              rows={3}
+              autoFocus={mode === "reject"}
+            />
+          </div>
         </div>
 
         <DialogFooter>
@@ -235,7 +211,7 @@ export function ApprovalReviewDialog({
             </Button>
           ) : null}
 
-          {actionable && (mode === "review" || mode === "approve") ? (
+          {actionable && mode === "review" ? (
             <Button onClick={handleApprove} disabled={submitting}>
               {pendingDecision === "approve" ? (
                 <>

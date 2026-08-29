@@ -101,11 +101,11 @@ function enteredCurrentStageAt(job: JobOrder): string {
 
 function approvalOwner(task: ApprovalTask): string {
   const people = (task.approverAssignments ?? []).flatMap((assignment) =>
-    assignment.people.map((person) => `${assignment.role} · ${person.name}`),
+    assignment.people.map((person) => `${person.name} (${assignment.role})`),
   );
   return people.length > 0
-    ? `Pending with ${people.join(", ")}`
-    : `Pending with ${task.requiredRoles.join(", ")}`;
+    ? `Waiting on ${people.join(", ")}`
+    : `Waiting on ${task.requiredRoles.join(", ")}`;
 }
 
 export function deriveServiceMetrics(input: DeriveInput): ServiceMetrics {
@@ -142,15 +142,89 @@ export function deriveServiceMetrics(input: DeriveInput): ServiceMetrics {
 }
 
 /**
- * Identify operational bottlenecks with a concrete reason + elapsed context.
- * Sorted critical-first, then longest-waiting. Callers may cap the list length.
+ * Due-date-driven items that need timely action. Kept separate from process
+ * bottlenecks so the dashboard answers two different questions:
+ *   - Needs action: what is due / overdue?
+ *   - Bottlenecks: what is blocking or stalling the process?
  */
-export function detectBottlenecks(input: DeriveInput): Bottleneck[] {
+export function detectNeedsAction(input: DeriveInput): Bottleneck[] {
   const now = input.now ?? Date.now();
   const today = isoDay(now);
   const dueSoonCutoff = isoDay(
     new Date(now).getTime() + SERVICE_THRESHOLDS.dueSoonDays * MS_PER_DAY,
   );
+  const out: Bottleneck[] = [];
+
+  for (const job of input.jobOrders) {
+    if (!isActiveJobOrder(job) || !job.dueDate) continue;
+
+    if (job.dueDate < today) {
+      out.push({
+        id: `overdue-${job.id}`,
+        jobOrderId: job.id,
+        code: job.code,
+        title: job.title,
+        kind: "job_order_overdue",
+        reason: "Job order overdue",
+        detail: `Due ${job.dueDate}`,
+        elapsedMs: 0,
+        severity: "critical",
+      });
+    } else if (job.dueDate <= dueSoonCutoff) {
+      out.push({
+        id: `due-soon-${job.id}`,
+        jobOrderId: job.id,
+        code: job.code,
+        title: job.title,
+        kind: "due_soon",
+        reason: "Due soon",
+        detail: `Due ${job.dueDate}`,
+        elapsedMs: 0,
+        severity: "warning",
+      });
+    }
+  }
+
+  for (const item of input.workItems) {
+    if (item.status === "completed" || !item.dueDate || item.dueDate >= today) {
+      continue;
+    }
+    out.push({
+      id: `work-item-${item.id}`,
+      jobOrderId: item.jobOrderId,
+      code: item.jobOrderCode,
+      title: item.task,
+      kind: "work_item_overdue",
+      reason: "Work item overdue",
+      detail: `Due ${item.dueDate}`,
+      elapsedMs: 0,
+      severity: "critical",
+    });
+  }
+
+  const severityRank: Record<BottleneckSeverity, number> = {
+    critical: 0,
+    warning: 1,
+  };
+  const sorted = out.sort(
+    (a, b) => severityRank[a.severity] - severityRank[b.severity],
+  );
+
+  // Keep one deadline signal per job order; the most urgent item wins.
+  const seen = new Set<number>();
+  return sorted.filter((item) => {
+    if (seen.has(item.jobOrderId)) return false;
+    seen.add(item.jobOrderId);
+    return true;
+  });
+}
+
+/**
+ * Identify process bottlenecks with a concrete reason + elapsed context.
+ * Due-date alerts intentionally live in detectNeedsAction instead.
+ */
+export function detectBottlenecks(input: DeriveInput): Bottleneck[] {
+  const now = input.now ?? Date.now();
   const jobById = new Map(input.jobOrders.map((job) => [job.id, job]));
   const partRequestById = new Map(
     input.partsRequests.map((request) => [request.id, request]),
@@ -252,50 +326,6 @@ export function detectBottlenecks(input: DeriveInput): Bottleneck[] {
         severity: "warning",
       });
     }
-
-    // 4. Past due date, or approaching it.
-    if (Boolean(job.dueDate) && job.dueDate < today) {
-      out.push({
-        id: `overdue-${job.id}`,
-        jobOrderId: job.id,
-        code: job.code,
-        title: job.title,
-        kind: "job_order_overdue",
-        reason: "Past due date",
-        detail: `Due ${job.dueDate}`,
-        elapsedMs: 0,
-        severity: "critical",
-      });
-    } else if (Boolean(job.dueDate) && job.dueDate <= dueSoonCutoff) {
-      out.push({
-        id: `due-soon-${job.id}`,
-        jobOrderId: job.id,
-        code: job.code,
-        title: job.title,
-        kind: "due_soon",
-        reason: "Due soon",
-        detail: `Due ${job.dueDate}`,
-        elapsedMs: 0,
-        severity: "warning",
-      });
-    }
-  }
-
-  // 5. Overdue work items (surfaced against their job order).
-  for (const item of input.workItems) {
-    if (item.status === "completed") continue;
-    if (!item.dueDate || item.dueDate >= today) continue;
-    out.push({
-      id: `work-item-${item.id}`,
-      jobOrderId: item.jobOrderId,
-      code: item.jobOrderCode,
-      title: item.task,
-      kind: "work_item_overdue",
-      reason: "Work item overdue",
-      detail: item.assignee ? `Mechanic: ${item.assignee}` : undefined,
-      elapsedMs: 0,
-      severity: "warning",
-    });
   }
 
   const severityRank: Record<BottleneckSeverity, number> = {

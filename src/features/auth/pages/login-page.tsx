@@ -71,13 +71,9 @@ export function LoginPage() {
   const onSubmit = (values: LoginForm) => signIn(values, "form");
 
   const handleDemoAccount = (account: (typeof DEMO_ACCOUNTS)[number]) => {
-  form.clearErrors();
-  form.reset({ email: account.email, password: DEMO_PASSWORD });
-  void signIn(
-    { email: account.email, password: DEMO_PASSWORD },
-    account.key,
-  );
-};
+    form.clearErrors();
+    form.reset({ email: account.email, password: DEMO_PASSWORD });
+  };
 
   return (
     <div className="space-y-8">
@@ -177,8 +173,8 @@ export function LoginPage() {
         <div className="rounded-lg border border-dashed bg-muted/40 p-4">
           <p className="text-xs font-medium text-foreground">Demo accounts</p>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Sign in directly with a role-specific account to test permissions
-            and workflow behavior.
+            Choose a role-specific account to fill the credentials, then click
+            Sign in to test permissions and workflow behavior.
           </p>
 
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -191,9 +187,6 @@ export function LoginPage() {
                 disabled={submitting}
                 onClick={() => handleDemoAccount(account)}
               >
-                {submittingSource === account.key ? (
-                  <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                ) : null}
                 <span className="min-w-0">
                   <span className="block text-sm font-medium">{account.label}</span>
                   <span className="mt-0.5 block break-all text-xs font-normal text-muted-foreground">

@@ -254,13 +254,8 @@ export function DashboardPage() {
   const canViewEquipment = can("equipment:view");
   const canViewMaintenance = can("maintenance:view");
 
-  const bottlenecks = dashboard?.bottlenecks ?? [];
-  const needsAction = bottlenecks
-    .filter((item) => item.severity === "critical")
-    .slice(0, 3);
-  const slipping = bottlenecks
-    .filter((item) => item.severity === "warning")
-    .slice(0, 3);
+  const needsAction = (dashboard?.needsAction ?? []).slice(0, 3);
+  const bottlenecks = (dashboard?.bottlenecks ?? []).slice(0, 3);
 
   return (
     <div className="space-y-4">
@@ -316,22 +311,22 @@ export function DashboardPage() {
           <section className="grid gap-4 lg:grid-cols-2">
             <AlertsCard
               title="Needs action now"
-              description="Blocked by approvals, parts, or overdue work"
+              description="Overdue work and deadlines that are coming up soon"
               icon={AlertTriangle}
               accent="critical"
               items={needsAction}
               canView={canViewJobOrders}
-              emptyText="Nothing is blocked or overdue right now."
+              emptyText="No due-date issues need attention right now."
             />
 
             <AlertsCard
               title="Bottlenecks"
-              description="Work that's stalling, waiting, or nearing risk"
+              description="Work stalled by approvals, parts, or lack of progress"
               icon={Clock}
               accent="warning"
-              items={slipping}
+              items={bottlenecks}
               canView={canViewJobOrders}
-              emptyText="No job orders are slipping right now."
+              emptyText="No process bottlenecks are slowing work right now."
             />
           </section>
 

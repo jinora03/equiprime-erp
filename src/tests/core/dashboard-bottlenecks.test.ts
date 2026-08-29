@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-import { detectBottlenecks } from "@/features/dashboard/service-metrics";
+import { detectBottlenecks, detectNeedsAction } from "@/features/dashboard/service-metrics";
 import type { JobOrder } from "@/features/job-orders/types";
 import type { ApprovalTask } from "@/types";
 import { coreTest } from "./test-harness";
@@ -94,7 +94,7 @@ export const tests = [
 
     assert.equal(result[0]?.kind, "workflow_approval_wait");
     assert.equal(result[0]?.reason, "Approval pending");
-    assert.match(result[0]?.detail ?? "", /Manager · Grace Tan/);
+    assert.match(result[0]?.detail ?? "", /Grace Tan \(Manager\)/);
   }),
 
   coreTest("dashboard no longer treats assignment as a bottleneck", () => {
@@ -117,3 +117,46 @@ export const tests = [
     assert.equal(result.some((item) => item.reason === "No mechanic assigned"), false);
   }),
 ];
+
+
+export const dashboardSeparationTests = [
+  coreTest("approval delays stay in bottlenecks instead of Needs Action", () => {
+    const input = {
+      jobOrders: [job()],
+      partsRequests: [],
+      workItems: [],
+      approvalTasks: [approval()],
+      now: NOW,
+    };
+
+    assert.equal(
+      detectBottlenecks(input).some((item) => item.kind === "workflow_approval_wait"),
+      true,
+    );
+    assert.equal(
+      detectNeedsAction(input).some((item) => item.kind === "workflow_approval_wait"),
+      false,
+    );
+  }),
+
+  coreTest("due dates stay in Needs Action instead of bottlenecks", () => {
+    const input = {
+      jobOrders: [job({ dueDate: "2026-08-29" })],
+      partsRequests: [],
+      workItems: [],
+      approvalTasks: [],
+      now: NOW,
+    };
+
+    assert.equal(
+      detectNeedsAction(input).some((item) => item.kind === "job_order_overdue"),
+      true,
+    );
+    assert.equal(
+      detectBottlenecks(input).some((item) => item.kind === "job_order_overdue"),
+      false,
+    );
+  }),
+];
+
+tests.push(...dashboardSeparationTests);
