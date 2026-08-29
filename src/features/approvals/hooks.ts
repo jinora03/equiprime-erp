@@ -7,8 +7,8 @@ import {
   useOrganizationScope,
 } from "@/store/organization.store";
 import type {
-  ApprovalDecisionInput,
-  ApprovalRequestInput,
+  CreateApprovalRequest,
+  DecideApprovalRequest,
 } from "@/types";
 import { approvalService } from "./service";
 
@@ -30,7 +30,7 @@ export function useMyApprovals() {
 export function useRequestApproval() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: ApprovalRequestInput) => approvalService.request(input),
+    mutationFn: (input: CreateApprovalRequest) => approvalService.request(input),
     onSettled: () =>
       Promise.all([
         qc.invalidateQueries({ queryKey: queryKeys.approvals.all }),
@@ -42,7 +42,7 @@ export function useRequestApproval() {
 export function useDecideApproval() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: ApprovalDecisionInput) => approvalService.decide(input),
+    mutationFn: (input: DecideApprovalRequest) => approvalService.decide(input),
     onSettled: (task) => {
       void qc.invalidateQueries({ queryKey: queryKeys.approvals.all });
       void qc.invalidateQueries({ queryKey: queryKeys.notifications.all });

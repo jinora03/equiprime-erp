@@ -7,7 +7,10 @@ export interface Maintenance extends WorkflowRecord {
   scheduledDate: string;
 }
 
-export interface MaintenanceInput {
+/** Stable read DTO returned by the Maintenance service/API. */
+export type MaintenanceResponse = Maintenance;
+
+export interface CreateMaintenanceRequest {
   equipment: string;
   type: string;
   priority: Priority;

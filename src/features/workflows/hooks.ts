@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/constants/query-keys";
 import {
   workflowService,
-  type WorkflowUpdateInput,
+  type UpdateWorkflowRequest,
 } from "@/services/workflow.service";
 
 export function useWorkflows() {
@@ -32,7 +32,7 @@ export function useWorkflowByModule(moduleId: string) {
 export function useUpdateWorkflow() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, input }: { id: number; input: WorkflowUpdateInput }) =>
+    mutationFn: ({ id, input }: { id: number; input: UpdateWorkflowRequest }) =>
       workflowService.update(id, input),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: queryKeys.workflows.all }),

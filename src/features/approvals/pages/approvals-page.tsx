@@ -1,5 +1,15 @@
 import { useMemo, useState } from "react";
-import { CheckCircle2, Clock3, Inbox, ShieldCheck, XCircle } from "lucide-react";
+import {
+  Building2,
+  CheckCircle2,
+  Clock3,
+  Eye,
+  Inbox,
+  ShieldCheck,
+  UserRound,
+  XCircle,
+  type LucideIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -7,22 +17,32 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/auth-context";
+import { useBranches } from "@/hooks/use-organizations";
+import { getErrorMessage } from "@/services/api/errors";
 import { usePermissions } from "@/hooks/use-permissions";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
-import { formatRelativeTime } from "@/utils/format";
+import { useOrganizationScope } from "@/store/organization.store";
+import { formatDateTime, formatRelativeTime } from "@/utils/format";
 import type { ApprovalTask } from "@/types";
-import { ApprovalReviewDialog } from "../components/approval-review-dialog";
+import {
+  ApprovalReviewDialog,
+  type ApprovalDialogMode,
+} from "../components/approval-review-dialog";
 import { useDecideApproval, useMyApprovals } from "../hooks";
 
 export function ApprovalsPage() {
   const { user } = useAuth();
   const { can, isSuperAdmin } = usePermissions();
+  const scope = useOrganizationScope();
+  const { data: branches = [] } = useBranches(scope.companyId);
   const { data: tasks = [], isLoading } = useMyApprovals();
   const decide = useDecideApproval();
   const [tab, setTab] = useState<"pending" | "history">("pending");
   const [selected, setSelected] = useState<ApprovalTask | null>(null);
+  const [dialogMode, setDialogMode] = useState<ApprovalDialogMode>("review");
 
+  const branchById = new Map(branches.map((branch) => [branch.id, branch]));
   const visible = useMemo(
     () =>
       tasks.filter((task) =>
@@ -31,6 +51,17 @@ export function ApprovalsPage() {
     [tasks, tab],
   );
   const pendingCount = tasks.filter((task) => task.status === "pending").length;
+  const selectedCanAct =
+    selected != null &&
+    selected.status === "pending" &&
+    can("approvals:act") &&
+    (isSuperAdmin ||
+      !selected.decisions.some((decision) => decision.role === user?.role));
+
+  const openDecision = (task: ApprovalTask, mode: ApprovalDialogMode) => {
+    setSelected(task);
+    setDialogMode(mode);
+  };
 
   const act = async (decision: "approve" | "reject", note?: string) => {
     if (!selected) return;
@@ -59,7 +90,7 @@ export function ApprovalsPage() {
       }
     } catch (error) {
       toast.error("Approval action failed", {
-        description: error instanceof Error ? error.message : "Try again.",
+        description: getErrorMessage(error, "Try again."),
       });
     }
   };
@@ -69,7 +100,7 @@ export function ApprovalsPage() {
       <div data-onboarding="approvals">
         <PageHeader
           title="My Approvals"
-          description="Review business and workflow requests assigned to your role for the active branch."
+          description="Review requests assigned to your role, with enough context to make a safe decision quickly."
         />
       </div>
 
@@ -103,64 +134,132 @@ export function ApprovalsPage() {
         />
       ) : (
         <div className="space-y-3">
-          {visible.map((task) => (
-            <Card key={task.id}>
-              <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  {task.status === "approved" ? (
-                    <CheckCircle2 className="h-5 w-5" />
-                  ) : task.status === "rejected" ? (
-                    <XCircle className="h-5 w-5" />
-                  ) : (
-                    <ShieldCheck className="h-5 w-5" />
-                  )}
-                </span>
+          {visible.map((task) => {
+            const canAct =
+              task.status === "pending" &&
+              can("approvals:act") &&
+              (isSuperAdmin ||
+                !task.decisions.some((decision) => decision.role === user?.role));
+            const alreadyApproved =
+              task.status === "pending" &&
+              task.decisions.some((decision) => decision.role === user?.role);
+            const branch = branchById.get(task.branchId);
+            const approverSummary = task.approverAssignments
+              ?.flatMap((assignment) =>
+                assignment.people.map((person) => `${assignment.role} · ${person.name}`),
+              )
+              .join(", ");
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs text-muted-foreground">{task.recordCode}</span>
-                    <Badge variant="outline">{task.moduleLabel}</Badge>
-                    <Badge
-                      variant={
-                        task.status === "approved"
-                          ? "success"
-                          : task.status === "rejected"
-                            ? "destructive"
-                            : task.status === "cancelled"
-                              ? "secondary"
-                              : "warning"
-                      }
-                    >
-                      {task.status}
-                    </Badge>
+            return (
+              <Card key={task.id} className="overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-start">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      {task.status === "approved" ? (
+                        <CheckCircle2 className="h-5 w-5" />
+                      ) : task.status === "rejected" ? (
+                        <XCircle className="h-5 w-5" />
+                      ) : (
+                        <ShieldCheck className="h-5 w-5" />
+                      )}
+                    </span>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {task.recordCode}
+                        </span>
+                        <Badge variant="outline">{task.moduleLabel}</Badge>
+                        <Badge
+                          variant={
+                            task.status === "approved"
+                              ? "success"
+                              : task.status === "rejected"
+                                ? "destructive"
+                                : task.status === "cancelled"
+                                  ? "secondary"
+                                  : "warning"
+                          }
+                        >
+                          {task.status}
+                        </Badge>
+                      </div>
+
+                      <p className="mt-1.5 font-semibold text-foreground">{task.recordTitle}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {task.transitionLabel}: {task.fromStageName} → {task.toStageName}
+                      </p>
+
+                      <div className="mt-4 grid gap-3 border-t pt-4 text-xs sm:grid-cols-2 xl:grid-cols-4">
+                        <ApprovalMeta
+                          icon={UserRound}
+                          label="Requested by"
+                          value={task.requestedByName}
+                          detail={task.requestedByRole}
+                        />
+                        <ApprovalMeta
+                          icon={ShieldCheck}
+                          label="Assigned approver"
+                          value={approverSummary || task.requiredRoles.join(", ")}
+                          detail={approverSummary ? "Role · person" : "Role assignment"}
+                        />
+                        <ApprovalMeta
+                          icon={Building2}
+                          label="Branch"
+                          value={branch?.displayName ?? task.branchId}
+                          detail={branch?.region}
+                        />
+                        <ApprovalMeta
+                          icon={Clock3}
+                          label="Requested"
+                          value={formatRelativeTime(task.requestedAt)}
+                          detail={formatDateTime(task.requestedAt)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
+                      {canAct ? (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => openDecision(task, "approve")}
+                          >
+                            <CheckCircle2 className="h-4 w-4" /> Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => openDecision(task, "reject")}
+                          >
+                            <XCircle className="h-4 w-4" /> Reject
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => openDecision(task, "review")}
+                          >
+                            <Eye className="h-4 w-4" /> Review
+                          </Button>
+                        </>
+                      ) : alreadyApproved ? (
+                        <Badge variant="success">Your role approved</Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openDecision(task, "review")}
+                        >
+                          <Eye className="h-4 w-4" /> Review
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <p className="mt-1 font-medium text-foreground">{task.recordTitle}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {task.transitionLabel}: {task.fromStageName} → {task.toStageName}
-                  </p>
-                  <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Clock3 className="h-3.5 w-3.5" />
-                    Requested by {task.requestedByName} {formatRelativeTime(task.requestedAt)}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                  {task.requiredRoles.map((role) => (
-                    <Badge key={role} variant="secondary">{role}</Badge>
-                  ))}
-                  {task.status === "pending" &&
-                  can("approvals:act") &&
-                  (isSuperAdmin ||
-                    !task.decisions.some((decision) => decision.role === user?.role)) ? (
-                    <Button onClick={() => setSelected(task)}>Review</Button>
-                  ) : task.status === "pending" &&
-                    task.decisions.some((decision) => decision.role === user?.role) ? (
-                    <Badge variant="success">Your role approved</Badge>
-                  ) : null}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -168,10 +267,36 @@ export function ApprovalsPage() {
         open={!!selected}
         onOpenChange={(open) => !open && setSelected(null)}
         task={selected}
+        mode={dialogMode}
+        branchName={selected ? branchById.get(selected.branchId)?.displayName : undefined}
+        actionable={selectedCanAct}
         submitting={decide.isPending}
         onApprove={(note) => act("approve", note)}
         onReject={(note) => act("reject", note)}
       />
+    </div>
+  );
+}
+
+function ApprovalMeta({
+  icon: Icon,
+  label,
+  value,
+  detail,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  detail?: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-start gap-2">
+      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      <div className="min-w-0">
+        <p className="text-muted-foreground">{label}</p>
+        <p className="mt-0.5 break-words font-medium text-foreground">{value}</p>
+        {detail ? <p className="mt-0.5 break-words text-muted-foreground">{detail}</p> : null}
+      </div>
     </div>
   );
 }

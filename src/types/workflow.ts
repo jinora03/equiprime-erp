@@ -69,6 +69,9 @@ export interface Workflow {
   updatedAt: string;
 }
 
+/** Stable read DTO returned by the Workflow service/API. */
+export type WorkflowResponse = Workflow;
+
 /** One movement of a record through the workflow. */
 export interface WorkflowHistory {
   id: string;

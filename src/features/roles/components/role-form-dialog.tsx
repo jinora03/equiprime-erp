@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { getErrorMessage } from "@/services/api/errors";
 import type { Role } from "@/types";
 import { useCreateRole, useUpdateRole } from "../hooks";
 
@@ -75,8 +76,8 @@ export function RoleFormDialog({
         });
       }
       onOpenChange(false);
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    } catch (error) {
+      toast.error("Couldn't save role.", { description: getErrorMessage(error) });
     }
   };
 

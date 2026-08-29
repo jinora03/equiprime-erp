@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateRecord } from "@/hooks/use-workflow-records";
+import { getErrorMessage } from "@/services/api/errors";
 import { useCustomers } from "@/features/customers/hooks";
 import { useEquipmentByCustomer } from "@/features/equipment/hooks";
 import { useMechanics } from "@/features/users/hooks";
@@ -46,7 +47,7 @@ const schema = z.object({
   customerId: z.string().min(1, "Select a customer"),
   equipmentId: z.string().min(1, "Select equipment"),
   serviceVehicleId: z.string().optional(),
-  assigneeIds: z.array(z.number()),
+  assigneeIds: z.array(z.number()).min(1, "Assign at least one mechanic"),
   priority: z.enum(["High", "Medium", "Low"]),
   workflowId: z.string().min(1, "Select a workflow"),
   dueDate: z.string().min(1, "Estimated date is required"),
@@ -131,8 +132,10 @@ export function JobOrderFormDialog({
         description: "It now follows its assigned workflow.",
       });
       onOpenChange(false);
-    } catch {
-      toast.error("Couldn't create job order.");
+    } catch (error) {
+      toast.error("Couldn't create job order.", {
+        description: getErrorMessage(error),
+      });
     }
   };
 

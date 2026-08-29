@@ -64,7 +64,15 @@ function BottleneckRow({
           {item.title}
         </p>
         {item.detail ? (
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          <p
+            className={cn(
+              "mt-0.5 text-xs",
+              item.kind === "parts_approval_wait" ||
+                item.kind === "workflow_approval_wait"
+                ? "font-medium text-foreground/75"
+                : "text-muted-foreground",
+            )}
+          >
             {item.detail}
           </p>
         ) : null}
@@ -308,7 +316,7 @@ export function DashboardPage() {
           <section className="grid gap-4 lg:grid-cols-2">
             <AlertsCard
               title="Needs action now"
-              description="Blocked or overdue — act now"
+              description="Blocked by approvals, parts, or overdue work"
               icon={AlertTriangle}
               accent="critical"
               items={needsAction}
@@ -318,7 +326,7 @@ export function DashboardPage() {
 
             <AlertsCard
               title="Bottlenecks"
-              description="Work that's stalling or slipping"
+              description="Work that's stalling, waiting, or nearing risk"
               icon={Clock}
               accent="warning"
               items={slipping}

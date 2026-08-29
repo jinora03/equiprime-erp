@@ -7,7 +7,7 @@ import {
 } from "@/store/organization.store";
 import { workItemService } from "./service";
 import type { WorkItemStatus } from "./statuses";
-import type { WorkItem, WorkItemInput } from "./types";
+import type { CreateWorkItemRequest, WorkItem } from "./types";
 
 export function useWorkItems(jobOrderId: number) {
   const scope = useOrganizationScope();
@@ -31,7 +31,7 @@ export function useAllWorkItems() {
 export function useCreateWorkItem() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: WorkItemInput) => workItemService.create(input),
+    mutationFn: (input: CreateWorkItemRequest) => workItemService.create(input),
     onSuccess: () =>
       Promise.all([
         qc.invalidateQueries({ queryKey: queryKeys.workItems.root }),

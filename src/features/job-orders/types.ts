@@ -33,7 +33,7 @@ export interface JobOrder extends WorkflowRecord {
   notes?: string;
 }
 
-export interface JobOrderInput {
+export interface CreateJobOrderRequest {
   title: string;
   description?: string;
   customerId: number;
@@ -45,6 +45,9 @@ export interface JobOrderInput {
   dueDate: string;
   notes?: string;
 }
+
+/** Stable read DTO returned by the Job Orders service/API. */
+export type JobOrderResponse = JobOrder;
 
 export interface JobOrderLabor {
   id: number;

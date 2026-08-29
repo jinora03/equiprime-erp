@@ -20,7 +20,7 @@ import {
   getWorkItemStatus,
   type WorkItemStatus,
 } from "./statuses";
-import type { WorkItem, WorkItemInput } from "./types";
+import type { CreateWorkItemRequest, WorkItem, WorkItemResponse } from "./types";
 
 /**
  * WorkItemService — mock repository for a job order's work items. Bespoke (not
@@ -33,7 +33,7 @@ let counter = workItemSeed.length;
 
 export const workItemService = {
   /** List work items, optionally scoped to a single job order. */
-  list(jobOrderId?: number, scope?: OrganizationScope): Promise<WorkItem[]> {
+  list(jobOrderId?: number, scope?: OrganizationScope): Promise<WorkItemResponse[]> {
     const rows = data
       .filter(
         (workItem) =>
@@ -47,7 +47,7 @@ export const workItemService = {
   listAssignedTo(
     userId: number,
     scope?: OrganizationScope,
-  ): Promise<WorkItem[]> {
+  ): Promise<WorkItemResponse[]> {
     return delay(
       data
         .filter(
@@ -59,7 +59,7 @@ export const workItemService = {
     );
   },
 
-  async create(input: WorkItemInput): Promise<WorkItem> {
+  async create(input: CreateWorkItemRequest): Promise<WorkItemResponse> {
     const now = new Date().toISOString();
     const session = requireMockPermission("work-items:create");
     const scope = getActiveOrganizationScope();
@@ -125,7 +125,7 @@ export const workItemService = {
   updateStatus(
     id: number,
     status: WorkItemStatus,
-  ): Promise<WorkItem> {
+  ): Promise<WorkItemResponse> {
     const session = requireMockSessionActor();
     const actor: ServiceWorkActor = {
       userId: session.id,

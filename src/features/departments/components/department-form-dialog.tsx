@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { getErrorMessage } from "@/services/api/errors";
 import type { Department } from "@/types";
 import { useCreateDepartment, useUpdateDepartment } from "../hooks";
 
@@ -93,8 +94,10 @@ export function DepartmentFormDialog({
         toast.success("Department created");
       }
       onOpenChange(false);
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    } catch (error) {
+      toast.error("Couldn't save department.", {
+        description: getErrorMessage(error),
+      });
     }
   };
 

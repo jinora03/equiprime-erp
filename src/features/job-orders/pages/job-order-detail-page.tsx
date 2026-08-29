@@ -34,7 +34,10 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { ROUTES } from "@/constants/routes";
+import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
+import { getErrorMessage } from "@/services/api/errors";
+import { isAssignedOnlyServiceActor } from "@/services/service-work-access";
 import { useRequestApproval } from "@/features/approvals/hooks";
 import { useMoveRecordStage } from "@/hooks/use-workflow-records";
 import { EmptyState } from "@/shared/components/empty-state";
@@ -82,6 +85,7 @@ export function JobOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const jobOrderId = Number(id);
   const navigate = useNavigate();
+  const { user, permissions } = useAuth();
   const { can } = usePermissions();
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -177,7 +181,14 @@ export function JobOrderDetailPage() {
 
   const currentStage =
     jobWorkflow?.stages.find((s) => s.id === jobOrder.currentStageId) ?? null;
-  const canMoveJob = can("job-orders:update");
+  const mechanicReadOnly =
+    user != null &&
+    isAssignedOnlyServiceActor({
+      userId: user.id,
+      role: user.role,
+      permissions,
+    });
+  const canMoveJob = can("job-orders:update") && !mechanicReadOnly;
   const stageName = (id: string) =>
     jobWorkflow?.stages.find((s) => s.id === id)?.name ?? id;
   const outgoing = getOutgoingTransitions(jobWorkflow, jobOrder.currentStageId);
@@ -197,7 +208,7 @@ export function JobOrderDetailPage() {
     } catch (error) {
       toast.warning("Move blocked", {
         description:
-          error instanceof Error ? error.message : "This move isn't allowed.",
+          getErrorMessage(error, "This move isn't allowed."),
       });
       return false;
     }
@@ -231,7 +242,7 @@ export function JobOrderDetailPage() {
     } catch (error) {
       toast.error("Approval request failed", {
         description:
-          error instanceof Error ? error.message : "This approval could not be requested.",
+          getErrorMessage(error, "This approval could not be requested."),
       });
     }
   };
@@ -272,6 +283,16 @@ export function JobOrderDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {mechanicReadOnly ? (
+        <div className="flex items-start gap-2 rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            This Job Order is read-only for mechanics. Update your assigned Work
+            Items; use the other tabs as job context and reference.
+          </p>
+        </div>
+      ) : null}
 
       <Tabs value={tab} onValueChange={setTab}>
         <ScrollableTabsList>
@@ -346,7 +367,9 @@ export function JobOrderDetailPage() {
                   />
                   {!canMoveJob ? (
                     <p className="text-xs text-muted-foreground">
-                      Read-only access.
+                      {mechanicReadOnly
+                        ? "Workflow changes are handled by a supervisor or manager."
+                        : "Read-only access."}
                     </p>
                   ) : outgoing.length > 0 ? (
                     <div className="space-y-2">

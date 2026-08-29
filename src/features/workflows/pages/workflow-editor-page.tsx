@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { ROUTES } from "@/constants/routes";
 import { usePermissions } from "@/hooks/use-permissions";
+import { getErrorMessage } from "@/services/api/errors";
 import { PageHeader } from "@/shared/components/page-header";
 import { EmptyState } from "@/shared/components/empty-state";
 import { workflowService } from "@/services/workflow.service";
@@ -118,7 +119,7 @@ export function WorkflowEditorPage() {
       });
     } catch (error) {
       toast.error("Couldn't save workflow.", {
-        description: error instanceof Error ? error.message : undefined,
+        description: getErrorMessage(error),
       });
     }
   };

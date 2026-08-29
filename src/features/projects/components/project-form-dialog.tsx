@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useCreateRecord } from "@/hooks/use-workflow-records";
+import { getErrorMessage } from "@/services/api/errors";
 import { projectService } from "../service";
 
 const schema = z.object({
@@ -68,8 +69,8 @@ export function ProjectFormDialog({
         description: "It now follows the Project Workflow.",
       });
       onOpenChange(false);
-    } catch {
-      toast.error("Couldn't create project.");
+    } catch (error) {
+      toast.error("Couldn't create project.", { description: getErrorMessage(error) });
     }
   };
 

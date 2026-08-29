@@ -27,7 +27,7 @@ import {
 import { getActiveOrganizationScope } from "@/store/organization.store";
 import { jobOrderSeed } from "./data";
 import { serviceVehicleService } from "./service-vehicle-service";
-import type { JobOrder, JobOrderInput } from "./types";
+import type { CreateJobOrderRequest, JobOrder, JobOrderResponse } from "./types";
 import type { OrganizationScope } from "@/types";
 
 const store = createRecordStore<JobOrder>("job-orders", jobOrderSeed, {
@@ -62,7 +62,7 @@ let counter = Math.max(
 
 export const jobOrderService = {
   ...store,
-  async listForCurrentActor(scope?: OrganizationScope): Promise<JobOrder[]> {
+  async listForCurrentActor(scope?: OrganizationScope): Promise<JobOrderResponse[]> {
     const session = requireMockSessionActor();
     const actor: ServiceWorkActor = {
       userId: session.id,
@@ -98,10 +98,13 @@ export const jobOrderService = {
     });
   },
 
-  async create(input: JobOrderInput): Promise<JobOrder> {
+  async create(input: CreateJobOrderRequest): Promise<JobOrderResponse> {
     const now = new Date().toISOString();
     const session = requireMockPermission("job-orders:create");
     const scope = getActiveOrganizationScope();
+    if (input.assigneeIds.length === 0) {
+      throw new Error("Assign at least one mechanic before creating a job order.");
+    }
     const [workflow, customer, equipment, mechanics, serviceVehicle] =
       await Promise.all([
         workflowService.get(input.workflowId),

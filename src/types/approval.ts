@@ -9,6 +9,17 @@ export interface ApprovalContextItem {
   value: string;
 }
 
+export interface ApprovalApproverPerson {
+  id: number;
+  name: string;
+  jobTitle?: string | null;
+}
+
+export interface ApprovalApproverAssignment {
+  role: string;
+  people: ApprovalApproverPerson[];
+}
+
 export interface ApprovalDecision {
   role: string;
   actorId: number;
@@ -37,6 +48,8 @@ export interface ApprovalTask {
   toStageId: string;
   toStageName: string;
   requiredRoles: string[];
+  /** Active people in this branch who can satisfy each required role. */
+  approverAssignments?: ApprovalApproverAssignment[];
   confirmedConditions: TransitionConditionType[];
   context: ApprovalContextItem[];
   requestedById: number;
@@ -49,6 +62,9 @@ export interface ApprovalTask {
   resolvedAt?: string;
 }
 
+/** Stable read DTO returned by the Approvals service/API. */
+export type ApprovalTaskResponse = ApprovalTask;
+
 export interface ApprovalActor {
   id: number;
   name: string;
@@ -56,7 +72,7 @@ export interface ApprovalActor {
   permissions: PermissionKey[];
 }
 
-export interface ApprovalRequestInput {
+export interface CreateApprovalRequest {
   moduleId: string;
   recordId: number;
   toStageId: string;
@@ -64,7 +80,7 @@ export interface ApprovalRequestInput {
   confirmedConditions?: TransitionConditionType[];
 }
 
-export interface ApprovalDecisionInput {
+export interface DecideApprovalRequest {
   taskId: string;
   decision: "approve" | "reject";
   note?: string;

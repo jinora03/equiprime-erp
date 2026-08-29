@@ -40,6 +40,7 @@ import {
 import { userDetailPath } from "@/constants/routes";
 import { useDebounce } from "@/hooks/use-debounce";
 import { usePermissions } from "@/hooks/use-permissions";
+import { getErrorMessage } from "@/services/api/errors";
 import { PageHeader } from "@/shared/components/page-header";
 import { PermissionGuard } from "@/components/permission-guard";
 import { ConfirmDialog } from "@/shared/components/confirm-dialog";
@@ -109,8 +110,8 @@ export function UsersPage() {
       toast.success("User removed", {
         description: `${deleting.full_name} was deleted.`,
       });
-    } catch {
-      toast.error("Couldn't delete user.");
+    } catch (error) {
+      toast.error("Couldn't delete user.", { description: getErrorMessage(error) });
     } finally {
       setDeleting(null);
     }

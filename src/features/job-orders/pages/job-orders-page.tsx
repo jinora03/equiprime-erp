@@ -16,6 +16,7 @@ import {
 import { jobOrderDetailPath } from "@/constants/routes";
 import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
+import { getErrorMessage } from "@/services/api/errors";
 import { useMoveRecordStage } from "@/hooks/use-workflow-records";
 import { PageHeader } from "@/shared/components/page-header";
 import { PermissionGuard } from "@/components/permission-guard";
@@ -41,7 +42,6 @@ export function JobOrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { can, permissions } = usePermissions();
-  const canMove = can("job-orders:update");
   const canCreate = can("job-orders:create");
 
   const { data: jobOrders = [], isLoading } = useJobOrders();
@@ -56,6 +56,7 @@ export function JobOrdersPage() {
       role: user.role,
       permissions,
     });
+  const canMove = can("job-orders:update") && !assignedOnly;
 
   const [view, setView] = useState<"list" | "kanban">("list");
   const createRequested = searchParams.get("create") === "1";
@@ -112,7 +113,7 @@ export function JobOrdersPage() {
     } catch (error) {
       toast.warning("Move blocked", {
         description:
-          error instanceof Error ? error.message : "This move isn't allowed.",
+          getErrorMessage(error, "This move isn't allowed."),
       });
     }
   };

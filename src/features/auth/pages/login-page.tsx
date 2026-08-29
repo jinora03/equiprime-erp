@@ -23,6 +23,7 @@ import {
 } from "@/constants/app";
 import { ROUTES } from "@/constants/routes";
 import { useAuth } from "@/contexts/auth-context";
+import { getErrorMessage } from "@/services/api/errors";
 import equiprimeLogo from "@/assets/equiprime-logo.jpg";
 
 const loginSchema = z.object({
@@ -59,8 +60,7 @@ export function LoginPage() {
       toast.success(`Welcome back, ${user.first_name}!`);
       navigate(from, { replace: true });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to sign in.";
+      const message = getErrorMessage(error, "Unable to sign in.");
       toast.error("Sign in failed", { description: message });
       if (source === "form") form.setError("password", { message });
     } finally {

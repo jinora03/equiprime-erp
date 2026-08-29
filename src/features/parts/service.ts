@@ -10,7 +10,12 @@ import { findRegisteredWorkflowRecord } from "@/services/workflow-record-registr
 import { getActiveOrganizationScope } from "@/store/organization.store";
 import type { ApprovalActor, OrganizationScope } from "@/types";
 import { partsRequestSeed } from "./data";
-import type { PartsRequest, PartsRequestInput } from "./types";
+import type {
+  CreatePartsRequestRequest,
+  PartsRequest,
+  PartsRequestItem,
+  PartsRequestResponse,
+} from "./types";
 
 /** Parts approvals belong to Warehouse Staff; Super Admin is handled by ApprovalService. */
 export const PARTS_APPROVER_ROLES = ["Warehouse Staff"] as const;
@@ -34,11 +39,11 @@ function inScope(request: PartsRequest, scope: OrganizationScope) {
 }
 
 export const partsRequestService = {
-  listByJobOrder(jobOrderId: number): Promise<PartsRequest[]> {
+  listByJobOrder(jobOrderId: number): Promise<PartsRequestResponse[]> {
     return delay(data.filter((request) => request.jobOrderId === jobOrderId).map(clone));
   },
 
-  listForApproval(scope: OrganizationScope): Promise<PartsRequest[]> {
+  listForApproval(scope: OrganizationScope): Promise<PartsRequestResponse[]> {
     return delay(
       data
         .filter((request) => inScope(request, scope) && request.status !== "draft")
@@ -46,12 +51,12 @@ export const partsRequestService = {
     );
   },
 
-  get(id: number): PartsRequest | null {
+  get(id: number): PartsRequestResponse | null {
     const request = data.find((candidate) => candidate.id === id);
     return request ? clone(request) : null;
   },
 
-  async create(input: PartsRequestInput): Promise<PartsRequest> {
+  async create(input: CreatePartsRequestRequest): Promise<PartsRequestResponse> {
     if (input.items.length === 0) {
       throw new Error("Add at least one part before creating a request.");
     }
@@ -84,6 +89,34 @@ export const partsRequestService = {
       );
     }
 
+    const inventory = await inventoryService.list(scope);
+    const inventoryById = new Map(inventory.map((item) => [item.id, item]));
+    const requestedQuantities = new Map<number, number>();
+    for (const item of input.items) {
+      requestedQuantities.set(
+        item.inventoryItemId,
+        (requestedQuantities.get(item.inventoryItemId) ?? 0) + item.quantity,
+      );
+    }
+
+    const resolvedItems: PartsRequestItem[] = [...requestedQuantities].map(
+      ([inventoryItemId, quantity]) => {
+        const item = inventoryById.get(inventoryItemId);
+        if (!item) {
+          throw new Error(
+            "Inventory item not found in the active organization scope.",
+          );
+        }
+        return {
+          inventoryItemId,
+          sku: item.sku,
+          name: item.name,
+          unit: item.unit,
+          quantity,
+        };
+      },
+    );
+
     const now = new Date().toISOString();
     counter += 1;
     const request: PartsRequest = {
@@ -99,7 +132,7 @@ export const partsRequestService = {
           ? Math.max(jobOrder.partsCycle, 1)
           : jobOrder.partsCycle + 1,
       status: "pending",
-      items: input.items.map((item) => ({ ...item })),
+      items: resolvedItems,
       requestedById: requester.id,
       requestedBy: requester.name,
       requestedByRole: requester.role,
@@ -124,7 +157,7 @@ export const partsRequestService = {
     actor: ApprovalActor,
     approvalRole: string,
     note?: string,
-  ): Promise<PartsRequest> {
+  ): Promise<PartsRequestResponse> {
     const request = data.find((candidate) => candidate.id === id);
     if (!request) throw new Error("Parts request not found.");
     if (request.status !== "pending") {

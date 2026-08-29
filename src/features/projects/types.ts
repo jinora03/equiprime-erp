@@ -8,7 +8,10 @@ export interface Project extends WorkflowRecord {
   dueDate: string;
 }
 
-export interface ProjectInput {
+/** Stable read DTO returned by the Projects service/API. */
+export type ProjectResponse = Project;
+
+export interface CreateProjectRequest {
   title: string;
   client: string;
   manager: string;

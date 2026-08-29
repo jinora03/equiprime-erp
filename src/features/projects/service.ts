@@ -14,7 +14,7 @@ import {
 } from "@/services/mock/session-context";
 import { getActiveOrganizationScope } from "@/store/organization.store";
 import { projectSeed } from "./data";
-import type { Project, ProjectInput } from "./types";
+import type { CreateProjectRequest, Project, ProjectResponse } from "./types";
 
 const store = createRecordStore<Project>("projects", projectSeed);
 let counter = projectSeed.length;
@@ -25,7 +25,7 @@ export const projectService = {
     id: number,
     toStageId: string,
     input: { note?: string; evidence?: WorkflowMoveEvidence } = {},
-  ): Promise<Project> {
+  ): Promise<ProjectResponse> {
     const actor = requireMockSessionActor();
     return store.moveStage(id, toStageId, {
       actor: actor.name,
@@ -37,7 +37,7 @@ export const projectService = {
     });
   },
 
-  async create(input: ProjectInput): Promise<Project> {
+  async create(input: CreateProjectRequest): Promise<ProjectResponse> {
     const now = new Date().toISOString();
     const actor = requireMockPermission("projects:create");
     const scope = getActiveOrganizationScope();

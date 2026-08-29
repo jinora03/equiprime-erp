@@ -6,14 +6,17 @@ import {
   validateRegisteredApprovalRequest,
 } from "@/services/workflow-record-registry";
 import { requireMockSessionActor } from "@/services/mock/session-context";
+import { userService } from "@/services/user.service";
 import { workflowService } from "@/services/workflow.service";
 import type {
   ApprovalActor,
+  ApprovalApproverAssignment,
   ApprovalDecision,
-  ApprovalDecisionInput,
-  ApprovalRequestInput,
+  CreateApprovalRequest,
+  DecideApprovalRequest,
   ApprovalStatus,
   ApprovalTask,
+  ApprovalTaskResponse,
   OrganizationScope,
   TransitionConditionType,
   Workflow,
@@ -86,7 +89,7 @@ function contextForRecord(record: WorkflowRecord): ApprovalTask["context"] {
   return context;
 }
 
-async function enrichWorkflow(task: ApprovalTaskEntity): Promise<ApprovalTask> {
+async function enrichWorkflow(task: ApprovalTaskEntity): Promise<ApprovalTaskResponse> {
   const record = findRegisteredWorkflowRecord(task.moduleId, task.recordId);
   if (!record) throw new Error("The record for this approval no longer exists.");
   const workflow = await workflowForRecord(task);
@@ -127,7 +130,7 @@ async function enrichWorkflow(task: ApprovalTaskEntity): Promise<ApprovalTask> {
 
 async function enrichPartsRequest(
   request: Awaited<ReturnType<typeof partsRequestService.listForApproval>>[number],
-): Promise<ApprovalTask> {
+): Promise<ApprovalTaskResponse> {
   const job = findRegisteredWorkflowRecord("job-orders", request.jobOrderId);
   const decision = request.decision
     ? [{
@@ -187,9 +190,9 @@ async function enrichPartsRequest(
 
 async function decidePartsRequest(
   taskId: string,
-  input: ApprovalDecisionInput,
+  input: DecideApprovalRequest,
   actor: ApprovalActor,
-): Promise<ApprovalTask> {
+): Promise<ApprovalTaskResponse> {
   const requestId = Number(taskId.slice("parts:".length));
   if (!Number.isInteger(requestId)) throw new Error("Parts approval task is invalid.");
   const request = partsRequestService.get(requestId);
@@ -222,26 +225,68 @@ function assertCanAct(actor: ApprovalActor) {
   }
 }
 
+async function attachApproverAssignments(
+  approvalTasks: ApprovalTaskResponse[],
+  scope: OrganizationScope,
+): Promise<ApprovalTaskResponse[]> {
+  if (approvalTasks.length === 0) return approvalTasks;
+
+  const activeUsers = await userService.list(
+    { status: "active", page: 1, page_size: 100 },
+    scope,
+  );
+  const peopleByRole = new Map<string, ApprovalApproverAssignment["people"]>();
+
+  for (const user of activeUsers.items) {
+    const people = peopleByRole.get(user.role) ?? [];
+    people.push({ id: user.id, name: user.full_name, jobTitle: user.job_title });
+    peopleByRole.set(user.role, people);
+  }
+
+  return approvalTasks.map((task) => ({
+    ...task,
+    approverAssignments: task.requiredRoles.map((role) => ({
+      role,
+      people: (peopleByRole.get(role) ?? []).map((person) => ({ ...person })),
+    })),
+  }));
+}
+
+async function listAllInScope(scope: OrganizationScope): Promise<ApprovalTaskResponse[]> {
+  const workflowTasks = await Promise.all(
+    tasks.filter((task) => inScope(task, scope)).map(enrichWorkflow),
+  );
+  const partsRequests = await partsRequestService.listForApproval(scope);
+  const partsTasks = await Promise.all(partsRequests.map(enrichPartsRequest));
+  return [...workflowTasks, ...partsTasks].sort((a, b) =>
+    b.requestedAt.localeCompare(a.requestedAt),
+  );
+}
+
 export const approvalService = {
-  async list(scope: OrganizationScope): Promise<ApprovalTask[]> {
+  async list(scope: OrganizationScope): Promise<ApprovalTaskResponse[]> {
     const actor = requireMockSessionActor();
     if (!hasPermission(actor.permissions, "approvals:view")) return [];
-    const relevant = tasks.filter(
-      (task) => inScope(task, scope) && actorCanSeeRoles(task.requiredRoles, actor),
-    );
-    const workflowTasks = await Promise.all(relevant.map(enrichWorkflow));
-    const partsRequests = await partsRequestService.listForApproval(scope);
-    const canSeeParts =
-      isSuperAdmin(actor) || PARTS_APPROVER_ROLES.some((role) => role === actor.role);
-    const partsTasks = canSeeParts
-      ? await Promise.all(partsRequests.map(enrichPartsRequest))
-      : [];
-    return [...workflowTasks, ...partsTasks].sort((a, b) =>
-      b.requestedAt.localeCompare(a.requestedAt),
+    const all = await listAllInScope(scope);
+    const visible = all.filter((task) => actorCanSeeRoles(task.requiredRoles, actor));
+    return attachApproverAssignments(visible, scope);
+  },
+
+  /**
+   * Dashboard-only read model: shows who/which role is currently holding work up
+   * without granting the viewer approval authority.
+   */
+  async listForDashboard(scope: OrganizationScope): Promise<ApprovalTaskResponse[]> {
+    const actor = requireMockSessionActor();
+    if (!hasPermission(actor.permissions, "dashboard:view")) return [];
+    const all = await listAllInScope(scope);
+    return attachApproverAssignments(
+      all.filter((task) => task.status === "pending"),
+      scope,
     );
   },
 
-  async request(input: ApprovalRequestInput): Promise<ApprovalTask> {
+  async request(input: CreateApprovalRequest): Promise<ApprovalTaskResponse> {
     const actor = requireMockSessionActor();
     const evaluation = await validateRegisteredApprovalRequest(
       input.moduleId,
@@ -300,7 +345,7 @@ export const approvalService = {
     return enrichWorkflow(task);
   },
 
-  async decide(input: ApprovalDecisionInput): Promise<ApprovalTask> {
+  async decide(input: DecideApprovalRequest): Promise<ApprovalTaskResponse> {
     const actor = requireMockSessionActor();
     assertCanAct(actor);
     if (input.taskId.startsWith("parts:")) {

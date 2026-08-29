@@ -1,3 +1,4 @@
+import { approvalService } from "@/features/approvals/service";
 import { equipmentService } from "@/features/equipment/service";
 import { inventoryService } from "@/features/inventory/service";
 import { isLowStock, LOW_STOCK_AVAILABLE_THRESHOLD } from "@/features/inventory/types";
@@ -68,6 +69,7 @@ export const dashboardService = {
       maintenance,
       partsRequests,
       workItems,
+      approvals,
       jobWorkflow,
       maintenanceWorkflow,
     ] = await Promise.all([
@@ -78,6 +80,7 @@ export const dashboardService = {
       maintenanceService.list(scope),
       partsRequestService.listForApproval(scope),
       workItemService.list(undefined, scope),
+      approvalService.listForDashboard(scope),
       workflowService.getByModule("job-orders"),
       workflowService.getByModule("maintenance"),
     ]);
@@ -175,6 +178,7 @@ export const dashboardService = {
       jobOrders,
       partsRequests,
       workItems,
+      approvalTasks: approvals,
     }).slice(0, 8);
 
     const jobById = new Map(jobOrders.map((job) => [job.id, job]));

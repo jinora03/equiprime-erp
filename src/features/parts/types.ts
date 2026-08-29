@@ -40,7 +40,16 @@ export interface PartsRequest {
   decision?: PartsRequestDecision;
 }
 
-export interface PartsRequestInput {
-  jobOrderId: number;
-  items: PartsRequestItem[];
+/** Minimal write DTO; display metadata is resolved by the service/backend. */
+export interface CreatePartsRequestItemRequest {
+  inventoryItemId: number;
+  quantity: number;
 }
+
+export interface CreatePartsRequestRequest {
+  jobOrderId: number;
+  items: CreatePartsRequestItemRequest[];
+}
+
+/** Stable read DTO returned by the Parts Requests service/API. */
+export type PartsRequestResponse = PartsRequest;

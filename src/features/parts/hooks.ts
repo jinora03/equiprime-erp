@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/constants/query-keys";
 import { partsRequestService } from "./service";
-import type { PartsRequestInput } from "./types";
+import type { CreatePartsRequestRequest } from "./types";
 
 export function usePartsRequests(jobOrderId: number) {
   return useQuery({
@@ -26,7 +26,7 @@ function useInvalidateParts() {
 export function useCreatePartsRequest() {
   const invalidate = useInvalidateParts();
   return useMutation({
-    mutationFn: (input: PartsRequestInput) => partsRequestService.create(input),
+    mutationFn: (input: CreatePartsRequestRequest) => partsRequestService.create(input),
     onSuccess: invalidate,
   });
 }

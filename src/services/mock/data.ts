@@ -102,7 +102,10 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   Mechanic: [
     ...viewKeys("dashboard", "my-work", "equipment"),
-    "job-orders:view", "job-orders:update",
+    // Mechanics can inspect assigned Job Orders but do not own Job Order
+    // workflow or record-level edits. Their operational mutations are limited
+    // to their own Work Items (and attachments when upload support is added).
+    "job-orders:view",
     "work-items:view", "work-items:update",
     "maintenance:view", "maintenance:update",
   ],
@@ -128,7 +131,7 @@ const ROLE_SEED: Array<[string, string, boolean]> = [
   ["HR Officer", "Manages people, attendance, and payroll.", false],
   ["Accountant", "Handles accounting and financial reports.", false],
   ["Sales Executive", "Manages CRM, customers, and sales pipeline.", false],
-  ["Mechanic", "Executes job orders and logs work items.", false],
+  ["Mechanic", "Executes assigned work items with read-only job-order context.", false],
   ["Warehouse Staff", "Manages inventory and warehouse stock.", false],
   ["Viewer", "Read-only access to dashboards and reports.", false],
   ["Warehouse Manager", "Oversees warehouse and inventory operations and can act on assigned approvals.", false],

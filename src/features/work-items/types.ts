@@ -26,7 +26,10 @@ export interface WorkItem {
   updatedAt: string;
 }
 
-export interface WorkItemInput {
+/** Stable read DTO returned by the Work Items service/API. */
+export type WorkItemResponse = WorkItem;
+
+export interface CreateWorkItemRequest {
   task: string;
   jobOrderId: number;
   assigneeId?: number;

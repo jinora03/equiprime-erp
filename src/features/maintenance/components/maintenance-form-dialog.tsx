@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateRecord } from "@/hooks/use-workflow-records";
+import { getErrorMessage } from "@/services/api/errors";
 import { maintenanceService } from "../service";
 
 const schema = z.object({
@@ -75,8 +76,10 @@ export function MaintenanceFormDialog({
         description: "It now follows the Maintenance Workflow.",
       });
       onOpenChange(false);
-    } catch {
-      toast.error("Couldn't schedule maintenance.");
+    } catch (error) {
+      toast.error("Couldn't schedule maintenance.", {
+        description: getErrorMessage(error),
+      });
     }
   };
 

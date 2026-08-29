@@ -33,6 +33,7 @@ import {
 import { ROUTES } from "@/constants/routes";
 import { WILDCARD } from "@/constants/modules";
 import { usePermissions } from "@/hooks/use-permissions";
+import { getErrorMessage } from "@/services/api/errors";
 import { PageHeader } from "@/shared/components/page-header";
 import { PermissionGuard } from "@/components/permission-guard";
 import { ConfirmDialog } from "@/shared/components/confirm-dialog";
@@ -70,7 +71,7 @@ export function RolesPage() {
       toast.success("Role removed");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Couldn't delete role.",
+        getErrorMessage(error, "Couldn't delete role."),
       );
     } finally {
       setDeleting(null);

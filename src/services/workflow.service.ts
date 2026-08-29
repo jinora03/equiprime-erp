@@ -1,7 +1,7 @@
 import { delay } from "@/services/mock/delay";
 import { requireMockPermission } from "@/services/mock/session-context";
 import { WORKFLOWS } from "@/services/mock/workflow-data";
-import type { Workflow, WorkflowStage } from "@/types";
+import type { Workflow, WorkflowResponse, WorkflowStage } from "@/types";
 
 /**
  * Workflow service (mock). Workflow edits create immutable revisions so records
@@ -23,7 +23,7 @@ const cloneWorkflow = (w: Workflow): Workflow => ({
 
 let workflowVersions: Workflow[] = WORKFLOWS.map(cloneWorkflow);
 
-export interface WorkflowUpdateInput {
+export interface UpdateWorkflowRequest {
   name?: string;
   description?: string;
   status?: Workflow["status"];
@@ -91,11 +91,11 @@ function validateStageUpdate(
 }
 
 export const workflowService = {
-  async list(): Promise<Workflow[]> {
+  async list(): Promise<WorkflowResponse[]> {
     return delay(latestWorkflows().map(cloneWorkflow));
   },
 
-  async listVersionsByModule(moduleId: string): Promise<Workflow[]> {
+  async listVersionsByModule(moduleId: string): Promise<WorkflowResponse[]> {
     return delay(
       workflowVersions
         .filter((workflow) => workflow.moduleId === moduleId)
@@ -104,7 +104,7 @@ export const workflowService = {
     );
   },
 
-  async get(id: number, version?: number): Promise<Workflow> {
+  async get(id: number, version?: number): Promise<WorkflowResponse> {
     const workflow = version
       ? workflowVersions.find(
           (candidate) => candidate.id === id && candidate.version === version,
@@ -115,7 +115,7 @@ export const workflowService = {
   },
 
   /** Resolve the latest active workflow used for newly-created records. */
-  async getByModule(moduleId: string): Promise<Workflow | null> {
+  async getByModule(moduleId: string): Promise<WorkflowResponse | null> {
     const workflow = latestWorkflows().find(
       (candidate) => candidate.moduleId === moduleId && candidate.status === "active",
     );
@@ -128,7 +128,7 @@ export const workflowService = {
     return workflow ? stageDeletionBlockReason(workflow, stageId) : null;
   },
 
-  async update(id: number, input: WorkflowUpdateInput): Promise<Workflow> {
+  async update(id: number, input: UpdateWorkflowRequest): Promise<WorkflowResponse> {
     const actor = requireMockPermission("workflows:manage");
     const current = latestById(id);
     if (!current) throw new Error("Workflow not found");

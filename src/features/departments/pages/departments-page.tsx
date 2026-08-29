@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissions } from "@/hooks/use-permissions";
+import { getErrorMessage } from "@/services/api/errors";
 import { ConfirmDialog } from "@/shared/components/confirm-dialog";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
@@ -54,8 +55,10 @@ export function DepartmentsPage() {
     try {
       await deleteDept.mutateAsync(deleting.id);
       toast.success("Department removed");
-    } catch {
-      toast.error("Couldn't delete department.");
+    } catch (error) {
+      toast.error("Couldn't delete department.", {
+        description: getErrorMessage(error),
+      });
     } finally {
       setDeleting(null);
     }

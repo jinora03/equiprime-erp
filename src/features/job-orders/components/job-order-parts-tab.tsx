@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { getErrorMessage } from "@/services/api/errors";
 import { useAuth } from "@/contexts/auth-context";
 import { canUpdateJobOrder } from "@/services/service-work-access";
 import { EmptyState } from "@/shared/components/empty-state";
@@ -35,9 +36,9 @@ export function JobOrderPartsTab({
   assigneeIds: number[];
 }) {
   const { user, permissions } = useAuth();
-  // Record-level access: raising a request requires update access to THIS job
-  // order (mechanics are limited to their assigned records). Mirrors the
-  // service-side enforcement in partsRequestService.create.
+  // Raising a request requires Job Order update authority. Mechanics are
+  // intentionally read-only at Job Order level, so supervisors/managers raise
+  // parts requests. The service enforces the same rule.
   const canRequest = user
     ? canUpdateJobOrder(
         { userId: user.id, role: user.role, permissions },
@@ -86,7 +87,10 @@ export function JobOrderPartsTab({
     try {
       await createRequest.mutateAsync({
         jobOrderId,
-        items: draft,
+        items: draft.map(({ inventoryItemId, quantity }) => ({
+          inventoryItemId,
+          quantity,
+        })),
       });
       toast.success("Parts request created", {
         description: "Stock reserved; awaiting approval.",
@@ -94,7 +98,7 @@ export function JobOrderPartsTab({
       setDraft([]);
     } catch (error) {
       toast.error("Couldn't create parts request.", {
-        description: error instanceof Error ? error.message : undefined,
+        description: getErrorMessage(error),
       });
     }
   };

@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance } from "axios";
 
 import { API_BASE_URL, TOKEN_STORAGE_KEY } from "@/constants/app";
+import { normalizeAppError } from "@/services/api/errors";
 
 /**
  * Pre-configured Axios instance. A request interceptor attaches the bearer
@@ -25,7 +26,8 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error?.response?.status === 401) {
+    const normalized = normalizeAppError(error, "The request could not be completed.");
+    if (normalized.status === 401) {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
       // HashRouter owns the application route. Preserve the deployment
       // pathname (for example /superEP/) and replace only the hash route.
@@ -35,6 +37,6 @@ apiClient.interceptors.response.use(
         );
       }
     }
-    return Promise.reject(error);
+    return Promise.reject(normalized);
   },
 );

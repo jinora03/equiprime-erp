@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { usePermissions } from "@/hooks/use-permissions";
+import { getErrorMessage } from "@/services/api/errors";
 import { useMoveRecordStage, useRecords } from "@/hooks/use-workflow-records";
 import { PageHeader } from "@/shared/components/page-header";
 import { PermissionGuard } from "@/components/permission-guard";
@@ -89,7 +90,7 @@ export function MaintenancePage() {
     } catch (error) {
       toast.warning("Move blocked", {
         description:
-          error instanceof Error ? error.message : "This move isn't allowed.",
+          getErrorMessage(error, "This move isn't allowed."),
       });
     }
   };

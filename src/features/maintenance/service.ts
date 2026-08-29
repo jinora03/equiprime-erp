@@ -14,7 +14,7 @@ import {
 } from "@/services/mock/session-context";
 import { getActiveOrganizationScope } from "@/store/organization.store";
 import { maintenanceSeed } from "./data";
-import type { Maintenance, MaintenanceInput } from "./types";
+import type { CreateMaintenanceRequest, Maintenance, MaintenanceResponse } from "./types";
 
 const store = createRecordStore<Maintenance>("maintenance", maintenanceSeed);
 let counter = maintenanceSeed.length;
@@ -25,7 +25,7 @@ export const maintenanceService = {
     id: number,
     toStageId: string,
     input: { note?: string; evidence?: WorkflowMoveEvidence } = {},
-  ): Promise<Maintenance> {
+  ): Promise<MaintenanceResponse> {
     const actor = requireMockSessionActor();
     return store.moveStage(id, toStageId, {
       actor: actor.name,
@@ -37,7 +37,7 @@ export const maintenanceService = {
     });
   },
 
-  async create(input: MaintenanceInput): Promise<Maintenance> {
+  async create(input: CreateMaintenanceRequest): Promise<MaintenanceResponse> {
     const now = new Date().toISOString();
     const actor = requireMockPermission("maintenance:create");
     const scope = getActiveOrganizationScope();
