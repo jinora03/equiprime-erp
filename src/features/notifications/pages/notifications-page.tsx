@@ -9,7 +9,12 @@ import { PageHeader } from "@/shared/components/page-header";
 import { EmptyState } from "@/shared/components/empty-state";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/format";
-import { NOTIFICATIONS } from "../data";
+import {
+  useMarkAllNotificationsRead,
+  useNotifications,
+  useToggleNotificationRead,
+} from "../hooks";
+import { getNotificationIcon } from "../presentation";
 import type { AppNotification } from "../types";
 
 const CATEGORY_LABELS: Record<AppNotification["category"], string> = {
@@ -21,7 +26,9 @@ const CATEGORY_LABELS: Record<AppNotification["category"], string> = {
 };
 
 export function NotificationsPage() {
-  const [items, setItems] = useState<AppNotification[]>(NOTIFICATIONS);
+  const { data: items = [] } = useNotifications();
+  const markAllRead = useMarkAllNotificationsRead();
+  const toggleRead = useToggleNotificationRead();
   const [tab, setTab] = useState<"all" | "unread">("all");
 
   const unreadCount = items.filter((n) => !n.read).length;
@@ -29,14 +36,6 @@ export function NotificationsPage() {
     () => (tab === "unread" ? items.filter((n) => !n.read) : items),
     [items, tab],
   );
-
-  const markAllRead = () =>
-    setItems((prev) => prev.map((n) => ({ ...n, read: true })));
-
-  const toggleRead = (id: number) =>
-    setItems((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: !n.read } : n)),
-    );
 
   return (
     <div className="space-y-4">
@@ -46,8 +45,8 @@ export function NotificationsPage() {
         actions={
           <Button
             variant="outline"
-            onClick={markAllRead}
-            disabled={unreadCount === 0}
+            onClick={() => markAllRead.mutate()}
+            disabled={unreadCount === 0 || markAllRead.isPending}
           >
             <CheckCheck className="h-4 w-4" /> Mark all as read
           </Button>
@@ -80,13 +79,14 @@ export function NotificationsPage() {
         <Card>
           <CardContent className="divide-y p-0">
             {visible.map((n) => {
-              const Icon = n.icon;
+              const Icon = getNotificationIcon(n.category);
               return (
                 <button
                   key={n.id}
-                  onClick={() => toggleRead(n.id)}
+                  onClick={() => toggleRead.mutate(n.id)}
+                  disabled={toggleRead.isPending}
                   className={cn(
-                    "flex w-full items-start gap-4 px-5 py-4 text-left transition-colors hover:bg-muted/50",
+                    "flex w-full items-start gap-4 px-5 py-4 text-left transition-colors hover:bg-muted/50 disabled:cursor-wait disabled:opacity-70",
                     !n.read && "bg-brand/[0.03]",
                   )}
                 >

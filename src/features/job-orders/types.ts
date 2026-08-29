@@ -46,3 +46,20 @@ export interface JobOrderInput {
   notes?: string;
   actor: string;
 }
+
+export interface JobOrderLabor {
+  id: number;
+  mechanic: string;
+  date: string;
+  hours: number;
+  rate: number;
+}
+
+export interface JobOrderAttachment {
+  id: number;
+  name: string;
+  type: string;
+  size: string;
+  uploadedBy: string;
+  uploadedAt: string;
+}

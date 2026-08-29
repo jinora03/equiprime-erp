@@ -60,10 +60,13 @@ import { TransitionDialog } from "@/features/workflows/components/transition-dia
 import type { WorkflowTransition } from "@/types";
 import type { WorkflowMoveEvidence } from "@/services/workflow-rules";
 import { jobOrderService } from "../service";
-import { SAMPLE_ATTACHMENTS, SAMPLE_LABOR } from "../detail-data";
 import { JobOrderWorkItemsTab } from "../components/job-order-work-items-tab";
 import { JobOrderPartsTab } from "../components/job-order-parts-tab";
-import { useJobOrders } from "../hooks";
+import {
+  useJobOrderAttachments,
+  useJobOrderLabor,
+  useJobOrders,
+} from "../hooks";
 
 const TABS = [
   "overview",
@@ -96,6 +99,8 @@ export function JobOrderDetailPage() {
   );
   const { data: workItems = [] } = useWorkItems(jobOrderId);
   const { data: partsRequests = [] } = usePartsRequests(jobOrderId);
+  const { data: labor = [] } = useJobOrderLabor(jobOrderId);
+  const { data: attachments = [] } = useJobOrderAttachments(jobOrderId);
   const moveJobStage = useMoveRecordStage("job-orders", jobOrderService);
   const requestApproval = useRequestApproval();
 
@@ -243,7 +248,7 @@ export function JobOrderDetailPage() {
     }
   };
 
-  const laborTotal = SAMPLE_LABOR.reduce((sum, l) => sum + l.hours * l.rate, 0);
+  const laborTotal = labor.reduce((sum, l) => sum + l.hours * l.rate, 0);
 
   return (
     <div className="space-y-6">
@@ -428,7 +433,7 @@ export function JobOrderDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {SAMPLE_LABOR.map((l) => (
+                {labor.map((l) => (
                   <TableRow key={l.id}>
                     <TableCell className="font-medium">{l.mechanic}</TableCell>
                     <TableCell className="text-muted-foreground">
@@ -460,7 +465,7 @@ export function JobOrderDetailPage() {
         <TabsContent value="attachments">
           <Card>
             <CardContent className="divide-y p-0">
-              {SAMPLE_ATTACHMENTS.map((a) => (
+              {attachments.map((a) => (
                 <div key={a.id} className="flex items-center gap-3 px-5 py-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                     <Paperclip className="h-4 w-4" />

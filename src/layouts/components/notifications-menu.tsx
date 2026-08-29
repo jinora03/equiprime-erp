@@ -10,7 +10,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ROUTES } from "@/constants/routes";
 import { useMyApprovals } from "@/features/approvals/hooks";
-import { NOTIFICATIONS } from "@/features/notifications/data";
+import { useNotifications } from "@/features/notifications/hooks";
+import { getNotificationIcon } from "@/features/notifications/presentation";
 import { usePermissions } from "@/hooks/use-permissions";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/format";
@@ -18,6 +19,11 @@ import { formatRelativeTime } from "@/utils/format";
 export function NotificationsMenu() {
   const { can } = usePermissions();
   const { data: approvalTasks = [] } = useMyApprovals();
+  const canViewNotifications = can("notifications:view");
+  const { data: notificationData = [] } = useNotifications(
+    canViewNotifications,
+  );
+  const appNotifications = canViewNotifications ? notificationData : [];
   const approvalNotifications = approvalTasks
     .filter((task) => task.status === "pending")
     .map((task) => ({
@@ -29,7 +35,13 @@ export function NotificationsMenu() {
       read: false,
       href: ROUTES.APPROVALS,
     }));
-  const notifications = [...approvalNotifications, ...NOTIFICATIONS];
+  const notifications = [
+    ...approvalNotifications,
+    ...appNotifications.map((notification) => ({
+      ...notification,
+      icon: getNotificationIcon(notification.category),
+    })),
+  ];
   const unreadCount = notifications.filter((notification) => !notification.read).length;
   // "View all" belongs to the notifications center. Only fall back to My
   // Approvals for roles that cannot reach the center but still act on approvals

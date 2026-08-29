@@ -99,6 +99,12 @@ export const queryKeys = {
   notifications: {
     all: ["notifications"] as const,
   },
+  jobOrderDetails: {
+    labor: (jobOrderId: number) =>
+      ["job-orders", jobOrderId, "labor"] as const,
+    attachments: (jobOrderId: number) =>
+      ["job-orders", jobOrderId, "attachments"] as const,
+  },
   partsRequests: {
     root: ["parts-requests"] as const,
     byJobOrder: (jobOrderId: number) =>
