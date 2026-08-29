@@ -30,6 +30,8 @@ export interface PartsRequest {
   companyId: string;
   branchId: string;
   jobOrderId: number;
+  /** Waiting-for-parts episode this request belongs to. */
+  jobOrderPartsCycle: number;
   status: PartsRequestStatus;
   items: PartsRequestItem[];
   requestedById: number;
@@ -42,8 +44,6 @@ export interface PartsRequest {
 
 export interface PartsRequestInput {
   jobOrderId: number;
-  /** Assignees of the target job order — used for record-level access checks. */
-  jobOrderAssigneeIds: number[];
   items: PartsRequestItem[];
   requestedBy: {
     id: number;

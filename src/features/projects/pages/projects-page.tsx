@@ -23,7 +23,10 @@ import { TableSkeleton } from "@/shared/components/table-skeleton";
 import { WorkflowDetailSheet } from "@/shared/components/workflow-detail-sheet";
 import { WorkflowStageBadge } from "@/shared/components/workflow-stage-badge";
 import { formatDate } from "@/utils/format";
-import { useWorkflowByModule } from "@/features/workflows/hooks";
+import {
+  useWorkflowByModule,
+  useWorkflowVersionsByModule,
+} from "@/features/workflows/hooks";
 import type { Project } from "../types";
 import { projectService } from "../service";
 import { ProjectFormDialog } from "../components/project-form-dialog";
@@ -38,13 +41,26 @@ export function ProjectsPage() {
     projectService,
   );
   const { data: workflow } = useWorkflowByModule("projects");
+  const { data: workflowVersions = [] } =
+    useWorkflowVersionsByModule("projects");
   const moveStage = useMoveRecordStage("projects", projectService);
 
   const [selected, setSelected] = useState<Project | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const stageOf = (id: string) =>
-    workflow?.stages.find((s) => s.id === id) ?? null;
+  const workflowFor = (project: Project | null) =>
+    (project
+      ? workflowVersions.find(
+          (candidate) =>
+            candidate.id === project.workflowId &&
+            candidate.version === project.workflowVersion,
+        )
+      : undefined) ?? workflow ?? null;
+  const stageOf = (project: Project) =>
+    workflowFor(project)?.stages.find(
+      (stage) => stage.id === project.currentStageId,
+    ) ?? null;
+  const selectedWorkflow = workflowFor(selected);
 
   const handleMove = async (toStageId: string) => {
     if (!selected) return;
@@ -132,7 +148,7 @@ export function ProjectsPage() {
                   </TableCell>
                   <TableCell>
                     <WorkflowStageBadge
-                      stage={stageOf(project.currentStageId)}
+                      stage={stageOf(project)}
                     />
                   </TableCell>
                 </TableRow>
@@ -150,7 +166,7 @@ export function ProjectsPage() {
         icon={FolderKanban}
         code={selected?.code ?? ""}
         title={selected?.title ?? ""}
-        workflow={workflow}
+        workflow={selectedWorkflow}
         currentStageId={selected?.currentStageId ?? ""}
         history={selected?.history ?? []}
         canMove={canMove}

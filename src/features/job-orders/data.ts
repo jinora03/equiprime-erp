@@ -25,7 +25,7 @@ const dueInDays = (days: number): string =>
   new Date(NOW + days * DAY_MS).toISOString().slice(0, 10);
 
 const build = (
-  data: Omit<JobOrder, "moduleId" | "history" | "updatedAt"> & {
+  data: Omit<JobOrder, "moduleId" | "workflowId" | "workflowVersion" | "partsCycle" | "history" | "updatedAt"> & {
     actor?: string;
   },
 ): JobOrder => {
@@ -33,6 +33,9 @@ const build = (
   return {
     ...rest,
     moduleId: "job-orders",
+    workflowId: 1,
+    workflowVersion: 1,
+    partsCycle: rest.currentStageId === "jo-waiting-parts" ? 1 : 0,
     history: seedHistory(
       JOB_ORDER_STAGE_IDS,
       rest.currentStageId,

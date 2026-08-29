@@ -13,11 +13,11 @@ export function useWorkflows() {
   });
 }
 
-export function useWorkflow(id: number) {
+export function useWorkflow(id?: number, version?: number) {
   return useQuery({
-    queryKey: queryKeys.workflows.detail(id),
-    queryFn: () => workflowService.get(id),
-    enabled: !Number.isNaN(id),
+    queryKey: queryKeys.workflows.detail(id ?? -1, version),
+    queryFn: () => workflowService.get(id as number, version),
+    enabled: id !== undefined && !Number.isNaN(id),
   });
 }
 
@@ -36,5 +36,13 @@ export function useUpdateWorkflow() {
       workflowService.update(id, input),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: queryKeys.workflows.all }),
+  });
+}
+
+/** All immutable revisions for rendering records pinned to older workflows. */
+export function useWorkflowVersionsByModule(moduleId: string) {
+  return useQuery({
+    queryKey: queryKeys.workflows.versionsByModule(moduleId),
+    queryFn: () => workflowService.listVersionsByModule(moduleId),
   });
 }

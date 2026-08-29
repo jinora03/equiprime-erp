@@ -29,6 +29,8 @@ export const maintenanceService = {
       code: `MNT-2026-${String(counter).padStart(4, "0")}`,
       title: `${input.type} — ${input.equipment}`,
       moduleId: "maintenance",
+      workflowId: workflow.id,
+      workflowVersion: workflow.version,
       companyId: scope.companyId,
       branchId: scope.branchId,
       currentStageId: firstStage,

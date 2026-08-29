@@ -44,13 +44,14 @@ import { WorkflowHistoryList } from "@/shared/components/workflow-history-list";
 import { WorkflowStageBadge } from "@/shared/components/workflow-stage-badge";
 import { WorkflowTimeline } from "@/shared/components/workflow-timeline";
 import { formatCurrency, formatDate, formatRelativeTime } from "@/utils/format";
-import { useWorkflowByModule } from "@/features/workflows/hooks";
+import { useWorkflow } from "@/features/workflows/hooks";
 import { useWorkItems } from "@/features/work-items/hooks";
 import {
   areAllWorkItemsComplete,
   getWorkItemStatus,
 } from "@/features/work-items/statuses";
 import { usePartsRequests } from "@/features/parts/hooks";
+import { arePartsReleasedForCycle } from "@/features/parts/rules";
 import {
   getOutgoingTransitions,
   type ConditionContext,
@@ -88,7 +89,11 @@ export function JobOrderDetailPage() {
     : "overview";
 
   const { data: jobOrders = [], isLoading } = useJobOrders();
-  const { data: jobWorkflow } = useWorkflowByModule("job-orders");
+  const jobOrder = jobOrders.find((j) => j.id === jobOrderId);
+  const { data: jobWorkflow } = useWorkflow(
+    jobOrder?.workflowId,
+    jobOrder?.workflowVersion,
+  );
   const { data: workItems = [] } = useWorkItems(jobOrderId);
   const { data: partsRequests = [] } = usePartsRequests(jobOrderId);
   const moveJobStage = useMoveRecordStage("job-orders", jobOrderService);
@@ -97,12 +102,13 @@ export function JobOrderDetailPage() {
   const [pendingTransition, setPendingTransition] =
     useState<WorkflowTransition | null>(null);
 
-  const jobOrder = jobOrders.find((j) => j.id === jobOrderId);
-
   // Context the transition engine evaluates conditions against.
   const conditionContext: ConditionContext = {
     allWorkItemsCompleted: areAllWorkItemsComplete(workItems),
-    partsReleased: partsRequests.some((r) => r.status === "released"),
+    partsReleased: arePartsReleasedForCycle(
+      partsRequests,
+      jobOrder?.partsCycle ?? 0,
+    ),
     supervisorApproved: false,
     qaPassed: false,
   };

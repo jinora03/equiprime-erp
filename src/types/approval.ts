@@ -24,6 +24,7 @@ export interface ApprovalTask {
   companyId: string;
   branchId: string;
   workflowId: number;
+  workflowVersion: number;
   moduleId: string;
   moduleLabel: string;
   recordId: number;

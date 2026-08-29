@@ -26,6 +26,7 @@ interface ApprovalTaskEntity {
   companyId: string;
   branchId: string;
   workflowId: number;
+  workflowVersion: number;
   moduleId: string;
   recordId: number;
   transitionId: string;
@@ -57,9 +58,9 @@ const actorCanSeeRoles = (requiredRoles: readonly string[], actor: ApprovalActor
   isSuperAdmin(actor) || requiredRoles.includes(actor.role);
 
 async function workflowForRecord(
-  task: Pick<ApprovalTaskEntity, "workflowId" | "moduleId">,
+  task: Pick<ApprovalTaskEntity, "workflowId" | "workflowVersion" | "moduleId">,
 ): Promise<Workflow> {
-  if (task.workflowId) return workflowService.get(task.workflowId);
+  if (task.workflowId) return workflowService.get(task.workflowId, task.workflowVersion);
   const workflow = await workflowService.getByModule(task.moduleId);
   if (!workflow) throw new Error("Workflow not found for approval task.");
   return workflow;
@@ -153,6 +154,7 @@ async function enrichPartsRequest(
     companyId: request.companyId,
     branchId: request.branchId,
     workflowId: 0,
+    workflowVersion: 0,
     moduleId: "parts-requests",
     moduleLabel: "Parts Request",
     recordId: request.id,
@@ -256,10 +258,10 @@ export const approvalService = {
 
     const record = findRegisteredWorkflowRecord(input.moduleId, input.recordId);
     if (!record) throw new Error("Record not found.");
-    const recordWorkflowId = (record as WorkflowRecord & { workflowId?: number }).workflowId;
-    const workflow = recordWorkflowId
-      ? await workflowService.get(recordWorkflowId)
-      : await workflowService.getByModule(input.moduleId);
+    const workflow = await workflowService.get(
+      record.workflowId,
+      record.workflowVersion,
+    );
     if (!workflow) throw new Error("No active workflow is configured for this module.");
     if (evaluation.transition.id !== input.transitionId) {
       throw new Error("The requested workflow transition has changed. Refresh and try again.");
@@ -280,6 +282,7 @@ export const approvalService = {
       companyId: record.companyId,
       branchId: record.branchId,
       workflowId: workflow.id,
+      workflowVersion: workflow.version,
       moduleId: input.moduleId,
       recordId: input.recordId,
       transitionId: input.transitionId,

@@ -25,7 +25,10 @@ import { TableSkeleton } from "@/shared/components/table-skeleton";
 import { WorkflowKanban } from "@/shared/components/workflow-kanban";
 import { WorkflowStageBadge } from "@/shared/components/workflow-stage-badge";
 import { formatDate } from "@/utils/format";
-import { useWorkflowByModule } from "@/features/workflows/hooks";
+import {
+  useWorkflowByModule,
+  useWorkflowVersionsByModule,
+} from "@/features/workflows/hooks";
 import { isAssignedOnlyServiceActor } from "@/services/service-work-access";
 import type { JobOrder } from "../types";
 import { useJobOrders } from "../hooks";
@@ -43,6 +46,8 @@ export function JobOrdersPage() {
 
   const { data: jobOrders = [], isLoading } = useJobOrders();
   const { data: workflow } = useWorkflowByModule("job-orders");
+  const { data: workflowVersions = [] } =
+    useWorkflowVersionsByModule("job-orders");
   const moveStage = useMoveRecordStage("job-orders", jobOrderService);
   const assignedOnly =
     user != null &&
@@ -69,22 +74,45 @@ export function JobOrdersPage() {
     }
   };
 
-  const stageOf = (id: string) =>
-    workflow?.stages.find((s) => s.id === id) ?? null;
+  const workflowFor = (jobOrder: JobOrder) =>
+    workflowVersions.find(
+      (candidate) =>
+        candidate.id === jobOrder.workflowId &&
+        candidate.version === jobOrder.workflowVersion,
+    ) ?? workflow ?? null;
+  const stageOf = (jobOrder: JobOrder, stageId = jobOrder.currentStageId) =>
+    workflowFor(jobOrder)?.stages.find((stage) => stage.id === stageId) ?? null;
+
+  const kanbanGroups = workflowVersions
+    .map((candidate) => ({
+      workflow: candidate,
+      items: jobOrders.filter(
+        (jobOrder) =>
+          jobOrder.workflowId === candidate.id &&
+          jobOrder.workflowVersion === candidate.version,
+      ),
+    }))
+    .filter(
+      (group) =>
+        group.items.length > 0 ||
+        (workflow != null &&
+          group.workflow.id === workflow.id &&
+          group.workflow.version === workflow.version),
+    );
 
   const open = (jo: JobOrder) => navigate(jobOrderDetailPath(jo.id));
 
   const handleMove = async (id: number, toStageId: string) => {
     try {
-      await moveStage.mutateAsync({
+      const updated = (await moveStage.mutateAsync({
         id,
         toStageId,
         actor: user?.full_name ?? "System",
         actorId: user?.id,
         actorRole: user?.role,
         permissions,
-      });
-      toast.success(`Moved to ${stageOf(toStageId)?.name ?? "new stage"}`);
+      })) as JobOrder;
+      toast.success(`Moved to ${stageOf(updated)?.name ?? "new stage"}`);
     } catch (error) {
       toast.warning("Move blocked", {
         description:
@@ -184,7 +212,7 @@ export function JobOrdersPage() {
                     <PriorityBadge priority={jo.priority} />
                   </TableCell>
                   <TableCell>
-                    <WorkflowStageBadge stage={stageOf(jo.currentStageId)} />
+                    <WorkflowStageBadge stage={stageOf(jo)} />
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatDate(jo.dueDate)}
@@ -194,17 +222,39 @@ export function JobOrdersPage() {
             </TableBody>
           </Table>
         </Card>
-      ) : workflow ? (
-        <WorkflowKanban
-          items={jobOrders}
-          workflow={workflow}
-          canMove={canMove}
-          fillAvailableHeight
-          onMove={handleMove}
-          renderCard={(jo) => (
-            <JobOrderKanbanCard jobOrder={jo} onClick={() => open(jo)} />
-          )}
-        />
+      ) : kanbanGroups.length > 0 ? (
+        <div className="space-y-6">
+          {kanbanGroups.map((group) => (
+            <div
+              key={`${group.workflow.id}:${group.workflow.version}`}
+              className="space-y-2"
+            >
+              {kanbanGroups.length > 1 ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    {group.workflow.name} v{group.workflow.version}
+                  </span>
+                  {workflow?.id === group.workflow.id &&
+                  workflow.version === group.workflow.version ? (
+                    <span>Current</span>
+                  ) : (
+                    <span>Existing records</span>
+                  )}
+                </div>
+              ) : null}
+              <WorkflowKanban
+                items={group.items}
+                workflow={group.workflow}
+                canMove={canMove}
+                fillAvailableHeight={kanbanGroups.length === 1}
+                onMove={handleMove}
+                renderCard={(jo) => (
+                  <JobOrderKanbanCard jobOrder={jo} onClick={() => open(jo)} />
+                )}
+              />
+            </div>
+          ))}
+        </div>
       ) : null}
 
       <JobOrderFormDialog open={createOpen} onOpenChange={setCreateDialogOpen} />

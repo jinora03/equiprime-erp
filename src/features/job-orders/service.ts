@@ -1,5 +1,6 @@
 import { customerService } from "@/features/customers/service";
 import { equipmentService } from "@/features/equipment/service";
+import { arePartsReleasedForCycle } from "@/features/parts/rules";
 import { partsRequestService } from "@/features/parts/service";
 import { areAllWorkItemsComplete } from "@/features/work-items/statuses";
 import { workItemService } from "@/features/work-items/service";
@@ -25,7 +26,7 @@ import type { OrganizationScope } from "@/types";
 const store = createRecordStore<JobOrder>("job-orders", jobOrderSeed, {
   resolveWorkflow: (record) =>
     record.workflowId
-      ? workflowService.get(record.workflowId)
+      ? workflowService.get(record.workflowId, record.workflowVersion)
       : workflowService.getByModule("job-orders"),
   getConditionContext: async (record) => {
     const [workItems, partsRequests] = await Promise.all([
@@ -37,10 +38,15 @@ const store = createRecordStore<JobOrder>("job-orders", jobOrderSeed, {
     ]);
     return {
       allWorkItemsCompleted: areAllWorkItemsComplete(workItems),
-      partsReleased: partsRequests.some((request) => request.status === "released"),
+      partsReleased: arePartsReleasedForCycle(partsRequests, record.partsCycle),
       supervisorApproved: false,
       qaPassed: false,
     };
+  },
+  onStageMoved: (record, fromStageId, toStageId) => {
+    if (fromStageId !== "jo-waiting-parts" && toStageId === "jo-waiting-parts") {
+      record.partsCycle += 1;
+    }
   },
 });
 let counter = Math.max(
@@ -140,7 +146,9 @@ export const jobOrderService = {
         ? `${serviceVehicle.code} · ${serviceVehicle.name}`
         : null,
       workflowId: input.workflowId,
+      workflowVersion: workflow.version,
       priority: input.priority,
+      partsCycle: 0,
       dueDate: input.dueDate,
       description: input.description,
       notes: input.notes,

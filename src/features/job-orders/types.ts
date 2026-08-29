@@ -22,9 +22,9 @@ export interface JobOrder extends WorkflowRecord {
   /** Optional Equiprime service vehicle used by the field crew for this job. */
   serviceVehicleId?: number | null;
   serviceVehicle?: string | null;
-  /** Workflow that drives this job order's stages. */
-  workflowId?: number;
   priority: Priority;
+  /** Number of times this job has entered Waiting for Parts. */
+  partsCycle: number;
   /** Active mechanics assigned to this job order. */
   assigneeIds: number[];
   /** Estimated completion date. */

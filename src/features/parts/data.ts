@@ -20,6 +20,7 @@ export const partsRequestSeed: PartsRequest[] = [
     companyId: "equiprime",
     branchId: "main",
     jobOrderId: 1,
+    jobOrderPartsCycle: 1,
     status: "released",
     items: [
       { inventoryItemId: 1, sku: "PRT-HYDPMP", name: "Hydraulic Pump", unit: "pc", quantity: 1 },
@@ -45,6 +46,7 @@ export const partsRequestSeed: PartsRequest[] = [
     companyId: "equiprime",
     branchId: "main",
     jobOrderId: 1,
+    jobOrderPartsCycle: 1,
     status: "rejected",
     items: [
       { inventoryItemId: 2, sku: "PRT-OILFLT", name: "Oil Filter", unit: "pc", quantity: 4 },
@@ -69,6 +71,7 @@ export const partsRequestSeed: PartsRequest[] = [
     companyId: "equiprime",
     branchId: "main",
     jobOrderId: 12,
+    jobOrderPartsCycle: 1,
     status: "pending",
     items: [
       { inventoryItemId: 23, sku: "PRT-HYDHOSE", name: "Hydraulic Hose Assembly", unit: "pc", quantity: 3 },

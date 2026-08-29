@@ -5,6 +5,7 @@ export interface ApprovalTaskSeed {
   companyId: string;
   branchId: string;
   workflowId: number;
+  workflowVersion: number;
   moduleId: string;
   recordId: number;
   transitionId: string;
@@ -27,6 +28,7 @@ export const approvalTaskSeed: ApprovalTaskSeed[] = [
     companyId: "equiprime",
     branchId: "main",
     workflowId: 1,
+    workflowVersion: 1,
     moduleId: "job-orders",
     recordId: 1,
     transitionId: "jt6",
@@ -42,6 +44,7 @@ export const approvalTaskSeed: ApprovalTaskSeed[] = [
     companyId: "equiprime",
     branchId: "davao",
     workflowId: 1,
+    workflowVersion: 1,
     moduleId: "job-orders",
     recordId: 8,
     transitionId: "jt2",

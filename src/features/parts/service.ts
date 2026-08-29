@@ -1,9 +1,11 @@
 import { inventoryService } from "@/features/inventory/service";
+import type { JobOrder } from "@/features/job-orders/types";
 import { delay, nextId } from "@/services/mock/delay";
 import {
   canUpdateJobOrder,
   type ServiceWorkActor,
 } from "@/services/service-work-access";
+import { findRegisteredWorkflowRecord } from "@/services/workflow-record-registry";
 import { getActiveOrganizationScope } from "@/store/organization.store";
 import type { ApprovalActor, OrganizationScope } from "@/types";
 import { partsRequestSeed } from "./data";
@@ -49,23 +51,38 @@ export const partsRequestService = {
   },
 
   async create(input: PartsRequestInput): Promise<PartsRequest> {
-    // Record-level access: raising a parts request requires update access to the
-    // target job order. Enforced in the service (not UI-only) so mechanics can
-    // only request parts for job orders assigned to them — consistent with the
-    // job-orders and work-items services (services/service-work-access.ts).
+    if (input.items.length === 0) {
+      throw new Error("Add at least one part before creating a request.");
+    }
+
+    const scope = getActiveOrganizationScope();
+    // Record-level access is resolved from the registered Job Order instead of
+    // trusting ownership/assignee data supplied by the UI. Laravel should make
+    // this same check authoritatively when the real backend is connected.
+    const jobOrder = findRegisteredWorkflowRecord<JobOrder>(
+      "job-orders",
+      input.jobOrderId,
+    );
+    if (
+      !jobOrder ||
+      jobOrder.companyId !== scope.companyId ||
+      jobOrder.branchId !== scope.branchId
+    ) {
+      throw new Error("Job order not found in the active organization scope.");
+    }
+
     const actor: ServiceWorkActor = {
       userId: input.requestedBy.id,
       role: input.requestedBy.role,
       permissions: input.requestedBy.permissions,
     };
-    if (!canUpdateJobOrder(actor, { assigneeIds: input.jobOrderAssigneeIds })) {
+    if (!canUpdateJobOrder(actor, jobOrder)) {
       throw new Error(
         "You can only request parts for job orders assigned to you.",
       );
     }
 
     const now = new Date().toISOString();
-    const scope = getActiveOrganizationScope();
     counter += 1;
     const request: PartsRequest = {
       id: nextId(),
@@ -73,6 +90,12 @@ export const partsRequestService = {
       companyId: scope.companyId,
       branchId: scope.branchId,
       jobOrderId: input.jobOrderId,
+      // Requests raised while Repair is active belong to the upcoming waiting
+      // cycle; requests raised while already waiting belong to the current one.
+      jobOrderPartsCycle:
+        jobOrder.currentStageId === "jo-waiting-parts"
+          ? Math.max(jobOrder.partsCycle, 1)
+          : jobOrder.partsCycle + 1,
       status: "pending",
       items: input.items.map((item) => ({ ...item })),
       requestedById: input.requestedBy.id,
@@ -82,10 +105,12 @@ export const partsRequestService = {
       updatedAt: now,
     };
 
-    await Promise.all(
-      request.items.map((item) =>
-        inventoryService.reserve(item.inventoryItemId, item.quantity),
-      ),
+    await inventoryService.reserveMany(
+      request.items.map((item) => ({
+        id: item.inventoryItemId,
+        qty: item.quantity,
+      })),
+      scope,
     );
     data.unshift(request);
     return clone(request);
@@ -108,19 +133,23 @@ export const partsRequestService = {
     }
 
     if (decision === "approve") {
-      await Promise.all(
-        request.items.map((item) =>
-          inventoryService.release(item.inventoryItemId, item.quantity),
-        ),
+      await inventoryService.releaseMany(
+        request.items.map((item) => ({
+          id: item.inventoryItemId,
+          qty: item.quantity,
+        })),
+        { companyId: request.companyId, branchId: request.branchId },
       );
       // Demo shortcut: an approved warehouse request is released immediately.
       // A real backend may split business approval and physical fulfillment.
       request.status = "released";
     } else {
-      await Promise.all(
-        request.items.map((item) =>
-          inventoryService.unreserve(item.inventoryItemId, item.quantity),
-        ),
+      await inventoryService.unreserveMany(
+        request.items.map((item) => ({
+          id: item.inventoryItemId,
+          qty: item.quantity,
+        })),
+        { companyId: request.companyId, branchId: request.branchId },
       );
       request.status = "rejected";
     }

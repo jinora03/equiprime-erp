@@ -77,6 +77,7 @@ export interface RecordStore<T extends WorkflowRecord> {
 interface RecordStoreOptions<T extends WorkflowRecord> {
   resolveWorkflow?: (record: T) => Promise<Workflow | null>;
   getConditionContext?: (record: T) => Promise<ConditionContext>;
+  onStageMoved?: (record: T, fromStageId: string, toStageId: string) => void;
 }
 
 export function createRecordStore<T extends WorkflowRecord>(
@@ -95,7 +96,7 @@ export function createRecordStore<T extends WorkflowRecord>(
   const resolveWorkflow = (record: T) =>
     options.resolveWorkflow
       ? options.resolveWorkflow(record)
-      : workflowService.getByModule(moduleId);
+      : workflowService.get(record.workflowId, record.workflowVersion);
 
   const resolveConditionContext = (record: T) =>
     options.getConditionContext
@@ -193,11 +194,13 @@ export function createRecordStore<T extends WorkflowRecord>(
       throw new Error(evaluation.reason ?? "This workflow move is not allowed.");
     }
 
+    const fromStageId = record.currentStageId;
     record.history = [
       ...record.history,
-      historyEntry(record.currentStageId, toStageId, input.actor, input.note),
+      historyEntry(fromStageId, toStageId, input.actor, input.note),
     ];
     record.currentStageId = toStageId;
+    options.onStageMoved?.(record, fromStageId, toStageId);
     record.updatedAt = new Date().toISOString();
     return delay({ ...record, history: [...record.history] });
   };

@@ -1,13 +1,11 @@
 import { delay } from "@/services/mock/delay";
 import { WORKFLOWS } from "@/services/mock/workflow-data";
-import { countWorkflowRecordsInStage } from "@/services/workflow-record-registry";
 import type { Workflow, WorkflowStage } from "@/types";
 
 /**
- * Workflow service (mock). Holds an in-memory, mutable copy of the seed
- * workflows so the admin editor's changes persist for the session. Swap the
- * `delay(...)` bodies for API calls when a backend exists; consumers stay the
- * same.
+ * Workflow service (mock). Workflow edits create immutable revisions so records
+ * continue to resolve the exact business process version they started with.
+ * A production backend should preserve the same contract with durable versions.
  */
 
 const cloneWorkflow = (w: Workflow): Workflow => ({
@@ -22,7 +20,7 @@ const cloneWorkflow = (w: Workflow): Workflow => ({
   })),
 });
 
-let workflows: Workflow[] = WORKFLOWS.map(cloneWorkflow);
+let workflowVersions: Workflow[] = WORKFLOWS.map(cloneWorkflow);
 
 export interface WorkflowUpdateInput {
   name?: string;
@@ -30,6 +28,20 @@ export interface WorkflowUpdateInput {
   status?: Workflow["status"];
   stages?: WorkflowStage[];
   actor: string;
+}
+
+function latestById(id: number): Workflow | undefined {
+  return workflowVersions
+    .filter((workflow) => workflow.id === id)
+    .sort((a, b) => b.version - a.version)[0];
+}
+
+function latestWorkflows(): Workflow[] {
+  const ids = [...new Set(workflowVersions.map((workflow) => workflow.id))];
+  return ids.flatMap((id) => {
+    const workflow = latestById(id);
+    return workflow ? [workflow] : [];
+  });
 }
 
 function stageDeletionBlockReason(
@@ -45,11 +57,6 @@ function stageDeletionBlockReason(
   );
   if (referenced) {
     return `${stage.name} is referenced by configured transitions and can't be deleted in this demo.`;
-  }
-
-  const recordCount = countWorkflowRecordsInStage(workflow.moduleId, stageId);
-  if (recordCount > 0) {
-    return `${recordCount} demo record${recordCount === 1 ? " currently uses" : "s currently use"} ${stage.name}. Move those records first.`;
   }
 
   return null;
@@ -85,47 +92,63 @@ function validateStageUpdate(
 
 export const workflowService = {
   async list(): Promise<Workflow[]> {
-    return delay(workflows.map(cloneWorkflow));
+    return delay(latestWorkflows().map(cloneWorkflow));
   },
 
-  async get(id: number): Promise<Workflow> {
-    const workflow = workflows.find((w) => w.id === id);
+  async listVersionsByModule(moduleId: string): Promise<Workflow[]> {
+    return delay(
+      workflowVersions
+        .filter((workflow) => workflow.moduleId === moduleId)
+        .sort((a, b) => b.version - a.version)
+        .map(cloneWorkflow),
+    );
+  },
+
+  async get(id: number, version?: number): Promise<Workflow> {
+    const workflow = version
+      ? workflowVersions.find(
+          (candidate) => candidate.id === id && candidate.version === version,
+        )
+      : latestById(id);
     if (!workflow) throw new Error("Workflow not found");
     return delay(cloneWorkflow(workflow));
   },
 
-  /** Resolve the active workflow that drives a given module. */
+  /** Resolve the latest active workflow used for newly-created records. */
   async getByModule(moduleId: string): Promise<Workflow | null> {
-    const workflow = workflows.find(
-      (w) => w.moduleId === moduleId && w.status === "active",
+    const workflow = latestWorkflows().find(
+      (candidate) => candidate.moduleId === moduleId && candidate.status === "active",
     );
     return delay(workflow ? cloneWorkflow(workflow) : null);
   },
 
   /** Immediate UX guard; update() repeats this check authoritatively. */
   getStageDeletionBlockReason(id: number, stageId: string): string | null {
-    const workflow = workflows.find((candidate) => candidate.id === id);
+    const workflow = latestById(id);
     return workflow ? stageDeletionBlockReason(workflow, stageId) : null;
   },
 
   async update(id: number, input: WorkflowUpdateInput): Promise<Workflow> {
-    const workflow = workflows.find((w) => w.id === id);
-    if (!workflow) throw new Error("Workflow not found");
+    const current = latestById(id);
+    if (!current) throw new Error("Workflow not found");
 
     const nextStages = input.stages?.map((stage, index) => ({
       ...stage,
       order: index + 1,
     }));
-    if (nextStages) validateStageUpdate(workflow, nextStages);
+    if (nextStages) validateStageUpdate(current, nextStages);
 
-    // Apply only after all validation succeeds so a failed stage edit cannot
-    // partially mutate the in-memory workflow.
-    if (input.name !== undefined) workflow.name = input.name;
-    if (input.description !== undefined) workflow.description = input.description;
-    if (input.status !== undefined) workflow.status = input.status;
-    if (nextStages) workflow.stages = nextStages;
-    workflow.updatedBy = input.actor;
-    workflow.updatedAt = new Date().toISOString();
-    return delay(cloneWorkflow(workflow));
+    // Never mutate a workflow already referenced by business records. Every
+    // successful edit creates a new immutable version for future records.
+    const next = cloneWorkflow(current);
+    next.version = current.version + 1;
+    if (input.name !== undefined) next.name = input.name;
+    if (input.description !== undefined) next.description = input.description;
+    if (input.status !== undefined) next.status = input.status;
+    if (nextStages) next.stages = nextStages;
+    next.updatedBy = input.actor;
+    next.updatedAt = new Date().toISOString();
+    workflowVersions.push(next);
+    return delay(cloneWorkflow(next));
   },
 };

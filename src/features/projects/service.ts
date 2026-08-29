@@ -27,6 +27,8 @@ export const projectService = {
       code: `PRJ-2026-${String(counter).padStart(3, "0")}`,
       title: input.title,
       moduleId: "projects",
+      workflowId: workflow.id,
+      workflowVersion: workflow.version,
       companyId: scope.companyId,
       branchId: scope.branchId,
       currentStageId: firstStage,

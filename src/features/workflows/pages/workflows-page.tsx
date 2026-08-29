@@ -84,7 +84,7 @@ export function WorkflowsPage() {
                           {workflow.name}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {workflow.stages.length} stages
+                          {workflow.stages.length} stages · v{workflow.version}
                         </p>
                       </div>
                     </div>

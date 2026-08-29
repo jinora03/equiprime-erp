@@ -87,7 +87,6 @@ export function JobOrderPartsTab({
       if (!user) throw new Error("Sign in before requesting parts.");
       await createRequest.mutateAsync({
         jobOrderId,
-        jobOrderAssigneeIds: assigneeIds,
         items: draft,
         requestedBy: {
           id: user.id,
@@ -100,8 +99,10 @@ export function JobOrderPartsTab({
         description: "Stock reserved; awaiting approval.",
       });
       setDraft([]);
-    } catch {
-      toast.error("Couldn't create parts request.");
+    } catch (error) {
+      toast.error("Couldn't create parts request.", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   };
 

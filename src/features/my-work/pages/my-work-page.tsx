@@ -20,7 +20,10 @@ import { useAuth } from "@/contexts/auth-context";
 import { useUpdateWorkItemStatus } from "@/features/work-items/hooks";
 import { WorkItemStatusActionButton } from "@/features/work-items/components/work-item-status-action-button";
 import { WorkItemStatusChip } from "@/features/work-items/components/work-item-status-chip";
-import { useWorkflowByModule } from "@/features/workflows/hooks";
+import {
+  useWorkflowByModule,
+  useWorkflowVersionsByModule,
+} from "@/features/workflows/hooks";
 import { usePermissions } from "@/hooks/use-permissions";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
@@ -35,6 +38,8 @@ export function MyWorkPage() {
   const { can } = usePermissions();
   const { data, isLoading } = useMyWork();
   const { data: workflow } = useWorkflowByModule("job-orders");
+  const { data: workflowVersions = [] } =
+    useWorkflowVersionsByModule("job-orders");
   const updateStatus = useUpdateWorkItemStatus();
 
   const jobOrders = data?.jobOrders ?? [];
@@ -45,8 +50,19 @@ export function MyWorkPage() {
   const inProgress = workItems.filter(
     (item) => item.status === "in_progress",
   ).length;
-  const stageOf = (id: string) =>
-    workflow?.stages.find((stage) => stage.id === id) ?? null;
+  const stageOf = (jobOrder: (typeof jobOrders)[number]) => {
+    const recordWorkflow =
+      workflowVersions.find(
+        (candidate) =>
+          candidate.id === jobOrder.workflowId &&
+          candidate.version === jobOrder.workflowVersion,
+      ) ?? workflow;
+    return (
+      recordWorkflow?.stages.find(
+        (stage) => stage.id === jobOrder.currentStageId,
+      ) ?? null
+    );
+  };
 
   return (
     <div className="space-y-5">
@@ -115,7 +131,7 @@ export function MyWorkPage() {
                         {jobOrder.title}
                       </p>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <WorkflowStageBadge stage={stageOf(jobOrder.currentStageId)} />
+                        <WorkflowStageBadge stage={stageOf(jobOrder)} />
                         <PriorityBadge priority={jobOrder.priority} />
                         <span className="text-xs text-muted-foreground">
                           Due {formatDate(jobOrder.dueDate)}

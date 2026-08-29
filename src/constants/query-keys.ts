@@ -37,8 +37,11 @@ export const queryKeys = {
   workflows: {
     all: ["workflows"] as const,
     list: ["workflows", "list"] as const,
-    detail: (id: number) => ["workflows", "detail", id] as const,
+    detail: (id: number, version?: number) =>
+      ["workflows", "detail", id, version ?? "latest"] as const,
     byModule: (moduleId: string) => ["workflows", "module", moduleId] as const,
+    versionsByModule: (moduleId: string) =>
+      ["workflows", "module", moduleId, "versions"] as const,
   },
   // Generic keys for workflow-driven business records (job-orders, projects, …)
   records: {

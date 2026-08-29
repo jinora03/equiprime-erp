@@ -9,7 +9,7 @@ export const PROJECT_STAGE_IDS = [
 ];
 
 const build = (
-  data: Omit<Project, "moduleId" | "history" | "updatedAt"> & {
+  data: Omit<Project, "moduleId" | "workflowId" | "workflowVersion" | "history" | "updatedAt"> & {
     actor?: string;
   },
 ): Project => {
@@ -17,6 +17,8 @@ const build = (
   return {
     ...rest,
     moduleId: "projects",
+    workflowId: 3,
+    workflowVersion: 1,
     history: seedHistory(
       PROJECT_STAGE_IDS,
       rest.currentStageId,
