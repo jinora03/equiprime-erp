@@ -33,6 +33,13 @@ export interface JobOrder extends WorkflowRecord {
   notes?: string;
 }
 
+/**
+ * API write contract for creating a Job Order.
+ *
+ * Intentionally excludes server-owned fields such as id/code, actor identity,
+ * workflowVersion, partsCycle, timestamps, and audit history. Laravel should
+ * derive/generate those values after authenticating and authorizing the request.
+ */
 export interface CreateJobOrderRequest {
   title: string;
   description?: string;

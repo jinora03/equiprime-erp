@@ -51,7 +51,11 @@ export const inventoryService = {
     );
   },
 
-  /** Reserve a batch only after every line passes validation (mock-atomic). */
+  /**
+   * Reserve a batch only after every line passes validation (mock-atomic).
+   * Production Laravel/PostgreSQL should wrap this in a DB transaction, lock the
+   * affected balance rows, and write an inventory movement/reservation ledger.
+   */
   reserveMany(
     changes: InventoryQuantityChange[],
     scope?: OrganizationScope,
@@ -92,7 +96,11 @@ export const inventoryService = {
     return delay(undefined, 120);
   },
 
-  /** Consume reserved stock only when every line is valid. */
+  /**
+   * Consume reserved stock only when every line is valid.
+   * Production code should update balances + ledger entries atomically; do not
+   * let FastAPI/integration workers mutate ERP inventory balances directly.
+   */
   releaseMany(
     changes: InventoryQuantityChange[],
     scope?: OrganizationScope,

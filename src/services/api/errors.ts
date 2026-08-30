@@ -19,7 +19,11 @@ export interface AppErrorOptions {
   cause?: unknown;
 }
 
-/** Stable frontend error contract used by both mock services and HTTP APIs. */
+/**
+ * Stable frontend error contract shared by mock services, Laravel ERP endpoints,
+ * and FastAPI integration endpoints. Components should depend on AppError rather
+ * than backend-specific response shapes.
+ */
 export class AppError extends Error {
   readonly code: string;
   readonly status?: number;
@@ -100,8 +104,9 @@ function codeForStatus(status?: number): string {
 
 /**
  * Normalize unknown errors from mock services or Axios-like HTTP errors into a
- * single UI contract. This intentionally supports Laravel's `{ message, errors }`
- * validation shape as well as Equiprime's future `{ code, message, fieldErrors }`.
+ * single UI contract. This intentionally supports Laravel's `{ message, errors }`,
+ * FastAPI's validation `detail`, and Equiprime's preferred
+ * `{ code, message, fieldErrors }` envelope.
  */
 export function normalizeAppError(
   error: unknown,

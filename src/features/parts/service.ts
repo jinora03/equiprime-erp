@@ -89,6 +89,8 @@ export const partsRequestService = {
       );
     }
 
+    // Backend-ready boundary: resolve item metadata from authoritative inventory
+    // records. Never accept SKU/name/unit/company/branch values from the browser.
     const inventory = await inventoryService.list(scope);
     const inventoryById = new Map(inventory.map((item) => [item.id, item]));
     const requestedQuantities = new Map<number, number>();
@@ -140,6 +142,9 @@ export const partsRequestService = {
       updatedAt: now,
     };
 
+    // Production Laravel/PostgreSQL should execute request creation + all stock
+    // reservations in one database transaction (with locking/concurrency guards).
+    // The mock service validates the same invariants but cannot provide DB atomicity.
     await inventoryService.reserveMany(
       request.items.map((item) => ({
         id: item.inventoryItemId,
@@ -167,6 +172,9 @@ export const partsRequestService = {
       throw new Error("Add a reason before rejecting.");
     }
 
+    // In production, the approval decision and resulting inventory movement must
+    // commit atomically with the audit record. FastAPI/integrations should not
+    // write these ERP-owned inventory tables directly.
     if (decision === "approve") {
       await inventoryService.releaseMany(
         request.items.map((item) => ({

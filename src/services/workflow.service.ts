@@ -23,6 +23,10 @@ const cloneWorkflow = (w: Workflow): Workflow => ({
 
 let workflowVersions: Workflow[] = WORKFLOWS.map(cloneWorkflow);
 
+/**
+ * API write contract for workflow administration. The backend owns revision
+ * numbering, updatedBy, updatedAt, and immutable historical versions.
+ */
 export interface UpdateWorkflowRequest {
   name?: string;
   description?: string;
@@ -139,8 +143,9 @@ export const workflowService = {
     }));
     if (nextStages) validateStageUpdate(current, nextStages);
 
-    // Never mutate a workflow already referenced by business records. Every
-    // successful edit creates a new immutable version for future records.
+    // Backend-ready invariant: never mutate a workflow revision already referenced
+    // by business records. Laravel should persist a new workflow version and keep
+    // existing records pinned to their original version for historical accuracy.
     const next = cloneWorkflow(current);
     next.version = current.version + 1;
     if (input.name !== undefined) next.name = input.name;
