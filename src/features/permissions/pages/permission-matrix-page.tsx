@@ -22,6 +22,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ACTION_LABELS, WILDCARD, viewKey } from "@/constants/modules";
 import { usePermissions } from "@/hooks/use-permissions";
+import { getErrorMessage } from "@/services/api/errors";
 import { PageHeader } from "@/shared/components/page-header";
 import { cn } from "@/lib/utils";
 import type { PermissionModule } from "@/types";
@@ -99,8 +100,10 @@ export function PermissionMatrixPage() {
         description:
           `Saved access for ${selectedRole.role}. Changes apply on the next sign-in.`,
       });
-    } catch {
-      toast.error("Couldn't save permissions.");
+    } catch (error) {
+      toast.error("Couldn't save permissions.", {
+        description: getErrorMessage(error),
+      });
     }
   };
 

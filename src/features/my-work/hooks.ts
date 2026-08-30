@@ -20,14 +20,7 @@ export function useMyWork() {
     queryKey: queryKeys.myWork.list(scopeKey, actorKey),
     queryFn: () =>
       user
-        ? myWorkService.get(
-            {
-              userId: user.id,
-              role: user.role,
-              permissions,
-            },
-            scope,
-          )
+        ? myWorkService.get(scope)
         : Promise.resolve({ jobOrders: [], workItems: [] }),
     enabled: Boolean(user),
   });

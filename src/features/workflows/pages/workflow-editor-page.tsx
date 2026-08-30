@@ -24,8 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ROUTES } from "@/constants/routes";
-import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
+import { getErrorMessage } from "@/services/api/errors";
 import { PageHeader } from "@/shared/components/page-header";
 import { EmptyState } from "@/shared/components/empty-state";
 import { workflowService } from "@/services/workflow.service";
@@ -45,7 +45,6 @@ export function WorkflowEditorPage() {
   const workflowId = Number(id);
   const navigate = useNavigate();
   const { can } = usePermissions();
-  const { user } = useAuth();
   const editable = can("workflows:manage");
 
   const { data: workflow, isLoading, isError } = useWorkflow(workflowId);
@@ -113,15 +112,14 @@ export function WorkflowEditorPage() {
           description: draft.description,
           status: draft.status,
           stages: draft.stages,
-          actor: user?.full_name ?? "System",
         },
       });
       toast.success("Workflow saved", {
-        description: `${draft.name} was updated.`,
+        description: `${draft.name} v${workflow.version + 1} was created; existing records keep their current version.`,
       });
     } catch (error) {
       toast.error("Couldn't save workflow.", {
-        description: error instanceof Error ? error.message : undefined,
+        description: getErrorMessage(error),
       });
     }
   };
@@ -147,7 +145,7 @@ export function WorkflowEditorPage() {
 
       <PageHeader
         title={workflow.name}
-        description={`Configure the ${workflow.moduleLabel} workflow.`}
+        description={`Configure the ${workflow.moduleLabel} workflow · v${workflow.version}.`}
         actions={
           editable ? (
             <div className="flex gap-2">
@@ -233,7 +231,7 @@ export function WorkflowEditorPage() {
             </div>
             <CardDescription>
               {editable
-                ? "Drag to reorder, rename inline, recolor, add, or remove stages. Changes apply to new and existing records."
+                ? `Drag to reorder, rename inline, recolor, add, or remove stages. Saving creates v${workflow.version + 1}; existing records stay on v${workflow.version}.`
                 : "Read-only — you need the Manage permission to edit."}
             </CardDescription>
           </CardHeader>

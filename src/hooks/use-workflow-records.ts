@@ -7,7 +7,7 @@ import {
 } from "@/store/organization.store";
 import type { RecordStore } from "@/services/workflow-records";
 import type { WorkflowMoveEvidence } from "@/services/workflow-rules";
-import type { PermissionKey, WorkflowRecord } from "@/types";
+import type { WorkflowRecord } from "@/types";
 
 /**
  * Generic TanStack Query hooks for configurable workflow-driven records such as
@@ -29,7 +29,13 @@ export function useRecords<T extends WorkflowRecord>(
 
 export function useMoveRecordStage<T extends WorkflowRecord>(
   moduleId: string,
-  store: Pick<RecordStore<T>, "moveStage">,
+  store: {
+    moveStage: (
+      id: number,
+      toStageId: string,
+      input?: { note?: string; evidence?: WorkflowMoveEvidence },
+    ) => Promise<T>;
+  },
 ) {
   const qc = useQueryClient();
 
@@ -37,18 +43,10 @@ export function useMoveRecordStage<T extends WorkflowRecord>(
     mutationFn: (vars: {
       id: number;
       toStageId: string;
-      actor: string;
-      actorId?: number;
-      permissions: PermissionKey[];
-      actorRole?: string | null;
       note?: string;
       evidence?: WorkflowMoveEvidence;
     }) =>
       store.moveStage(vars.id, vars.toStageId, {
-        actor: vars.actor,
-        actorId: vars.actorId,
-        permissions: vars.permissions,
-        actorRole: vars.actorRole,
         note: vars.note,
         evidence: vars.evidence,
       }),

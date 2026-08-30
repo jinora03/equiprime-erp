@@ -13,8 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
+import { getErrorMessage } from "@/services/api/errors";
 import { useMoveRecordStage, useRecords } from "@/hooks/use-workflow-records";
 import { PageHeader } from "@/shared/components/page-header";
 import { PermissionGuard } from "@/components/permission-guard";
@@ -24,15 +24,17 @@ import { TableSkeleton } from "@/shared/components/table-skeleton";
 import { WorkflowDetailSheet } from "@/shared/components/workflow-detail-sheet";
 import { WorkflowStageBadge } from "@/shared/components/workflow-stage-badge";
 import { formatDate } from "@/utils/format";
-import { useWorkflowByModule } from "@/features/workflows/hooks";
+import {
+  useWorkflowByModule,
+  useWorkflowVersionsByModule,
+} from "@/features/workflows/hooks";
 import type { Maintenance } from "../types";
 import { maintenanceService } from "../service";
 import { MaintenanceFormDialog } from "../components/maintenance-form-dialog";
 
 export function MaintenancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user } = useAuth();
-  const { can, permissions } = usePermissions();
+  const { can } = usePermissions();
   const canMove = can("maintenance:update");
   const canCreate = can("maintenance:create");
 
@@ -41,6 +43,8 @@ export function MaintenancePage() {
     maintenanceService,
   );
   const { data: workflow } = useWorkflowByModule("maintenance");
+  const { data: workflowVersions = [] } =
+    useWorkflowVersionsByModule("maintenance");
   const moveStage = useMoveRecordStage("maintenance", maintenanceService);
 
   const [selected, setSelected] = useState<Maintenance | null>(null);
@@ -60,8 +64,19 @@ export function MaintenancePage() {
     }
   };
 
-  const stageOf = (id: string) =>
-    workflow?.stages.find((s) => s.id === id) ?? null;
+  const workflowFor = (record: Maintenance | null) =>
+    (record
+      ? workflowVersions.find(
+          (candidate) =>
+            candidate.id === record.workflowId &&
+            candidate.version === record.workflowVersion,
+        )
+      : undefined) ?? workflow ?? null;
+  const stageOf = (record: Maintenance) =>
+    workflowFor(record)?.stages.find(
+      (stage) => stage.id === record.currentStageId,
+    ) ?? null;
+  const selectedWorkflow = workflowFor(selected);
 
   const handleMove = async (toStageId: string) => {
     if (!selected) return;
@@ -69,16 +84,13 @@ export function MaintenancePage() {
       const updated = await moveStage.mutateAsync({
         id: selected.id,
         toStageId,
-        actor: user?.full_name ?? "System",
-        actorRole: user?.role,
-        permissions,
       });
       setSelected(updated as Maintenance);
       toast.success("Stage updated");
     } catch (error) {
       toast.warning("Move blocked", {
         description:
-          error instanceof Error ? error.message : "This move isn't allowed.",
+          getErrorMessage(error, "This move isn't allowed."),
       });
     }
   };
@@ -138,7 +150,7 @@ export function MaintenancePage() {
                     <PriorityBadge priority={record.priority} />
                   </TableCell>
                   <TableCell>
-                    <WorkflowStageBadge stage={stageOf(record.currentStageId)} />
+                    <WorkflowStageBadge stage={stageOf(record)} />
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatDate(record.scheduledDate)}
@@ -158,7 +170,7 @@ export function MaintenancePage() {
         icon={Wrench}
         code={selected?.code ?? ""}
         title={selected?.title ?? ""}
-        workflow={workflow}
+        workflow={selectedWorkflow}
         currentStageId={selected?.currentStageId ?? ""}
         history={selected?.history ?? []}
         canMove={canMove}

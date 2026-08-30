@@ -4,7 +4,7 @@ import type { WorkItemStatus } from "./statuses";
 /**
  * A Work Item is a child of a Job Order. It uses a fixed status (see
  * `statuses.ts`) rather than the Workflow Engine. Shape mirrors the future
- * FastAPI `WorkItem` resource.
+ * ERP API `WorkItem` resource.
  */
 export interface WorkItem {
   id: number;
@@ -26,7 +26,10 @@ export interface WorkItem {
   updatedAt: string;
 }
 
-export interface WorkItemInput {
+/** Stable read DTO returned by the Work Items service/API. */
+export type WorkItemResponse = WorkItem;
+
+export interface CreateWorkItemRequest {
   task: string;
   jobOrderId: number;
   assigneeId?: number;

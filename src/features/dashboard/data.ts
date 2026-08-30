@@ -92,7 +92,9 @@ export interface DashboardSnapshot {
   attention: DashboardAttentionItem[];
   /** Service-focused operational metrics (Shot 5). */
   serviceMetrics: ServiceMetrics;
-  /** Per-record operational bottlenecks with reasons + elapsed context (Shot 5). */
+  /** Due-date-driven items requiring timely action. */
+  needsAction: Bottleneck[];
+  /** Process blockers/stalls with reasons + elapsed context. */
   bottlenecks: Bottleneck[];
   revenueTrend: RevenueTrendPoint[];
   equipmentStatus: EquipmentStatusPoint[];

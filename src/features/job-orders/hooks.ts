@@ -6,6 +6,7 @@ import {
   organizationScopeKey,
   useOrganizationScope,
 } from "@/store/organization.store";
+import { jobOrderDetailService } from "./detail-service";
 import { jobOrderService } from "./service";
 
 /** Actor-aware Job Order query; mechanics receive only their assigned records. */
@@ -19,17 +20,23 @@ export function useJobOrders() {
 
   return useQuery({
     queryKey: queryKeys.records.list("job-orders", scopeKey, actorKey),
-    queryFn: () =>
-      user
-        ? jobOrderService.listForActor(
-            {
-              userId: user.id,
-              role: user.role,
-              permissions,
-            },
-            scope,
-          )
-        : Promise.resolve([]),
+    queryFn: () => (user ? jobOrderService.listForCurrentActor(scope) : Promise.resolve([])),
     enabled: Boolean(user),
+  });
+}
+
+export function useJobOrderLabor(jobOrderId: number) {
+  return useQuery({
+    queryKey: queryKeys.jobOrderDetails.labor(jobOrderId),
+    queryFn: () => jobOrderDetailService.listLabor(jobOrderId),
+    enabled: Number.isFinite(jobOrderId),
+  });
+}
+
+export function useJobOrderAttachments(jobOrderId: number) {
+  return useQuery({
+    queryKey: queryKeys.jobOrderDetails.attachments(jobOrderId),
+    queryFn: () => jobOrderDetailService.listAttachments(jobOrderId),
+    enabled: Number.isFinite(jobOrderId),
   });
 }

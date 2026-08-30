@@ -5,6 +5,7 @@ export interface ApprovalTaskSeed {
   companyId: string;
   branchId: string;
   workflowId: number;
+  workflowVersion: number;
   moduleId: string;
   recordId: number;
   transitionId: string;
@@ -15,6 +16,11 @@ export interface ApprovalTaskSeed {
   requestedByRole: string;
   requestedAt: string;
 }
+
+const HOUR_MS = 3_600_000;
+const NOW = Date.now();
+const hoursAgo = (hours: number): string =>
+  new Date(NOW - hours * HOUR_MS).toISOString();
 
 /**
  * Pending approval examples are relational: they reference live workflow records
@@ -27,6 +33,7 @@ export const approvalTaskSeed: ApprovalTaskSeed[] = [
     companyId: "equiprime",
     branchId: "main",
     workflowId: 1,
+    workflowVersion: 1,
     moduleId: "job-orders",
     recordId: 1,
     transitionId: "jt6",
@@ -35,13 +42,30 @@ export const approvalTaskSeed: ApprovalTaskSeed[] = [
     requestedById: 10,
     requestedByName: "Jun Bautista",
     requestedByRole: "Mechanic",
-    requestedAt: "2026-06-26T10:15:00Z",
+    requestedAt: hoursAgo(20),
+  },
+  {
+    id: "approval-002",
+    companyId: "equiprime",
+    branchId: "main",
+    workflowId: 1,
+    workflowVersion: 1,
+    moduleId: "job-orders",
+    recordId: 13,
+    transitionId: "jt2",
+    requiredRoles: ["Manager"],
+    confirmedConditions: [],
+    requestedById: 27,
+    requestedByName: "Adrian Valdez",
+    requestedByRole: "Mechanic",
+    requestedAt: hoursAgo(16),
   },
   {
     id: "approval-003",
     companyId: "equiprime",
     branchId: "davao",
     workflowId: 1,
+    workflowVersion: 1,
     moduleId: "job-orders",
     recordId: 8,
     transitionId: "jt2",
@@ -50,6 +74,6 @@ export const approvalTaskSeed: ApprovalTaskSeed[] = [
     requestedById: 23,
     requestedByName: "Joel Manalo",
     requestedByRole: "Mechanic",
-    requestedAt: "2026-07-01T07:05:00Z",
+    requestedAt: hoursAgo(4),
   },
 ];

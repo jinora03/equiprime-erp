@@ -1,3 +1,4 @@
+import { approvalService } from "@/features/approvals/service";
 import { equipmentService } from "@/features/equipment/service";
 import { inventoryService } from "@/features/inventory/service";
 import { isLowStock, LOW_STOCK_AVAILABLE_THRESHOLD } from "@/features/inventory/types";
@@ -15,7 +16,7 @@ import {
   type DashboardSnapshot,
   type JobOrderStatus,
 } from "./data";
-import { deriveServiceMetrics, detectBottlenecks } from "./service-metrics";
+import { deriveServiceMetrics, detectBottlenecks, detectNeedsAction } from "./service-metrics";
 
 const MONTH_FORMATTER = new Intl.DateTimeFormat("en", {
   month: "short",
@@ -68,6 +69,7 @@ export const dashboardService = {
       maintenance,
       partsRequests,
       workItems,
+      approvals,
       jobWorkflow,
       maintenanceWorkflow,
     ] = await Promise.all([
@@ -78,6 +80,7 @@ export const dashboardService = {
       maintenanceService.list(scope),
       partsRequestService.listForApproval(scope),
       workItemService.list(undefined, scope),
+      approvalService.listForDashboard(scope),
       workflowService.getByModule("job-orders"),
       workflowService.getByModule("maintenance"),
     ]);
@@ -171,10 +174,16 @@ export const dashboardService = {
       partsRequests,
       workItems,
     });
+    const needsAction = detectNeedsAction({
+      jobOrders,
+      partsRequests,
+      workItems,
+    }).slice(0, 8);
     const bottlenecks = detectBottlenecks({
       jobOrders,
       partsRequests,
       workItems,
+      approvalTasks: approvals,
     }).slice(0, 8);
 
     const jobById = new Map(jobOrders.map((job) => [job.id, job]));
@@ -262,6 +271,7 @@ export const dashboardService = {
       lowStockItems: lowStockItems.length,
       attention,
       serviceMetrics,
+      needsAction,
       bottlenecks,
       revenueTrend: revenue.slice(-6).map((entry) => ({
         month: MONTH_FORMATTER.format(new Date(`${entry.period}-01T00:00:00Z`)),

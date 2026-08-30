@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Loader2,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,11 +19,17 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import type { ApprovalTask } from "@/types";
+import { formatDateTime } from "@/utils/format";
+
+export type ApprovalDialogMode = "review" | "reject";
 
 interface ApprovalReviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   task: ApprovalTask | null;
+  mode?: ApprovalDialogMode;
+  branchName?: string;
+  actionable?: boolean;
   submitting?: boolean;
   onApprove: (note?: string) => void | Promise<void>;
   onReject: (note: string) => void | Promise<void>;
@@ -27,6 +39,9 @@ export function ApprovalReviewDialog({
   open,
   onOpenChange,
   task,
+  mode = "review",
+  branchName,
+  actionable = true,
   submitting,
   onApprove,
   onReject,
@@ -39,7 +54,7 @@ export function ApprovalReviewDialog({
       setNote("");
       setPendingDecision(null);
     }
-  }, [open, task?.id]);
+  }, [open, task?.id, mode]);
 
   const handleApprove = async () => {
     setPendingDecision("approve");
@@ -53,7 +68,7 @@ export function ApprovalReviewDialog({
   const handleReject = async () => {
     setPendingDecision("reject");
     try {
-      await onReject(note);
+      await onReject(note.trim());
     } finally {
       setPendingDecision(null);
     }
@@ -61,14 +76,18 @@ export function ApprovalReviewDialog({
 
   if (!task) return null;
 
+  const title = mode === "reject" ? "Reject approval" : "Review approval";
+  const description =
+    mode === "reject"
+      ? "Add a reason so the requester knows what needs to change."
+      : `Review the full request context, then approve or reject from here.`;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Review approval</DialogTitle>
-          <DialogDescription>
-            Review this request without needing access to the full {task.moduleLabel} source module.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -85,7 +104,7 @@ export function ApprovalReviewDialog({
             </div>
           </div>
 
-          {task.context.length > 0 ? (
+          {mode === "review" && task.context.length > 0 ? (
             <div className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2">
               {task.context.map((item) => (
                 <div key={item.label}>
@@ -101,33 +120,68 @@ export function ApprovalReviewDialog({
           <div className="rounded-xl border p-4">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-              Required approval
+              Approval routing
             </div>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Requested by</p>
+                <p className="mt-0.5 text-sm font-medium text-foreground">
+                  {task.requestedByName}
+                </p>
+                <p className="text-xs text-muted-foreground">{task.requestedByRole}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Requested at</p>
+                <p className="mt-0.5 text-sm font-medium text-foreground">
+                  {formatDateTime(task.requestedAt)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {branchName ?? task.branchId}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 space-y-2 border-t pt-3">
               {task.requiredRoles.map((role) => {
                 const approved = task.decisions.some((decision) => decision.role === role);
+                const assignment = task.approverAssignments?.find(
+                  (candidate) => candidate.role === role,
+                );
+                const approver = assignment?.people[0];
                 return (
-                  <Badge key={role} variant={approved ? "success" : "secondary"}>
-                    {role}{approved ? " approved" : ""}
-                  </Badge>
+                  <div key={role} className="flex items-start justify-between gap-3 text-sm">
+                    <div>
+                      <p className="font-medium text-foreground">
+                        {approver?.name ?? role}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {approver ? role : "No active approver found"}
+                      </p>
+                    </div>
+                    <Badge variant={approved ? "success" : "outline"}>
+                      {approved ? "Approved" : "Pending"}
+                    </Badge>
+                  </div>
                 );
               })}
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Requested by {task.requestedByName} ({task.requestedByRole}).
-            </p>
           </div>
 
           <div className="space-y-2">
             <label htmlFor="approval-note" className="text-sm font-medium text-foreground">
-              Decision note
+              {mode === "reject" ? "Rejection reason" : "Decision note"}
             </label>
             <Textarea
               id="approval-note"
               value={note}
               onChange={(event) => setNote(event.target.value)}
-              placeholder="Optional for approval; required when rejecting."
+              placeholder={
+                mode === "reject"
+                  ? "Explain what needs to be corrected before resubmission."
+                  : "Optional note for this decision."
+              }
               rows={3}
+              autoFocus={mode === "reject"}
             />
           </div>
         </div>
@@ -136,30 +190,42 @@ export function ApprovalReviewDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
-          <Button
-            variant="destructive"
-            onClick={handleReject}
-            disabled={submitting || !note.trim()}
-          >
-            {pendingDecision === "reject" ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Rejecting…
-              </>
-            ) : (
-              "Reject"
-            )}
-          </Button>
-          <Button onClick={handleApprove} disabled={submitting}>
-            {pendingDecision === "approve" ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Approving…
-              </>
-            ) : (
-              "Approve"
-            )}
-          </Button>
+
+          {actionable && (mode === "review" || mode === "reject") ? (
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={submitting || !note.trim()}
+            >
+              {pendingDecision === "reject" ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Rejecting…
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-4 w-4" />
+                  Reject
+                </>
+              )}
+            </Button>
+          ) : null}
+
+          {actionable && mode === "review" ? (
+            <Button onClick={handleApprove} disabled={submitting}>
+              {pendingDecision === "approve" ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Approving…
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  Approve
+                </>
+              )}
+            </Button>
+          ) : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>

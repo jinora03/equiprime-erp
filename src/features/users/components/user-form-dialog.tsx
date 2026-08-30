@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { getErrorMessage } from "@/services/api/errors";
 import {
   Select,
   SelectContent,
@@ -109,8 +110,8 @@ export function UserFormDialog({
         });
       }
       onOpenChange(false);
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    } catch (error) {
+      toast.error("Couldn't save user.", { description: getErrorMessage(error) });
     }
   };
 

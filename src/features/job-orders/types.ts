@@ -22,9 +22,9 @@ export interface JobOrder extends WorkflowRecord {
   /** Optional Equiprime service vehicle used by the field crew for this job. */
   serviceVehicleId?: number | null;
   serviceVehicle?: string | null;
-  /** Workflow that drives this job order's stages. */
-  workflowId?: number;
   priority: Priority;
+  /** Number of times this job has entered Waiting for Parts. */
+  partsCycle: number;
   /** Active mechanics assigned to this job order. */
   assigneeIds: number[];
   /** Estimated completion date. */
@@ -33,7 +33,7 @@ export interface JobOrder extends WorkflowRecord {
   notes?: string;
 }
 
-export interface JobOrderInput {
+export interface CreateJobOrderRequest {
   title: string;
   description?: string;
   customerId: number;
@@ -44,5 +44,24 @@ export interface JobOrderInput {
   workflowId: number;
   dueDate: string;
   notes?: string;
-  actor: string;
+}
+
+/** Stable read DTO returned by the Job Orders service/API. */
+export type JobOrderResponse = JobOrder;
+
+export interface JobOrderLabor {
+  id: number;
+  mechanic: string;
+  date: string;
+  hours: number;
+  rate: number;
+}
+
+export interface JobOrderAttachment {
+  id: number;
+  name: string;
+  type: string;
+  size: string;
+  uploadedBy: string;
+  uploadedAt: string;
 }

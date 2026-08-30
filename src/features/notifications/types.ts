@@ -1,5 +1,3 @@
-import type { LucideIcon } from "lucide-react";
-
 export type NotificationCategory =
   | "job-order"
   | "inventory"
@@ -7,12 +5,15 @@ export type NotificationCategory =
   | "system"
   | "mention";
 
+/**
+ * Serializable notification shape. Keep presentation details (icons/components)
+ * outside this contract so a future API can return the same payload as JSON.
+ */
 export interface AppNotification {
   id: number;
   title: string;
   description: string;
   category: NotificationCategory;
-  icon: LucideIcon;
   createdAt: string; // ISO
   read: boolean;
 }

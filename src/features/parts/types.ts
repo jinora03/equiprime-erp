@@ -1,5 +1,3 @@
-import type { PermissionKey } from "@/types";
-
 export type PartsRequestStatus =
   | "draft"
   | "pending"
@@ -30,6 +28,8 @@ export interface PartsRequest {
   companyId: string;
   branchId: string;
   jobOrderId: number;
+  /** Waiting-for-parts episode this request belongs to. */
+  jobOrderPartsCycle: number;
   status: PartsRequestStatus;
   items: PartsRequestItem[];
   requestedById: number;
@@ -40,15 +40,16 @@ export interface PartsRequest {
   decision?: PartsRequestDecision;
 }
 
-export interface PartsRequestInput {
-  jobOrderId: number;
-  /** Assignees of the target job order — used for record-level access checks. */
-  jobOrderAssigneeIds: number[];
-  items: PartsRequestItem[];
-  requestedBy: {
-    id: number;
-    name: string;
-    role: string;
-    permissions: PermissionKey[];
-  };
+/** Minimal write DTO; display metadata is resolved by the service/backend. */
+export interface CreatePartsRequestItemRequest {
+  inventoryItemId: number;
+  quantity: number;
 }
+
+export interface CreatePartsRequestRequest {
+  jobOrderId: number;
+  items: CreatePartsRequestItemRequest[];
+}
+
+/** Stable read DTO returned by the Parts Requests service/API. */
+export type PartsRequestResponse = PartsRequest;

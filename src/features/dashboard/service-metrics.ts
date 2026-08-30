@@ -1,3 +1,4 @@
+import type { ApprovalTask } from "@/types";
 import type { JobOrder } from "@/features/job-orders/types";
 import type { PartsRequest } from "@/features/parts/types";
 import type { WorkItem } from "@/features/work-items/types";
@@ -23,8 +24,8 @@ export const isActiveJobOrder = (job: Pick<JobOrder, "currentStageId">): boolean
  * alert updates consistently. Not a full SLA engine by design.
  */
 export const SERVICE_THRESHOLDS = {
-  /** Parts request left pending approval longer than this (hours) is flagged. */
-  partsApprovalHours: 12,
+  /** Approval request left pending longer than this (hours) is flagged. */
+  approvalWaitHours: 12,
   /** Active job order with no history/update for longer than this (hours). */
   noActivityHours: 24,
   /** Job order sitting in "Waiting for Parts" longer than this (hours). */
@@ -46,12 +47,12 @@ export interface ServiceMetrics {
 
 export type BottleneckKind =
   | "parts_approval_wait"
+  | "workflow_approval_wait"
   | "waiting_parts"
   | "no_activity"
   | "work_item_overdue"
   | "job_order_overdue"
-  | "due_soon"
-  | "unassigned";
+  | "due_soon";
 
 export type BottleneckSeverity = "critical" | "warning";
 
@@ -74,6 +75,7 @@ interface DeriveInput {
   jobOrders: JobOrder[];
   partsRequests: PartsRequest[];
   workItems: WorkItem[];
+  approvalTasks?: ApprovalTask[];
   /** Injectable "now" for deterministic behaviour/testing. Defaults to now. */
   now?: string | number | Date;
 }
@@ -95,6 +97,15 @@ function enteredCurrentStageAt(job: JobOrder): string {
     .reverse()
     .find((h) => h.toStageId === job.currentStageId);
   return entry?.at ?? job.createdAt;
+}
+
+function approvalOwner(task: ApprovalTask): string {
+  const people = (task.approverAssignments ?? []).flatMap((assignment) =>
+    assignment.people.map((person) => `${person.name} (${assignment.role})`),
+  );
+  return people.length > 0
+    ? `Waiting on ${people.join(", ")}`
+    : `Waiting on ${task.requiredRoles.join(", ")}`;
 }
 
 export function deriveServiceMetrics(input: DeriveInput): ServiceMetrics {
@@ -131,23 +142,140 @@ export function deriveServiceMetrics(input: DeriveInput): ServiceMetrics {
 }
 
 /**
- * Identify operational bottlenecks with a concrete reason + elapsed context.
- * Sorted critical-first, then longest-waiting. Callers may cap the list length.
+ * Due-date-driven items that need timely action. Kept separate from process
+ * bottlenecks so the dashboard answers two different questions:
+ *   - Needs action: what is due / overdue?
+ *   - Bottlenecks: what is blocking or stalling the process?
  */
-export function detectBottlenecks(input: DeriveInput): Bottleneck[] {
+export function detectNeedsAction(input: DeriveInput): Bottleneck[] {
   const now = input.now ?? Date.now();
   const today = isoDay(now);
   const dueSoonCutoff = isoDay(
     new Date(now).getTime() + SERVICE_THRESHOLDS.dueSoonDays * MS_PER_DAY,
   );
-  const jobById = new Map(input.jobOrders.map((job) => [job.id, job]));
   const out: Bottleneck[] = [];
 
-  // 1. Parts requests pending approval too long (Shot 4 data).
+  for (const job of input.jobOrders) {
+    if (!isActiveJobOrder(job) || !job.dueDate) continue;
+
+    if (job.dueDate < today) {
+      out.push({
+        id: `overdue-${job.id}`,
+        jobOrderId: job.id,
+        code: job.code,
+        title: job.title,
+        kind: "job_order_overdue",
+        reason: "Job order overdue",
+        detail: `Due ${job.dueDate}`,
+        elapsedMs: 0,
+        severity: "critical",
+      });
+    } else if (job.dueDate <= dueSoonCutoff) {
+      out.push({
+        id: `due-soon-${job.id}`,
+        jobOrderId: job.id,
+        code: job.code,
+        title: job.title,
+        kind: "due_soon",
+        reason: "Due soon",
+        detail: `Due ${job.dueDate}`,
+        elapsedMs: 0,
+        severity: "warning",
+      });
+    }
+  }
+
+  for (const item of input.workItems) {
+    if (item.status === "completed" || !item.dueDate || item.dueDate >= today) {
+      continue;
+    }
+    out.push({
+      id: `work-item-${item.id}`,
+      jobOrderId: item.jobOrderId,
+      code: item.jobOrderCode,
+      title: item.task,
+      kind: "work_item_overdue",
+      reason: "Work item overdue",
+      detail: `Due ${item.dueDate}`,
+      elapsedMs: 0,
+      severity: "critical",
+    });
+  }
+
+  const severityRank: Record<BottleneckSeverity, number> = {
+    critical: 0,
+    warning: 1,
+  };
+  const sorted = out.sort(
+    (a, b) => severityRank[a.severity] - severityRank[b.severity],
+  );
+
+  // Keep one deadline signal per job order; the most urgent item wins.
+  const seen = new Set<number>();
+  return sorted.filter((item) => {
+    if (seen.has(item.jobOrderId)) return false;
+    seen.add(item.jobOrderId);
+    return true;
+  });
+}
+
+/**
+ * Identify process bottlenecks with a concrete reason + elapsed context.
+ * Due-date alerts intentionally live in detectNeedsAction instead.
+ */
+export function detectBottlenecks(input: DeriveInput): Bottleneck[] {
+  const now = input.now ?? Date.now();
+  const jobById = new Map(input.jobOrders.map((job) => [job.id, job]));
+  const partRequestById = new Map(
+    input.partsRequests.map((request) => [request.id, request]),
+  );
+  const out: Bottleneck[] = [];
+
+  // 1. Approval queues: surface both the business blocker and the actual role/
+  // person expected to act. Dashboard reads this across the active branch; it
+  // does not grant the viewer approval authority.
+  const representedPartApprovals = new Set<number>();
+  for (const task of input.approvalTasks ?? []) {
+    if (task.status !== "pending") continue;
+    const waited = elapsedMs(task.requestedAt, now);
+    if (waited < SERVICE_THRESHOLDS.approvalWaitHours * MS_PER_HOUR) continue;
+
+    let jobOrderId: number | null = null;
+    if (task.kind === "parts_request") {
+      representedPartApprovals.add(task.recordId);
+      jobOrderId = partRequestById.get(task.recordId)?.jobOrderId ?? null;
+    } else if (task.moduleId === "job-orders") {
+      jobOrderId = task.recordId;
+    }
+    if (jobOrderId == null) continue;
+
+    const job = jobById.get(jobOrderId);
+    out.push({
+      id: `approval-wait-${task.id}`,
+      jobOrderId,
+      code: job?.code ?? task.recordCode,
+      title: job?.title ?? task.recordTitle,
+      kind:
+        task.kind === "parts_request"
+          ? "parts_approval_wait"
+          : "workflow_approval_wait",
+      reason:
+        task.kind === "parts_request"
+          ? "Parts approval pending"
+          : "Approval pending",
+      detail: approvalOwner(task),
+      elapsedMs: waited,
+      severity: "critical",
+    });
+  }
+
+  // Fallback for callers that do not provide approval read models yet.
   for (const request of input.partsRequests) {
-    if (request.status !== "pending") continue;
+    if (request.status !== "pending" || representedPartApprovals.has(request.id)) {
+      continue;
+    }
     const waited = elapsedMs(request.createdAt, now);
-    if (waited < SERVICE_THRESHOLDS.partsApprovalHours * MS_PER_HOUR) continue;
+    if (waited < SERVICE_THRESHOLDS.approvalWaitHours * MS_PER_HOUR) continue;
     const job = jobById.get(request.jobOrderId);
     out.push({
       id: `parts-wait-${request.id}`,
@@ -155,7 +283,7 @@ export function detectBottlenecks(input: DeriveInput): Bottleneck[] {
       code: job?.code ?? request.code,
       title: job?.title ?? "Parts request",
       kind: "parts_approval_wait",
-      reason: "Waiting for parts approval",
+      reason: "Parts approval pending",
       detail: `Requested by ${request.requestedBy}`,
       elapsedMs: waited,
       severity: "critical",
@@ -176,7 +304,7 @@ export function detectBottlenecks(input: DeriveInput): Bottleneck[] {
           title: job.title,
           kind: "waiting_parts",
           reason: "Stuck waiting for parts",
-          detail: job.assignee ? `Assigned: ${job.assignee}` : undefined,
+          detail: job.assignee ? `Mechanic: ${job.assignee}` : undefined,
           elapsedMs: waited,
           severity: "warning",
         });
@@ -193,70 +321,11 @@ export function detectBottlenecks(input: DeriveInput): Bottleneck[] {
         title: job.title,
         kind: "no_activity",
         reason: "No recent activity",
-        detail: job.assignee ? `Assigned: ${job.assignee}` : "Unassigned",
+        detail: job.assignee ? `Mechanic: ${job.assignee}` : undefined,
         elapsedMs: idle,
         severity: "warning",
       });
     }
-
-    // 4. Past due date, or approaching it.
-    if (Boolean(job.dueDate) && job.dueDate < today) {
-      out.push({
-        id: `overdue-${job.id}`,
-        jobOrderId: job.id,
-        code: job.code,
-        title: job.title,
-        kind: "job_order_overdue",
-        reason: "Past due date",
-        detail: `Due ${job.dueDate}`,
-        elapsedMs: 0,
-        severity: "critical",
-      });
-    } else if (Boolean(job.dueDate) && job.dueDate <= dueSoonCutoff) {
-      out.push({
-        id: `due-soon-${job.id}`,
-        jobOrderId: job.id,
-        code: job.code,
-        title: job.title,
-        kind: "due_soon",
-        reason: "Due soon",
-        detail: `Due ${job.dueDate}`,
-        elapsedMs: 0,
-        severity: "warning",
-      });
-    }
-
-    // 5. Active but no mechanic assigned yet.
-    if (job.assigneeIds.length === 0) {
-      out.push({
-        id: `unassigned-${job.id}`,
-        jobOrderId: job.id,
-        code: job.code,
-        title: job.title,
-        kind: "unassigned",
-        reason: "No mechanic assigned",
-        detail: "Awaiting assignment",
-        elapsedMs: elapsedMs(job.createdAt, now),
-        severity: "warning",
-      });
-    }
-  }
-
-  // 6. Overdue work items (surfaced against their job order).
-  for (const item of input.workItems) {
-    if (item.status === "completed") continue;
-    if (!item.dueDate || item.dueDate >= today) continue;
-    out.push({
-      id: `work-item-${item.id}`,
-      jobOrderId: item.jobOrderId,
-      code: item.jobOrderCode,
-      title: item.task,
-      kind: "work_item_overdue",
-      reason: "Work item overdue",
-      detail: item.assignee ? `Assigned: ${item.assignee}` : "Unassigned",
-      elapsedMs: 0,
-      severity: "warning",
-    });
   }
 
   const severityRank: Record<BottleneckSeverity, number> = {

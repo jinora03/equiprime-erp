@@ -27,6 +27,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/auth-context";
+import { getErrorMessage } from "@/services/api/errors";
 import { useTheme } from "@/contexts/theme-context";
 import { PageHeader } from "@/shared/components/page-header";
 import { UserAvatar } from "@/shared/components/user-avatar";
@@ -74,8 +75,8 @@ export function ProfilePage() {
         full_name: `${values.first_name} ${values.last_name}`,
       });
       toast.success("Profile updated");
-    } catch {
-      toast.error("Couldn't update profile.");
+    } catch (error) {
+      toast.error("Couldn't update profile.", { description: getErrorMessage(error) });
     }
   };
 

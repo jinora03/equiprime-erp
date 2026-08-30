@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/constants/query-keys";
 import {
   workflowService,
-  type WorkflowUpdateInput,
+  type UpdateWorkflowRequest,
 } from "@/services/workflow.service";
 
 export function useWorkflows() {
@@ -13,11 +13,11 @@ export function useWorkflows() {
   });
 }
 
-export function useWorkflow(id: number) {
+export function useWorkflow(id?: number, version?: number) {
   return useQuery({
-    queryKey: queryKeys.workflows.detail(id),
-    queryFn: () => workflowService.get(id),
-    enabled: !Number.isNaN(id),
+    queryKey: queryKeys.workflows.detail(id ?? -1, version),
+    queryFn: () => workflowService.get(id as number, version),
+    enabled: id !== undefined && !Number.isNaN(id),
   });
 }
 
@@ -32,9 +32,17 @@ export function useWorkflowByModule(moduleId: string) {
 export function useUpdateWorkflow() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, input }: { id: number; input: WorkflowUpdateInput }) =>
+    mutationFn: ({ id, input }: { id: number; input: UpdateWorkflowRequest }) =>
       workflowService.update(id, input),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: queryKeys.workflows.all }),
+  });
+}
+
+/** All immutable revisions for rendering records pinned to older workflows. */
+export function useWorkflowVersionsByModule(moduleId: string) {
+  return useQuery({
+    queryKey: queryKeys.workflows.versionsByModule(moduleId),
+    queryFn: () => workflowService.listVersionsByModule(moduleId),
   });
 }

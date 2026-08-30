@@ -1,5 +1,6 @@
 import { customerService } from "@/features/customers/service";
 import { equipmentService } from "@/features/equipment/service";
+import { arePartsReleasedForCycle } from "@/features/parts/rules";
 import { partsRequestService } from "@/features/parts/service";
 import { areAllWorkItemsComplete } from "@/features/work-items/statuses";
 import { workItemService } from "@/features/work-items/service";
@@ -13,19 +14,26 @@ import {
   canViewJobOrder,
   type ServiceWorkActor,
 } from "@/services/service-work-access";
-import { getInitialWorkflowStageId } from "@/services/workflow-rules";
+import {
+  getInitialWorkflowStageId,
+  type WorkflowMoveEvidence,
+} from "@/services/workflow-rules";
 import { userService } from "@/services/user.service";
 import { workflowService } from "@/services/workflow.service";
+import {
+  requireMockPermission,
+  requireMockSessionActor,
+} from "@/services/mock/session-context";
 import { getActiveOrganizationScope } from "@/store/organization.store";
 import { jobOrderSeed } from "./data";
 import { serviceVehicleService } from "./service-vehicle-service";
-import type { JobOrder, JobOrderInput } from "./types";
+import type { CreateJobOrderRequest, JobOrder, JobOrderResponse } from "./types";
 import type { OrganizationScope } from "@/types";
 
 const store = createRecordStore<JobOrder>("job-orders", jobOrderSeed, {
   resolveWorkflow: (record) =>
     record.workflowId
-      ? workflowService.get(record.workflowId)
+      ? workflowService.get(record.workflowId, record.workflowVersion)
       : workflowService.getByModule("job-orders"),
   getConditionContext: async (record) => {
     const [workItems, partsRequests] = await Promise.all([
@@ -37,30 +45,30 @@ const store = createRecordStore<JobOrder>("job-orders", jobOrderSeed, {
     ]);
     return {
       allWorkItemsCompleted: areAllWorkItemsComplete(workItems),
-      partsReleased: partsRequests.some((request) => request.status === "released"),
+      partsReleased: arePartsReleasedForCycle(partsRequests, record.partsCycle),
       supervisorApproved: false,
       qaPassed: false,
     };
+  },
+  onStageMoved: (record, fromStageId, toStageId) => {
+    if (fromStageId !== "jo-waiting-parts" && toStageId === "jo-waiting-parts") {
+      record.partsCycle += 1;
+    }
   },
 });
 let counter = Math.max(
   ...jobOrderSeed.map((job) => Number(job.code.split("-").at(-1) ?? 0)),
 );
 
-const actorFromMove = (
-  input: Parameters<typeof store.moveStage>[2],
-): ServiceWorkActor => ({
-  userId: input.actorId ?? -1,
-  role: input.actorRole ?? "",
-  permissions: input.permissions,
-});
-
 export const jobOrderService = {
   ...store,
-  async listForActor(
-    actor: ServiceWorkActor,
-    scope?: OrganizationScope,
-  ): Promise<JobOrder[]> {
+  async listForCurrentActor(scope?: OrganizationScope): Promise<JobOrderResponse[]> {
+    const session = requireMockSessionActor();
+    const actor: ServiceWorkActor = {
+      userId: session.id,
+      role: session.role,
+      permissions: session.permissions,
+    };
     const records = await store.list(scope);
     return records.filter((record) => canViewJobOrder(actor, record));
   },
@@ -68,18 +76,35 @@ export const jobOrderService = {
   async moveStage(
     id: number,
     toStageId: string,
-    input: Parameters<typeof store.moveStage>[2],
+    input: { note?: string; evidence?: WorkflowMoveEvidence } = {},
   ): Promise<JobOrder> {
+    const session = requireMockSessionActor();
+    const actor: ServiceWorkActor = {
+      userId: session.id,
+      role: session.role,
+      permissions: session.permissions,
+    };
     const record = await store.get(id);
-    if (!canUpdateJobOrder(actorFromMove(input), record)) {
+    if (!canUpdateJobOrder(actor, record)) {
       throw new Error("You can only update job orders available to your account.");
     }
-    return store.moveStage(id, toStageId, input);
+    return store.moveStage(id, toStageId, {
+      actor: session.name,
+      actorId: session.id,
+      actorRole: session.role,
+      permissions: session.permissions,
+      note: input.note,
+      evidence: input.evidence,
+    });
   },
 
-  async create(input: JobOrderInput): Promise<JobOrder> {
+  async create(input: CreateJobOrderRequest): Promise<JobOrderResponse> {
     const now = new Date().toISOString();
+    const session = requireMockPermission("job-orders:create");
     const scope = getActiveOrganizationScope();
+    if (input.assigneeIds.length === 0) {
+      throw new Error("Assign at least one mechanic before creating a job order.");
+    }
     const [workflow, customer, equipment, mechanics, serviceVehicle] =
       await Promise.all([
         workflowService.get(input.workflowId),
@@ -128,7 +153,7 @@ export const jobOrderService = {
       companyId: scope.companyId,
       branchId: scope.branchId,
       currentStageId: firstStage,
-      history: [historyEntry(null, firstStage, input.actor, undefined, now)],
+      history: [historyEntry(null, firstStage, session.name, undefined, now)],
       assignee: assigneeNames.length > 0 ? assigneeNames.join(", ") : null,
       assigneeIds: [...input.assigneeIds],
       customer: customer.name,
@@ -140,7 +165,9 @@ export const jobOrderService = {
         ? `${serviceVehicle.code} · ${serviceVehicle.name}`
         : null,
       workflowId: input.workflowId,
+      workflowVersion: workflow.version,
       priority: input.priority,
+      partsCycle: 0,
       dueDate: input.dueDate,
       description: input.description,
       notes: input.notes,

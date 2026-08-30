@@ -21,6 +21,7 @@ const stage = (
 export const WORKFLOWS: Workflow[] = [
   {
     id: 1,
+    version: 1,
     name: "Job Order Workflow",
     description: "End-to-end lifecycle for equipment repair and service job orders.",
     moduleId: "job-orders",
@@ -118,6 +119,7 @@ export const WORKFLOWS: Workflow[] = [
   },
   {
     id: 3,
+    version: 1,
     name: "Project Workflow",
     description: "Delivery lifecycle for service and installation projects.",
     moduleId: "projects",
@@ -134,6 +136,7 @@ export const WORKFLOWS: Workflow[] = [
   },
   {
     id: 4,
+    version: 1,
     name: "Maintenance Workflow",
     description: "Preventive maintenance schedule for the equipment fleet.",
     moduleId: "maintenance",

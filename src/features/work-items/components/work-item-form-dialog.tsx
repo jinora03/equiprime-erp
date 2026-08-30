@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMechanics } from "@/features/users/hooks";
+import { getErrorMessage } from "@/services/api/errors";
 import { useCreateWorkItem } from "../hooks";
 
 const schema = z.object({
@@ -96,8 +97,10 @@ export function WorkItemFormDialog({
       });
       toast.success("Work item added");
       onOpenChange(false);
-    } catch {
-      toast.error("Couldn't add work item.");
+    } catch (error) {
+      toast.error("Couldn't add work item.", {
+        description: getErrorMessage(error),
+      });
     }
   };
 

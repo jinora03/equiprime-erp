@@ -36,6 +36,8 @@ import {
 import { ROUTES } from "@/constants/routes";
 import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
+import { getErrorMessage } from "@/services/api/errors";
+import { isAssignedOnlyServiceActor } from "@/services/service-work-access";
 import { useRequestApproval } from "@/features/approvals/hooks";
 import { useMoveRecordStage } from "@/hooks/use-workflow-records";
 import { EmptyState } from "@/shared/components/empty-state";
@@ -44,13 +46,14 @@ import { WorkflowHistoryList } from "@/shared/components/workflow-history-list";
 import { WorkflowStageBadge } from "@/shared/components/workflow-stage-badge";
 import { WorkflowTimeline } from "@/shared/components/workflow-timeline";
 import { formatCurrency, formatDate, formatRelativeTime } from "@/utils/format";
-import { useWorkflowByModule } from "@/features/workflows/hooks";
+import { useWorkflow } from "@/features/workflows/hooks";
 import { useWorkItems } from "@/features/work-items/hooks";
 import {
   areAllWorkItemsComplete,
   getWorkItemStatus,
 } from "@/features/work-items/statuses";
 import { usePartsRequests } from "@/features/parts/hooks";
+import { arePartsReleasedForCycle } from "@/features/parts/rules";
 import {
   getOutgoingTransitions,
   type ConditionContext,
@@ -59,10 +62,13 @@ import { TransitionDialog } from "@/features/workflows/components/transition-dia
 import type { WorkflowTransition } from "@/types";
 import type { WorkflowMoveEvidence } from "@/services/workflow-rules";
 import { jobOrderService } from "../service";
-import { SAMPLE_ATTACHMENTS, SAMPLE_LABOR } from "../detail-data";
 import { JobOrderWorkItemsTab } from "../components/job-order-work-items-tab";
 import { JobOrderPartsTab } from "../components/job-order-parts-tab";
-import { useJobOrders } from "../hooks";
+import {
+  useJobOrderAttachments,
+  useJobOrderLabor,
+  useJobOrders,
+} from "../hooks";
 
 const TABS = [
   "overview",
@@ -79,8 +85,8 @@ export function JobOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const jobOrderId = Number(id);
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { can, permissions } = usePermissions();
+  const { user, permissions } = useAuth();
+  const { can } = usePermissions();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = TABS.includes(searchParams.get("tab") ?? "")
@@ -88,21 +94,28 @@ export function JobOrderDetailPage() {
     : "overview";
 
   const { data: jobOrders = [], isLoading } = useJobOrders();
-  const { data: jobWorkflow } = useWorkflowByModule("job-orders");
+  const jobOrder = jobOrders.find((j) => j.id === jobOrderId);
+  const { data: jobWorkflow } = useWorkflow(
+    jobOrder?.workflowId,
+    jobOrder?.workflowVersion,
+  );
   const { data: workItems = [] } = useWorkItems(jobOrderId);
   const { data: partsRequests = [] } = usePartsRequests(jobOrderId);
+  const { data: labor = [] } = useJobOrderLabor(jobOrderId);
+  const { data: attachments = [] } = useJobOrderAttachments(jobOrderId);
   const moveJobStage = useMoveRecordStage("job-orders", jobOrderService);
   const requestApproval = useRequestApproval();
 
   const [pendingTransition, setPendingTransition] =
     useState<WorkflowTransition | null>(null);
 
-  const jobOrder = jobOrders.find((j) => j.id === jobOrderId);
-
   // Context the transition engine evaluates conditions against.
   const conditionContext: ConditionContext = {
     allWorkItemsCompleted: areAllWorkItemsComplete(workItems),
-    partsReleased: partsRequests.some((r) => r.status === "released"),
+    partsReleased: arePartsReleasedForCycle(
+      partsRequests,
+      jobOrder?.partsCycle ?? 0,
+    ),
     supervisorApproved: false,
     qaPassed: false,
   };
@@ -168,7 +181,14 @@ export function JobOrderDetailPage() {
 
   const currentStage =
     jobWorkflow?.stages.find((s) => s.id === jobOrder.currentStageId) ?? null;
-  const canMoveJob = can("job-orders:update");
+  const mechanicReadOnly =
+    user != null &&
+    isAssignedOnlyServiceActor({
+      userId: user.id,
+      role: user.role,
+      permissions,
+    });
+  const canMoveJob = can("job-orders:update") && !mechanicReadOnly;
   const stageName = (id: string) =>
     jobWorkflow?.stages.find((s) => s.id === id)?.name ?? id;
   const outgoing = getOutgoingTransitions(jobWorkflow, jobOrder.currentStageId);
@@ -181,10 +201,6 @@ export function JobOrderDetailPage() {
       await moveJobStage.mutateAsync({
         id: jobOrder.id,
         toStageId,
-        actor: user?.full_name ?? "System",
-        actorId: user?.id,
-        actorRole: user?.role,
-        permissions,
         evidence,
       });
       toast.success(`Moved to ${stageName(toStageId)}`);
@@ -192,7 +208,7 @@ export function JobOrderDetailPage() {
     } catch (error) {
       toast.warning("Move blocked", {
         description:
-          error instanceof Error ? error.message : "This move isn't allowed.",
+          getErrorMessage(error, "This move isn't allowed."),
       });
       return false;
     }
@@ -210,19 +226,13 @@ export function JobOrderDetailPage() {
     toStageId: string,
     evidence: WorkflowMoveEvidence,
   ) => {
-    if (!user || !pendingTransition) return;
+    if (!pendingTransition) return;
     try {
       const task = await requestApproval.mutateAsync({
         moduleId: "job-orders",
         recordId: jobOrder.id,
         toStageId,
         transitionId: pendingTransition.id,
-        actor: {
-          id: user.id,
-          name: user.full_name,
-          role: user.role,
-          permissions,
-        },
         confirmedConditions: evidence.confirmedConditions,
       });
       toast.success("Approval requested", {
@@ -232,12 +242,12 @@ export function JobOrderDetailPage() {
     } catch (error) {
       toast.error("Approval request failed", {
         description:
-          error instanceof Error ? error.message : "This approval could not be requested.",
+          getErrorMessage(error, "This approval could not be requested."),
       });
     }
   };
 
-  const laborTotal = SAMPLE_LABOR.reduce((sum, l) => sum + l.hours * l.rate, 0);
+  const laborTotal = labor.reduce((sum, l) => sum + l.hours * l.rate, 0);
 
   return (
     <div className="space-y-6">
@@ -273,6 +283,16 @@ export function JobOrderDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {mechanicReadOnly ? (
+        <div className="flex items-start gap-2 rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            This Job Order is read-only for mechanics. Update your assigned Work
+            Items; use the other tabs as job context and reference.
+          </p>
+        </div>
+      ) : null}
 
       <Tabs value={tab} onValueChange={setTab}>
         <ScrollableTabsList>
@@ -347,7 +367,9 @@ export function JobOrderDetailPage() {
                   />
                   {!canMoveJob ? (
                     <p className="text-xs text-muted-foreground">
-                      Read-only access.
+                      {mechanicReadOnly
+                        ? "Workflow changes are handled by a supervisor or manager."
+                        : "Read-only access."}
                     </p>
                   ) : outgoing.length > 0 ? (
                     <div className="space-y-2">
@@ -422,7 +444,7 @@ export function JobOrderDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {SAMPLE_LABOR.map((l) => (
+                {labor.map((l) => (
                   <TableRow key={l.id}>
                     <TableCell className="font-medium">{l.mechanic}</TableCell>
                     <TableCell className="text-muted-foreground">
@@ -454,7 +476,7 @@ export function JobOrderDetailPage() {
         <TabsContent value="attachments">
           <Card>
             <CardContent className="divide-y p-0">
-              {SAMPLE_ATTACHMENTS.map((a) => (
+              {attachments.map((a) => (
                 <div key={a.id} className="flex items-center gap-3 px-5 py-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                     <Paperclip className="h-4 w-4" />

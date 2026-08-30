@@ -51,6 +51,11 @@ export function canUpdateJobOrder(
   actor: ServiceWorkActor,
   jobOrder: Pick<JobOrder, "assigneeIds">,
 ): boolean {
+  // Assigned-only field roles (currently Mechanic) may view their Job Orders
+  // for context, but the Job Order itself remains manager/supervisor-owned.
+  // This explicit role boundary prevents an accidentally broad permission
+  // grant from enabling workflow moves or Job Order mutations.
+  if (isAssignedOnlyServiceActor(actor)) return false;
   return (
     hasPermission(actor.permissions, "job-orders:update") &&
     matchesAssignment(actor, jobOrder.assigneeIds)

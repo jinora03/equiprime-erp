@@ -1,14 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/constants/query-keys";
-import { useAuth } from "@/contexts/auth-context";
 import {
   organizationScopeKey,
   useOrganizationScope,
 } from "@/store/organization.store";
 import { workItemService } from "./service";
 import type { WorkItemStatus } from "./statuses";
-import type { WorkItem, WorkItemInput } from "./types";
+import type { CreateWorkItemRequest, WorkItem } from "./types";
 
 export function useWorkItems(jobOrderId: number) {
   const scope = useOrganizationScope();
@@ -32,7 +31,7 @@ export function useAllWorkItems() {
 export function useCreateWorkItem() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: WorkItemInput) => workItemService.create(input),
+    mutationFn: (input: CreateWorkItemRequest) => workItemService.create(input),
     onSuccess: () =>
       Promise.all([
         qc.invalidateQueries({ queryKey: queryKeys.workItems.root }),
@@ -43,19 +42,10 @@ export function useCreateWorkItem() {
 
 export function useUpdateWorkItemStatus() {
   const qc = useQueryClient();
-  const { user, permissions } = useAuth();
 
   return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: WorkItemStatus }) => {
-      if (!user) {
-        throw new Error("Sign in to update this work item.");
-      }
-      return workItemService.updateStatus(id, status, {
-        userId: user.id,
-        role: user.role,
-        permissions,
-      });
-    },
+    mutationFn: ({ id, status }: { id: number; status: WorkItemStatus }) =>
+      workItemService.updateStatus(id, status),
     // Optimistic: reflect the new status across every work-item query instantly.
     onMutate: async ({ id, status }) => {
       await qc.cancelQueries({ queryKey: queryKeys.workItems.root });

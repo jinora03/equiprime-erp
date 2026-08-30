@@ -55,6 +55,8 @@ export interface WorkflowTransition {
 
 export interface Workflow {
   id: number;
+  /** Immutable revision number; edits create a new version. */
+  version: number;
   name: string;
   description?: string;
   /** Module the workflow drives, e.g. "job-orders". */
@@ -66,6 +68,9 @@ export interface Workflow {
   updatedBy: string;
   updatedAt: string;
 }
+
+/** Stable read DTO returned by the Workflow service/API. */
+export type WorkflowResponse = Workflow;
 
 /** One movement of a record through the workflow. */
 export interface WorkflowHistory {
@@ -97,6 +102,9 @@ export interface WorkflowRecord {
   code: string;
   title: string;
   moduleId: string;
+  /** Exact workflow revision this record follows. */
+  workflowId: number;
+  workflowVersion: number;
   companyId: string;
   branchId: string;
   currentStageId: string;

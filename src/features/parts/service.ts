@@ -1,13 +1,21 @@
 import { inventoryService } from "@/features/inventory/service";
+import type { JobOrder } from "@/features/job-orders/types";
 import { delay, nextId } from "@/services/mock/delay";
+import { requireMockSessionActor } from "@/services/mock/session-context";
 import {
   canUpdateJobOrder,
   type ServiceWorkActor,
 } from "@/services/service-work-access";
+import { findRegisteredWorkflowRecord } from "@/services/workflow-record-registry";
 import { getActiveOrganizationScope } from "@/store/organization.store";
 import type { ApprovalActor, OrganizationScope } from "@/types";
 import { partsRequestSeed } from "./data";
-import type { PartsRequest, PartsRequestInput } from "./types";
+import type {
+  CreatePartsRequestRequest,
+  PartsRequest,
+  PartsRequestItem,
+  PartsRequestResponse,
+} from "./types";
 
 /** Parts approvals belong to Warehouse Staff; Super Admin is handled by ApprovalService. */
 export const PARTS_APPROVER_ROLES = ["Warehouse Staff"] as const;
@@ -31,11 +39,11 @@ function inScope(request: PartsRequest, scope: OrganizationScope) {
 }
 
 export const partsRequestService = {
-  listByJobOrder(jobOrderId: number): Promise<PartsRequest[]> {
+  listByJobOrder(jobOrderId: number): Promise<PartsRequestResponse[]> {
     return delay(data.filter((request) => request.jobOrderId === jobOrderId).map(clone));
   },
 
-  listForApproval(scope: OrganizationScope): Promise<PartsRequest[]> {
+  listForApproval(scope: OrganizationScope): Promise<PartsRequestResponse[]> {
     return delay(
       data
         .filter((request) => inScope(request, scope) && request.status !== "draft")
@@ -43,29 +51,73 @@ export const partsRequestService = {
     );
   },
 
-  get(id: number): PartsRequest | null {
+  get(id: number): PartsRequestResponse | null {
     const request = data.find((candidate) => candidate.id === id);
     return request ? clone(request) : null;
   },
 
-  async create(input: PartsRequestInput): Promise<PartsRequest> {
-    // Record-level access: raising a parts request requires update access to the
-    // target job order. Enforced in the service (not UI-only) so mechanics can
-    // only request parts for job orders assigned to them — consistent with the
-    // job-orders and work-items services (services/service-work-access.ts).
+  async create(input: CreatePartsRequestRequest): Promise<PartsRequestResponse> {
+    if (input.items.length === 0) {
+      throw new Error("Add at least one part before creating a request.");
+    }
+
+    const scope = getActiveOrganizationScope();
+    const requester = requireMockSessionActor();
+    // Record-level access is resolved from the registered Job Order instead of
+    // trusting ownership/assignee data supplied by the UI. Laravel should make
+    // this same check authoritatively when the real backend is connected.
+    const jobOrder = findRegisteredWorkflowRecord<JobOrder>(
+      "job-orders",
+      input.jobOrderId,
+    );
+    if (
+      !jobOrder ||
+      jobOrder.companyId !== scope.companyId ||
+      jobOrder.branchId !== scope.branchId
+    ) {
+      throw new Error("Job order not found in the active organization scope.");
+    }
+
     const actor: ServiceWorkActor = {
-      userId: input.requestedBy.id,
-      role: input.requestedBy.role,
-      permissions: input.requestedBy.permissions,
+      userId: requester.id,
+      role: requester.role,
+      permissions: requester.permissions,
     };
-    if (!canUpdateJobOrder(actor, { assigneeIds: input.jobOrderAssigneeIds })) {
+    if (!canUpdateJobOrder(actor, jobOrder)) {
       throw new Error(
         "You can only request parts for job orders assigned to you.",
       );
     }
 
+    const inventory = await inventoryService.list(scope);
+    const inventoryById = new Map(inventory.map((item) => [item.id, item]));
+    const requestedQuantities = new Map<number, number>();
+    for (const item of input.items) {
+      requestedQuantities.set(
+        item.inventoryItemId,
+        (requestedQuantities.get(item.inventoryItemId) ?? 0) + item.quantity,
+      );
+    }
+
+    const resolvedItems: PartsRequestItem[] = [...requestedQuantities].map(
+      ([inventoryItemId, quantity]) => {
+        const item = inventoryById.get(inventoryItemId);
+        if (!item) {
+          throw new Error(
+            "Inventory item not found in the active organization scope.",
+          );
+        }
+        return {
+          inventoryItemId,
+          sku: item.sku,
+          name: item.name,
+          unit: item.unit,
+          quantity,
+        };
+      },
+    );
+
     const now = new Date().toISOString();
-    const scope = getActiveOrganizationScope();
     counter += 1;
     const request: PartsRequest = {
       id: nextId(),
@@ -73,19 +125,27 @@ export const partsRequestService = {
       companyId: scope.companyId,
       branchId: scope.branchId,
       jobOrderId: input.jobOrderId,
+      // Requests raised while Repair is active belong to the upcoming waiting
+      // cycle; requests raised while already waiting belong to the current one.
+      jobOrderPartsCycle:
+        jobOrder.currentStageId === "jo-waiting-parts"
+          ? Math.max(jobOrder.partsCycle, 1)
+          : jobOrder.partsCycle + 1,
       status: "pending",
-      items: input.items.map((item) => ({ ...item })),
-      requestedById: input.requestedBy.id,
-      requestedBy: input.requestedBy.name,
-      requestedByRole: input.requestedBy.role,
+      items: resolvedItems,
+      requestedById: requester.id,
+      requestedBy: requester.name,
+      requestedByRole: requester.role,
       createdAt: now,
       updatedAt: now,
     };
 
-    await Promise.all(
-      request.items.map((item) =>
-        inventoryService.reserve(item.inventoryItemId, item.quantity),
-      ),
+    await inventoryService.reserveMany(
+      request.items.map((item) => ({
+        id: item.inventoryItemId,
+        qty: item.quantity,
+      })),
+      scope,
     );
     data.unshift(request);
     return clone(request);
@@ -97,7 +157,7 @@ export const partsRequestService = {
     actor: ApprovalActor,
     approvalRole: string,
     note?: string,
-  ): Promise<PartsRequest> {
+  ): Promise<PartsRequestResponse> {
     const request = data.find((candidate) => candidate.id === id);
     if (!request) throw new Error("Parts request not found.");
     if (request.status !== "pending") {
@@ -108,19 +168,23 @@ export const partsRequestService = {
     }
 
     if (decision === "approve") {
-      await Promise.all(
-        request.items.map((item) =>
-          inventoryService.release(item.inventoryItemId, item.quantity),
-        ),
+      await inventoryService.releaseMany(
+        request.items.map((item) => ({
+          id: item.inventoryItemId,
+          qty: item.quantity,
+        })),
+        { companyId: request.companyId, branchId: request.branchId },
       );
       // Demo shortcut: an approved warehouse request is released immediately.
       // A real backend may split business approval and physical fulfillment.
       request.status = "released";
     } else {
-      await Promise.all(
-        request.items.map((item) =>
-          inventoryService.unreserve(item.inventoryItemId, item.quantity),
-        ),
+      await inventoryService.unreserveMany(
+        request.items.map((item) => ({
+          id: item.inventoryItemId,
+          qty: item.quantity,
+        })),
+        { companyId: request.companyId, branchId: request.branchId },
       );
       request.status = "rejected";
     }
