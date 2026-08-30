@@ -11,6 +11,7 @@ export interface Project extends WorkflowRecord {
 /** Stable read DTO returned by the Projects service/API. */
 export type ProjectResponse = Project;
 
+/** API write contract; actor/audit/workflow revision fields are server-owned. */
 export interface CreateProjectRequest {
   title: string;
   client: string;

@@ -8,6 +8,10 @@ import { normalizeAppError } from "@/services/api/errors";
  * token; a response interceptor clears the session on 401 so the route guards
  * redirect to login. Swapping mock mode for the real backend requires no
  * changes here.
+ *
+ * Backend ownership note: this transport layer only forwards credentials and
+ * normalizes failures. Authorization decisions remain authoritative in Laravel
+ * (core ERP) or the owning FastAPI integration endpoint, never in React.
  */
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

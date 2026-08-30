@@ -40,12 +40,20 @@ export interface PartsRequest {
   decision?: PartsRequestDecision;
 }
 
-/** Minimal write DTO; display metadata is resolved by the service/backend. */
+/**
+ * Backend-ready write DTO. The browser sends only authoritative references and
+ * quantities; SKU/name/unit are read-model fields and must be resolved from the
+ * inventory record by Laravel rather than accepted from client input.
+ */
 export interface CreatePartsRequestItemRequest {
   inventoryItemId: number;
   quantity: number;
 }
 
+/**
+ * Requester identity is deliberately absent. The authenticated backend session
+ * owns requestedBy/requestedByRole and the server must verify Job Order access.
+ */
 export interface CreatePartsRequestRequest {
   jobOrderId: number;
   items: CreatePartsRequestItemRequest[];

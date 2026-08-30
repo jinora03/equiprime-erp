@@ -72,6 +72,11 @@ export interface ApprovalActor {
   permissions: PermissionKey[];
 }
 
+/**
+ * Backend-ready approval command. Actor identity/role/permissions are omitted on
+ * purpose: Laravel must derive the requester from the authenticated session and
+ * independently validate the transition and required approver roles.
+ */
 export interface CreateApprovalRequest {
   moduleId: string;
   recordId: number;
@@ -80,6 +85,11 @@ export interface CreateApprovalRequest {
   confirmedConditions?: TransitionConditionType[];
 }
 
+/**
+ * Approval decision command. `taskId`, decision, and optional business note are
+ * client intent only; the backend must determine who is acting and whether that
+ * actor is an eligible approver.
+ */
 export interface DecideApprovalRequest {
   taskId: string;
   decision: "approve" | "reject";

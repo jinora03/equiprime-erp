@@ -29,6 +29,10 @@ export interface WorkItem {
 /** Stable read DTO returned by the Work Items service/API. */
 export type WorkItemResponse = WorkItem;
 
+/**
+ * API write contract. Server-owned identity, timestamps, status history, and
+ * derived Job Order metadata are intentionally excluded from client input.
+ */
 export interface CreateWorkItemRequest {
   task: string;
   jobOrderId: number;

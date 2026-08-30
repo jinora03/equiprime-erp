@@ -73,6 +73,14 @@ export const jobOrderService = {
     return records.filter((record) => canViewJobOrder(actor, record));
   },
 
+  /**
+   * Mock command boundary for a Job Order transition.
+   *
+   * The caller supplies only the requested business action. Actor identity and
+   * permissions are resolved from the authenticated session here; production
+   * Laravel must perform the equivalent authorization server-side before moving
+   * the record.
+   */
   async moveStage(
     id: number,
     toStageId: string,
@@ -98,6 +106,11 @@ export const jobOrderService = {
     });
   },
 
+  /**
+   * Mock create command mirroring the future Laravel application service.
+   * Resolve authoritative references (workflow/customer/equipment/mechanics)
+   * inside the service/backend rather than trusting display data from the UI.
+   */
   async create(input: CreateJobOrderRequest): Promise<JobOrderResponse> {
     const now = new Date().toISOString();
     const session = requireMockPermission("job-orders:create");
