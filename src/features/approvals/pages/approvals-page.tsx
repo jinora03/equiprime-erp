@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   UserRound,
   XCircle,
-  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -156,18 +155,9 @@ export function ApprovalsPage() {
             const alreadyApproved =
               task.status === "pending" &&
               task.decisions.some((decision) => decision.role === user?.role);
-            const primaryAssignment = task.approverAssignments?.find(
-              (assignment) => assignment.people.length > 0,
-            );
-            const primaryApprover = primaryAssignment?.people[0];
-            const approverName =
-              primaryApprover?.name ?? task.requiredRoles.join(", ");
-            const approverRole =
-              primaryAssignment?.role ??
-              (task.requiredRoles.length === 1
-                ? task.requiredRoles[0]
-                : `${task.requiredRoles.length} required roles`);
-
+            const assignedTo =
+              task.context.find((entry) => entry.label === "Assigned")?.value ??
+              "Not assigned";
             return (
               <Card key={task.id} className="overflow-hidden">
                 <CardContent className="p-0">
@@ -211,25 +201,25 @@ export function ApprovalsPage() {
                         {task.toStageName}
                       </p>
 
-                      <div className="mt-4 grid gap-3 border-t pt-4 text-xs sm:grid-cols-3">
-                        <ApprovalMeta
-                          icon={UserRound}
-                          label="Requested by"
-                          value={task.requestedByName}
-                          detail={task.requestedByRole}
-                        />
-                        <ApprovalMeta
-                          icon={ShieldCheck}
-                          label="Approver"
-                          value={approverName}
-                          detail={approverRole}
-                        />
-                        <ApprovalMeta
-                          icon={Clock3}
-                          label="Requested"
-                          value={formatRelativeTime(task.requestedAt)}
-                          detail={formatDateTime(task.requestedAt)}
-                        />
+                      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <UserRound className="h-3.5 w-3.5 shrink-0" />
+                          <span>Assigned</span>
+                          <span className="font-medium text-foreground">
+                            {assignedTo}
+                          </span>
+                        </div>
+
+                        <div className="hidden h-3.5 w-px bg-border sm:block" />
+
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <Clock3 className="h-3.5 w-3.5 shrink-0" />
+                          <span className="font-medium text-foreground">
+                            {formatRelativeTime(task.requestedAt)}
+                          </span>
+                          <span className="text-muted-foreground/50">·</span>
+                          <span>{formatDateTime(task.requestedAt)}</span>
+                        </div>
                       </div>
                     </div>
 
@@ -250,9 +240,15 @@ export function ApprovalsPage() {
                           </Button>
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => openDecision(task, "reject")}
+                            variant="destructive"
+                            disabled={decide.isPending}
+                            onClick={() =>
+                              void act(
+                                task,
+                                "reject",
+                                "Rejected from the approvals queue.",
+                              )
+                            }
                           >
                             <XCircle className="h-4 w-4" /> Reject
                           </Button>
@@ -303,29 +299,6 @@ export function ApprovalsPage() {
           return act(selected, "reject", note);
         }}
       />
-    </div>
-  );
-}
-
-function ApprovalMeta({
-  icon: Icon,
-  label,
-  value,
-  detail,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  detail?: string;
-}) {
-  return (
-    <div className="flex min-w-0 items-start gap-2">
-      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      <div className="min-w-0">
-        <p className="text-muted-foreground">{label}</p>
-        <p className="mt-0.5 break-words font-medium text-foreground">{value}</p>
-        {detail ? <p className="mt-0.5 break-words text-muted-foreground">{detail}</p> : null}
-      </div>
     </div>
   );
 }
